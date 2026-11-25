@@ -1,0 +1,65 @@
+{
+ "description": "Mutants that the random-data tests alone must catch (they run with --fuzz).",
+ "command": [
+  "gjs",
+  "-m",
+  "tests/run.js",
+  "--fuzz"
+ ],
+ "mutants": [
+  {
+   "file": "src/providers/files-query.js",
+   "label": "query keeps any non-space character",
+   "old": "/[\\p{L}\\p{N}]+/gu",
+   "new": "/\\S+/gu"
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "fold keeps combining marks (length changes)",
+   "old": "return unit.toLowerCase().normalize('NFD')[0];",
+   "new": "return unit.toLowerCase().normalize('NFD');"
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "split drops the tail",
+   "old": "    if (at < text.length)\n        parts.push({text: text.slice(at), match: false});",
+   "new": "    "
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "ranges touching are not merged",
+   "old": "if (last && range[0] <= last[1])",
+   "new": "if (last && range[0] < last[1])"
+  },
+  {
+   "file": "src/core/frecency.js",
+   "label": "non-finite times kept when loading",
+   "old": "const clean = times.filter(t => Number.isFinite(t))",
+   "new": "const clean = times.filter(() => true)"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "duplicate files kept",
+   "old": "        if (seen.has(row.url))\n            continue;\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/merge.js",
+   "label": "top hit stays in its section",
+   "old": "            section.items = section.items.filter(item => item !== top);\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/scoring.js",
+   "label": "highlight ranges from any field",
+   "old": "best.text === result.title ?",
+   "new": "true ?"
+  },
+  {
+   "file": "src/core/matching.js",
+   "label": "fuzzy match not bounded to the text",
+   "old": "return {score: Math.min(score, TIER.FUZZY), ranges: positions.map(p => [p, p + 1])};",
+   "new": "return {score: Math.min(score, TIER.FUZZY), ranges: positions.map(p => [p, p + 2])};"
+  }
+ ]
+}

@@ -19,11 +19,16 @@ PACK_ARGS := --force --out-dir=$(DIST) --schema=$(SCHEMA) \
 POT     := $(SRC)/po/luciole.pot
 LANGS   := $(patsubst $(SRC)/po/%.po,%,$(wildcard $(SRC)/po/*.po))
 
-.PHONY: help check lint test schemas pot po locale pack shell-test shell-test-ui shell-test-search shell-test-degrade shell-test-files capture clean
+.PHONY: help check lint test fuzz mutation soak zipcheck gate schemas pot po locale pack shell-test shell-test-ui shell-test-search shell-test-degrade shell-test-files capture clean
 
 help:
 	@echo "make check       lint + unit tests"
 	@echo "make lint        ESLint"
+	@echo "make gate        the quality gate: everything below, in order (run before every commit)"
+	@echo "make fuzz        random-data tests, fixed seeds (replay one with LUCIOLE_SEED=n)"
+	@echo "make mutation    break the code on purpose; the tests must notice (all mutants)"
+	@echo "make soak        thousands of random actions in a headless shell (endurance)"
+	@echo "make zipcheck    build the package and check its content"
 	@echo "make test        unit tests (plain gjs, no shell needed)"
 	@echo "make schemas     compile GSettings schemas for local runs"
 	@echo "make pot         extract the texts to translate into src/po/luciole.pot"
@@ -44,6 +49,21 @@ lint:
 
 test:
 	gjs -m tests/run.js
+
+fuzz:
+	@for seed in 1 2 3; do echo "seed $$seed"; LUCIOLE_SEED=$$seed gjs -m tests/run.js --fuzz | tail -n 1 || exit 1; done
+
+mutation:
+	gjs -m tests/mutation/run.js
+
+soak: schemas
+	sh tests/shell/soak.sh
+
+zipcheck:
+	sh tests/zipcheck.sh
+
+gate:
+	sh tests/gate.sh
 
 schemas:
 	glib-compile-schemas $(SRC)/schemas

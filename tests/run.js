@@ -2,13 +2,15 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 // Runs every tests/*.test.js with plain gjs:  gjs -m tests/run.js
+// With --fuzz it runs tests/fuzz/*.test.js instead (random data, see tests/fuzz/random.js).
 
 import Gio from 'gi://Gio';
 import System from 'system';
 
 import {takeTests} from './harness.js';
 
-const dir = Gio.File.new_for_uri(import.meta.url).get_parent();
+const testsDir = Gio.File.new_for_uri(import.meta.url).get_parent();
+const dir = ARGV.includes('--fuzz') ? testsDir.get_child('fuzz') : testsDir;
 const names = [];
 const enumerator = dir.enumerate_children('standard::name', Gio.FileQueryInfoFlags.NONE, null);
 for (let info = enumerator.next_file(null); info; info = enumerator.next_file(null)) {

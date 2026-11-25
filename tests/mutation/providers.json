@@ -1,0 +1,256 @@
+{
+ "description": "Mutants for the providers logic: each one breaks the code on purpose and the unit tests must fail.",
+ "command": [
+  "gjs",
+  "-m",
+  "tests/run.js"
+ ],
+ "mutants": [
+  {
+   "file": "src/providers/apps-index.js",
+   "label": "name weight lowered",
+   "old": "const WEIGHT = {NAME: 1, GENERIC_NAME: 0.6, KEYWORD: 0.5, ID: 0.4};",
+   "new": "const WEIGHT = {NAME: 0.3, GENERIC_NAME: 0.6, KEYWORD: 0.5, ID: 0.4};"
+  },
+  {
+   "file": "src/providers/apps-index.js",
+   "label": "keyword weight raised",
+   "old": "KEYWORD: 0.5,",
+   "new": "KEYWORD: 1,"
+  },
+  {
+   "file": "src/providers/apps-index.js",
+   "label": "generic name ignored",
+   "old": "        if (app.genericName)\n            fields.push({text: app.genericName, weight: WEIGHT.GENERIC_NAME});\n",
+   "new": ""
+  },
+  {
+   "file": "src/providers/apps-index.js",
+   "label": "empty keywords kept",
+   "old": "            if (keyword)\n                fields.push",
+   "new": "            if (true)\n                fields.push"
+  },
+  {
+   "file": "src/providers/apps-index.js",
+   "label": "id field removed",
+   "old": "        fields.push({text: app.id.replace(/\\.desktop$/, ''), weight: WEIGHT.ID});\n",
+   "new": ""
+  },
+  {
+   "file": "src/providers/apps-index.js",
+   "label": "desktop suffix kept",
+   "old": ".replace(/\\.desktop$/, '')",
+   "new": ""
+  },
+  {
+   "file": "src/providers/apps-index.js",
+   "label": "texts not folded",
+   "old": "matchFields: fields.map(field => ({...field, folded: fold(field.text)})),",
+   "new": "matchFields: fields.map(field => ({...field, folded: field.text})),"
+  },
+  {
+   "file": "src/providers/apps-index.js",
+   "label": "duplicates kept",
+   "old": "        if (!app || !app.id || !app.name || seen.has(app.id))",
+   "new": "        if (!app || !app.id || !app.name)"
+  },
+  {
+   "file": "src/providers/apps-index.js",
+   "label": "nameless apps kept",
+   "old": "!app.id || !app.name ||",
+   "new": "!app.id ||"
+  },
+  {
+   "file": "src/providers/apps-index.js",
+   "label": "frecency key changed",
+   "old": "frecencyKey: `apps:${app.id}`,",
+   "new": "frecencyKey: app.id,"
+  },
+  {
+   "file": "src/providers/apps-index.js",
+   "label": "description multi-line",
+   "old": "return (text ?? '').split('\\n')[0].trim();",
+   "new": "return (text ?? '').trim();"
+  },
+  {
+   "file": "src/providers/apps-index.js",
+   "label": "subtitle prefers description",
+   "old": "subtitle: firstLine(app.genericName) || firstLine(app.description),",
+   "new": "subtitle: firstLine(app.description) || firstLine(app.genericName),"
+  },
+  {
+   "file": "src/providers/apps-index.js",
+   "label": "pickByIds unsorted",
+   "old": "return ids.map(id => byId.get(id)).filter(result => result !== undefined);",
+   "new": "return results.filter(result => ids.includes(result.id));"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "word cap removed",
+   "old": "const MAX_WORDS = 5;",
+   "new": "const MAX_WORDS = 50;"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "min length 1",
+   "old": "const MIN_WORD_LENGTH = 2;",
+   "new": "const MIN_WORD_LENGTH = 1;"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "needs every word long",
+   "old": "Math.max(...words.map(word => word.length)) < MIN_WORD_LENGTH",
+   "new": "Math.min(...words.map(word => word.length)) < MIN_WORD_LENGTH"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "digits dropped",
+   "old": "/[\\p{L}\\p{N}]+/gu",
+   "new": "/[\\p{L}]+/gu"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "no prefix star",
+   "old": "words.map(word => `${word}*`)",
+   "new": "words.map(word => `${word}`)"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "url not decoded",
+   "old": "return decodeURIComponent(url.replace(/^file:\\/\\//, ''));",
+   "new": "return url.replace(/^file:\\/\\//, '');"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "home prefix too loose",
+   "old": "folder.startsWith(`${home}/`)",
+   "new": "folder.startsWith(home)"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "hidden files allowed",
+   "old": "    if (segments.some(segment => segment.startsWith('.')))\n        return true;\n",
+   "new": ""
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "path rule too loose",
+   "old": "path.startsWith(`${prefix}/`)",
+   "new": "path.startsWith(prefix)"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "name rule on substring",
+   "old": "} else if (segments.includes(rule)) {",
+   "new": "} else if (path.includes(rule)) {"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "tilde not expanded",
+   "old": "(rule.startsWith('~') ? home + rule.slice(1) : rule)",
+   "new": "rule"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "type matches any suffix",
+   "old": "lower.endsWith(`.${extension}`)",
+   "new": "lower.endsWith(extension)"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "duplicates kept",
+   "old": "        if (seen.has(row.url))\n            continue;\n",
+   "new": ""
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "zero relevance divides",
+   "old": "best > 0 ? row.rank / best : 1",
+   "new": "row.rank / best"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "rows without url kept",
+   "old": "        row.url && row.name &&\n",
+   "new": "        row.name &&\n"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "excluded folders ignored",
+   "old": "        !isExcluded(row.url, excludedFolders, home) &&\n",
+   "new": "        true &&\n"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "excluded types ignored",
+   "old": "        !isExcludedType(row.name, excludedTypes));",
+   "new": "        true);"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "short queries reach the index",
+   "old": "        if (!terms)\n            return [];\n        const connection",
+   "new": "        const connection"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "connection reopened each time",
+   "old": "        if (!this.#connecting) {",
+   "new": "        if (true) {"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "cursor not closed",
+   "old": "                try {\n                    cursor.close();\n                } catch {\n                    // Already closed; nothing to release.\n                }\n",
+   "new": ""
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "excluded folders not read",
+   "old": "excludedFolders: this.#settings.get_strv('excluded-folders'),",
+   "new": "excludedFolders: [],"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "excluded types not read",
+   "old": "excludedTypes: this.#settings.get_strv('excluded-types'),",
+   "new": "excludedTypes: [],"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "unknown action opens the folder",
+   "old": "        if (action.id === 'open-folder')\n",
+   "new": "        if (true)\n"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "results not ordered",
+   "old": "ORDER BY DESC(?rank)\n",
+   "new": ""
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "limit of one",
+   "old": "LIMIT 40`",
+   "new": "LIMIT 1`"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "late connection kept after destroy",
+   "old": "                if (this.#destroyed) {\n                    connection.close_async(null, () => {});\n                    return null;\n                }\n",
+   "new": ""
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "search after destroy still connects",
+   "old": "        if (this.#connection || this.#destroyed)\n            return this.#connection;",
+   "new": "        if (this.#connection)\n            return this.#connection;"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "failed connection retried",
+   "old": "        if (!this.#connecting) {",
+   "new": "        if (!this.#connecting || !this.#connection) {"
+  }
+ ]
+}

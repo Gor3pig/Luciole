@@ -18,7 +18,7 @@ start_shell() {
     # everything the private bus starts (a preferences window, a portal...): without
     # it a graphical program would fall back to the real session's display.
     WAYLAND_NAME="luciole-test-$$"
-    gnome-shell --headless --wayland --no-x11 --wayland-display="$WAYLAND_NAME" --virtual-monitor 1280x720 >"$LOG" 2>&1 &
+    gnome-shell --headless --wayland --no-x11 --wayland-display="$WAYLAND_NAME" --virtual-monitor 1280x720 ${SHELL_EXTRA_ARGS:-} >"$LOG" 2>&1 &
     SHELL_PID=$!
     gdbus call --session --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus \
         --method org.freedesktop.DBus.UpdateActivationEnvironment "{'WAYLAND_DISPLAY': '$WAYLAND_NAME', 'DISPLAY': ''}" >/dev/null

@@ -29,7 +29,7 @@ const KEY_SPACE = 32;
 const KEY_ESCAPE = 65307;
 const NAMED_KEYS = {
     Down: 65364, Up: 65362, Return: 65293, BackSpace: 65288, Escape: KEY_ESCAPE, Tab: 65289,
-    ISO_Left_Tab: 65056, Next: 65366, Prior: 65365, Right: 65363, Left: 65361, Control_L: KEY_CONTROL_L, Alt_L: KEY_ALT_L, Shift_L: 65505,
+    ISO_Left_Tab: 65056, Next: 65366, Prior: 65365, Right: 65363, Left: 65361, Control_L: KEY_CONTROL_L, Alt_L: KEY_ALT_L, Shift_L: 65505, Super_L: 65515,
 };
 
 const bus = Gio.bus_get_sync(Gio.BusType.SESSION, null);

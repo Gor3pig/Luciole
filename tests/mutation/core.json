@@ -1,0 +1,580 @@
+{
+ "description": "Mutants for the core logic: each one breaks the code on purpose and the unit tests must fail.",
+ "command": [
+  "gjs",
+  "-m",
+  "tests/run.js"
+ ],
+ "mutants": [
+  {
+   "file": "src/core/disposables.js",
+   "label": "dispose order (reverse -> forward)",
+   "old": "this.#run(this.#items.pop());",
+   "new": "this.#run(this.#items.shift());"
+  },
+  {
+   "file": "src/core/disposables.js",
+   "label": "errors no longer reported",
+   "old": "                this.#onError(error);",
+   "new": "                void error;"
+  },
+  {
+   "file": "src/core/disposables.js",
+   "label": "reporter failure no longer caught",
+   "old": "            } catch {\n                // The error reporter",
+   "new": "            } finally {\n                // The error reporter"
+  },
+  {
+   "file": "src/core/disposables.js",
+   "label": "late add leaks instead of running",
+   "old": "        if (this.#disposed)\n            this.#run(fn);\n        else\n            this.#items.push(fn);",
+   "new": "        this.#items.push(fn);"
+  },
+  {
+   "file": "src/core/disposables.js",
+   "label": "release forgets nothing",
+   "old": "        this.#items.splice(index, 1);\n        this.#run(fn);",
+   "new": "        this.#run(fn);"
+  },
+  {
+   "file": "src/core/disposables.js",
+   "label": "release of unknown callback not guarded",
+   "old": "        if (index < 0)\n            return;\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/disposables.js",
+   "label": "add accepts non-functions",
+   "old": "        if (typeof fn !== 'function')\n            throw new TypeError('Disposables.add() expects a function');\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/log.js",
+   "label": "debug always on",
+   "old": "            return isDebug() === true;",
+   "new": "            return true;"
+  },
+  {
+   "file": "src/core/log.js",
+   "label": "throwing isDebug counted as enabled",
+   "old": "        } catch {\n            return false;\n        }\n    };",
+   "new": "        } catch {\n            return true;\n        }\n    };"
+  },
+  {
+   "file": "src/core/log.js",
+   "label": "prefix removed",
+   "old": "const PREFIX = '[Luciole]';",
+   "new": "const PREFIX = '';"
+  },
+  {
+   "file": "src/core/log.js",
+   "label": "error cause dropped",
+   "old": "const detail = error === undefined ? '' : `: ${describe(error)}`;",
+   "new": "const detail = '';"
+  },
+  {
+   "file": "src/core/log.js",
+   "label": "guard no longer logs",
+   "old": "                logger.error(label, error);\n                return fallback;\n            }\n        },\n\n        async",
+   "new": "                return fallback;\n            }\n        },\n\n        async"
+  },
+  {
+   "file": "src/core/log.js",
+   "label": "guard rethrows",
+   "old": "                return fn();\n            } catch (error) {\n                logger.error(label, error);\n                return fallback;",
+   "new": "                return fn();\n            } catch (error) {\n                logger.error(label, error);\n                throw error;"
+  },
+  {
+   "file": "src/core/log.js",
+   "label": "guardAsync stops awaiting",
+   "old": "                return await fn();",
+   "new": "                return fn();"
+  },
+  {
+   "file": "src/core/disposables.js",
+   "label": "connect does not register the disconnection",
+   "old": "        this.add(() => emitter.disconnect(id));\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/disposables.js",
+   "label": "connect does not connect",
+   "old": "        const id = emitter.connect(signal, handler);",
+   "new": "        const id = 0;"
+  },
+  {
+   "file": "src/stylesheet-dark.css",
+   "label": "dark stylesheet loses a selector",
+   "old": ".luciole-entry-icon {\n    icon-size: 20px;\n    color: #b4b3bb;\n}\n",
+   "new": ""
+  },
+  {
+   "file": "src/stylesheet-dark.css",
+   "label": "dark stylesheet loses a property",
+   "old": "    font-size: 17px;\n",
+   "new": ""
+  },
+  {
+   "file": "src/stylesheet.css",
+   "label": "light stylesheet gets an unscoped selector",
+   "old": ".luciole-overlay {",
+   "new": "StEntry {\n    color: red;\n}\n\n.luciole-overlay {"
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "fold lower-casing removed",
+   "old": "return unit.toLowerCase().normalize('NFD')[0];",
+   "new": "return unit.normalize('NFD')[0];"
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "accents stripped",
+   "old": "return unit.toLowerCase().normalize('NFD')[0];",
+   "new": "return unit.toLowerCase();"
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "digits are word chars",
+   "old": "const WORD_CHAR = /[\\p{L}\\p{N}]/u;",
+   "new": "const WORD_CHAR = /[\\p{L}]/u;"
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "only first word start",
+   "old": "if (isWordChar(folded[i]) && (i === 0 || !isWordChar(folded[i - 1])))",
+   "new": "if (isWordChar(folded[i]) && (i === 0))"
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "touching ranges not merged",
+   "old": "if (last && range[0] <= last[1])",
+   "new": "if (last && range[0] < last[1])"
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "merge keeps wrong end",
+   "old": "last[1] = Math.max(last[1], range[1]);",
+   "new": "last[1] = range[1];"
+  },
+  {
+   "file": "src/core/matching.js",
+   "label": "prefix tier lowered",
+   "old": "PREFIX: 0.92,",
+   "new": "PREFIX: 0.70,"
+  },
+  {
+   "file": "src/core/matching.js",
+   "label": "exact check removed",
+   "old": "    if (text === token)\n        return {score: TIER.EXACT, ranges: [[0, text.length]]};\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/matching.js",
+   "label": "initials inverted",
+   "old": "ok = text[starts[first + k]] === token[k];",
+   "new": "ok = text[starts[first + k]] !== token[k];"
+  },
+  {
+   "file": "src/core/matching.js",
+   "label": "substring position ignored",
+   "old": "const score = TIER.SUBSTRING - 0.1 * (index / text.length);",
+   "new": "const score = TIER.SUBSTRING;"
+  },
+  {
+   "file": "src/core/matching.js",
+   "label": "fuzzy density not enforced",
+   "old": "if (density < MIN_FUZZY_DENSITY)\n        return null;\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/matching.js",
+   "label": "fuzzy word-start bonus removed",
+   "old": "const startsAWord = starts.includes(positions[0]) ? 0.05 : 0;",
+   "new": "const startsAWord = 0;"
+  },
+  {
+   "file": "src/core/matching.js",
+   "label": "multi-word score uncapped",
+   "old": "score: Math.min(mean, TIER.WORD_PREFIX),",
+   "new": "score: mean,"
+  },
+  {
+   "file": "src/core/matching.js",
+   "label": "query spaces not collapsed",
+   "old": ".trim().replace(/\\s+/g, ' ');",
+   "new": ".trim();"
+  },
+  {
+   "file": "src/core/matching.js",
+   "label": "word prefix removed",
+   "old": "    return wordPrefix(token, text, starts) ??\n        initials(token, text, starts) ??",
+   "new": "    return initials(token, text, starts) ??"
+  },
+  {
+   "file": "src/core/matching.js",
+   "label": "subsequence order ignored",
+   "old": "const at = text.indexOf(unit, from);",
+   "new": "const at = text.indexOf(unit, 0);"
+  },
+  {
+   "file": "src/core/frecency.js",
+   "label": "recent weight lowered",
+   "old": "{maxAgeDays: 4, weight: 100},",
+   "new": "{maxAgeDays: 4, weight: 10},"
+  },
+  {
+   "file": "src/core/frecency.js",
+   "label": "per-key cap removed",
+   "old": "this.#entries.set(key, times.slice(-MAX_ACTIVATIONS_PER_KEY));",
+   "new": "this.#entries.set(key, times);"
+  },
+  {
+   "file": "src/core/frecency.js",
+   "label": "forget-after inverted",
+   "old": "if (times[times.length - 1] < limit)",
+   "new": "if (times[times.length - 1] > limit)"
+  },
+  {
+   "file": "src/core/frecency.js",
+   "label": "key cap removed",
+   "old": "if (this.#entries.size <= MAX_KEYS)\n            return;",
+   "new": "return;"
+  },
+  {
+   "file": "src/core/frecency.js",
+   "label": "from keeps non-finite",
+   "old": "const clean = times.filter(t => Number.isFinite(t))",
+   "new": "const clean = times.filter(t => true)"
+  },
+  {
+   "file": "src/core/frecency.js",
+   "label": "score unbounded",
+   "old": "return raw / (raw + HALF_SCORE_AT);",
+   "new": "return raw / 1000;"
+  },
+  {
+   "file": "src/core/frecency.js",
+   "label": "top order inverted",
+   "old": "ranked.sort((a, b) => b.score - a.score || (a.key < b.key ? -1 : 1));",
+   "new": "ranked.sort((a, b) => a.score - b.score || (a.key < b.key ? -1 : 1));"
+  },
+  {
+   "file": "src/core/frecency.js",
+   "label": "record not dirty",
+   "old": "        this.#dirty = true;\n        this.#prune(now);",
+   "new": "        this.#prune(now);"
+  },
+  {
+   "file": "src/core/frecency.js",
+   "label": "forget unknown is dirty",
+   "old": "if (this.#entries.delete(key))\n            this.#dirty = true;",
+   "new": "this.#entries.delete(key);\n        this.#dirty = true;"
+  },
+  {
+   "file": "src/core/scoring.js",
+   "label": "min text not enforced",
+   "old": "if (text < SCORING.MIN_TEXT)\n        return null;\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/scoring.js",
+   "label": "frecency on weak matches",
+   "old": "if (text >= SCORING.FRECENCY_MIN_TEXT && frecency && result.frecencyKey)",
+   "new": "if (frecency && result.frecencyKey)"
+  },
+  {
+   "file": "src/core/scoring.js",
+   "label": "frecency uncapped",
+   "old": "bonus = SCORING.FRECENCY_MAX * frecency.score(result.frecencyKey, now);",
+   "new": "bonus = frecency.score(result.frecencyKey, now);"
+  },
+  {
+   "file": "src/core/scoring.js",
+   "label": "ranges from any field",
+   "old": "ranges: best && best.text === result.title ? best.ranges : [],",
+   "new": "ranges: best ? best.ranges : [],"
+  },
+  {
+   "file": "src/core/scoring.js",
+   "label": "provider score weight",
+   "old": "text = 0.5 * provided + 0.5 * (best ? best.score : 0);",
+   "new": "text = 0.7 * provided + 0.3 * (best ? best.score : 0);"
+  },
+  {
+   "file": "src/core/scoring.js",
+   "label": "provider score unclamped",
+   "old": "const provided = Math.min(1, Math.max(0, result.providerScore));",
+   "new": "const provided = result.providerScore;"
+  },
+  {
+   "file": "src/core/scoring.js",
+   "label": "field weight ignored",
+   "old": "const score = found.score * field.weight;",
+   "new": "const score = found.score;"
+  },
+  {
+   "file": "src/core/scoring.js",
+   "label": "empty query frecency ignored",
+   "old": "return {text: 0, bonus: f, final: f, ranges: []};",
+   "new": "return {text: 0, bonus: 0, final: 0, ranges: []};"
+  },
+  {
+   "file": "src/core/merge.js",
+   "label": "order inverted",
+   "old": "    b.final - a.final ||",
+   "new": "    a.final - b.final ||"
+  },
+  {
+   "file": "src/core/merge.js",
+   "label": "title length tie-break removed",
+   "old": "    a.result.title.length - b.result.title.length ||\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/merge.js",
+   "label": "priority inverted",
+   "old": "[...entries].sort((a, b) => a.provider.priority - b.provider.priority)",
+   "new": "[...entries].sort((a, b) => b.provider.priority - a.provider.priority)"
+  },
+  {
+   "file": "src/core/merge.js",
+   "label": "top hit threshold ignored",
+   "old": "if (first && first.final >= topHitMin && (!top || first.final > top.final))",
+   "new": "if (first && (!top || first.final > top.final))"
+  },
+  {
+   "file": "src/core/merge.js",
+   "label": "top hit stays in its section",
+   "old": "            section.items = section.items.filter(item => item !== top);\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/merge.js",
+   "label": "cap ignores top hit",
+   "old": "let budget = maxTotal - (top ? 1 : 0);",
+   "new": "let budget = maxTotal;"
+  },
+  {
+   "file": "src/core/merge.js",
+   "label": "dedupe keeps the worse",
+   "old": "if (!known || item.final > known.final)\n            byDedupe.set(dedupe, item);",
+   "new": "if (!known || item.final < known.final)\n            byDedupe.set(dedupe, item);"
+  },
+  {
+   "file": "src/core/merge.js",
+   "label": "same key keeps the worse",
+   "old": "if (known && known.final >= item.final)",
+   "new": "if (known && known.final <= item.final)"
+  },
+  {
+   "file": "src/core/merge.js",
+   "label": "provider limit ignored",
+   "old": ".slice(0, provider.maxResults ?? Infinity);",
+   "new": ";"
+  },
+  {
+   "file": "src/core/merge.js",
+   "label": "selection ignores navigation",
+   "old": "if (userNavigated && previousKey !== null && items.some(item => item.key === previousKey))",
+   "new": "if (previousKey !== null && items.some(item => item.key === previousKey))"
+  },
+  {
+   "file": "src/core/merge.js",
+   "label": "empty sections kept",
+   "old": "const visible = sections.filter(section => section.items.length > 0);",
+   "new": "const visible = sections;"
+  },
+  {
+   "file": "src/core/registry.js",
+   "label": "duplicates allowed",
+   "old": "if (this.#factories.has(id))\n            throw new Error(`provider \"${id}\" is already registered`);\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/registry.js",
+   "label": "contract not validated",
+   "old": "                validateProvider(provider);\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/registry.js",
+   "label": "failed provider not cleaned",
+   "old": "                this.#destroyOne(provider);\n            }\n        }\n    }\n\n    /** Destroys",
+   "new": "            }\n        }\n    }\n\n    /** Destroys"
+  },
+  {
+   "file": "src/core/registry.js",
+   "label": "stop order forward",
+   "old": "this.#destroyOne(this.#active.pop());",
+   "new": "this.#destroyOne(this.#active.shift());"
+  },
+  {
+   "file": "src/core/registry.js",
+   "label": "unknown id silent",
+   "old": "                this.#log.warn(`unknown provider \"${id}\" skipped`);\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/provider.js",
+   "label": "search not required",
+   "old": "const REQUIRED_FUNCTIONS = ['search', 'activate'];",
+   "new": "const REQUIRED_FUNCTIONS = ['activate'];"
+  },
+  {
+   "file": "src/core/provider.js",
+   "label": "activate not required",
+   "old": "const REQUIRED_FUNCTIONS = ['search', 'activate'];",
+   "new": "const REQUIRED_FUNCTIONS = ['search'];"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "debounce ignored",
+   "old": "if (!matcher.isEmpty && provider.debounceMs > 0) {",
+   "new": "if (false) {"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "timeout never detected",
+   "old": "if (outcome === TIMED_OUT) {",
+   "new": "if (false) {"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "timed-out provider not cancelled",
+   "old": "                own.cancel();\n                if (alive())\n                    this.#log.warn",
+   "new": "                if (alive())\n                    this.#log.warn"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "late answers accepted",
+   "old": "            if (alive())\n                this.#accept(provider, outcome, matcher);",
+   "new": "            this.#accept(provider, outcome, matcher);"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "cancellation logged as error",
+   "old": "if (alive() && !isCancelledError(error))",
+   "new": "if (alive())"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "previous search not cancelled",
+   "old": "        this.#cancelPendingFrame();\n        this.#cancellable?.cancel();\n        this.#cancellable = null;",
+   "new": "        this.#cancelPendingFrame();\n        this.#cancellable = null;"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "updates not coalesced",
+   "old": "        if (this.#cancelFrame)\n            return;\n        this.#cancelFrame",
+   "new": "        this.#cancelFrame"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "frame not cancelled at the end",
+   "old": "            this.#cancelPendingFrame();\n            this.#publish(true);",
+   "new": "            this.#publish(true);"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "empty query gets a top hit",
+   "old": "topHit: !this.#emptyQuery",
+   "new": "topHit: true"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "failed activation recorded",
+   "old": "if (done && item.result.frecencyKey) {",
+   "new": "if (item.result.frecencyKey) {"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "alive ignores cancellation",
+   "old": "const alive = () => !cancellable.is_cancelled();",
+   "new": "const alive = () => true;"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "timer not cancelled",
+   "old": "            timer?.cancel();\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "split drops the tail",
+   "old": "    if (at < text.length)\n        parts.push({text: text.slice(at), match: false});",
+   "new": "    "
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "split ignores ranges order",
+   "old": "for (const [start, end] of mergeRanges(ranges)) {",
+   "new": "for (const [start, end] of ranges) {"
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "split does not clamp the end",
+   "old": "const to = Math.min(end, text.length);",
+   "new": "const to = end;"
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "split keeps empty parts",
+   "old": "        if (to <= from)\n            continue;\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "split marks everything as match",
+   "old": "parts.push({text: text.slice(at, from), match: false});",
+   "new": "parts.push({text: text.slice(at, from), match: true});"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "weight ignored",
+   "old": "const weight = provider.scoreWeight ?? 1;",
+   "new": "const weight = 1;"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "weight not applied to final",
+   "old": "final: scored.final * weight,",
+   "new": "final: scored.final,"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "secondary runs the last action",
+   "old": "const [action] = provider?.secondaryActions?.(item.result) ?? [];",
+   "new": "const action = (provider?.secondaryActions?.(item.result) ?? []).slice(-1)[0];"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "secondary needs no action",
+   "old": "        if (!action)\n            return false;\n        return this.#log.guardAsync(`action",
+   "new": "        return this.#log.guardAsync(`action"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "secondary failure thrown",
+   "old": "        return this.#log.guardAsync(`action ${action.id} on ${item.key}`, async () => {\n            await provider.activateAction(item.result, action);\n            return true;\n        }, false);",
+   "new": "        await provider.activateAction(item.result, action);\n        return true;"
+  },
+  {
+   "file": "src/core/provider.js",
+   "label": "weight not validated",
+   "old": "['priority', 'scoreWeight', 'debounceMs', 'timeoutMs', 'maxResults']",
+   "new": "['priority', 'debounceMs', 'timeoutMs', 'maxResults']"
+  },
+  {
+   "file": "src/core/provider.js",
+   "label": "default weight lowered",
+   "old": "    get scoreWeight() {\n        return 1;",
+   "new": "    get scoreWeight() {\n        return 0.5;"
+  },
+  {
+   "file": "src/core/scoring.js",
+   "label": "ranges kept whatever the matching field",
+   "old": "best.text === result.title ?",
+   "new": "true ?"
+  }
+ ]
+}
