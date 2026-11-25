@@ -1,4 +1,4 @@
-import {mergeResults, nextSelection} from '../src/core/merge.js';
+import {jumpSection, mergeResults, nextSelection} from '../src/core/merge.js';
 import {assert, assertEquals, test} from './harness.js';
 
 const scored = (id, title, final, extra = {}) => ({result: {id, title, ...extra}, final, ranges: []});
@@ -122,4 +122,40 @@ test('selection stays on the chosen item once the user navigated', () => {
 
 test('selection is null for an empty list', () => {
     assert(nextSelection('a', [], true) === null, 'null');
+});
+
+const threeGroups = () => mergeResults([
+    {provider: provider('apps', 1), scored: [scored('1', 'Top', 0.9), scored('2', 'A2', 0.5), scored('3', 'A3', 0.4)]},
+    {provider: provider('files', 2), scored: [scored('4', 'F1', 0.45), scored('5', 'F2', 0.3)]},
+]);
+
+test('Tab goes to the first item of the next section, then wraps around', () => {
+    const merged = threeGroups();
+    assertEquals(merged.items.map(i => i.key), ['apps:1', 'apps:2', 'apps:3', 'files:4', 'files:5']);
+    assertEquals(jumpSection(merged, 'apps:1', 1), 'apps:2', 'from the top hit to the applications');
+    assertEquals(jumpSection(merged, 'apps:3', 1), 'files:4', 'from the end of a section to the next one');
+    assertEquals(jumpSection(merged, 'files:5', 1), 'apps:1', 'wraps to the top hit');
+});
+
+test('Shift+Tab goes to the first item of the previous section, then wraps around', () => {
+    const merged = threeGroups();
+    assertEquals(jumpSection(merged, 'files:4', -1), 'apps:2');
+    assertEquals(jumpSection(merged, 'apps:3', -1), 'apps:1', 'from the middle of a section to the one before');
+    assertEquals(jumpSection(merged, 'apps:1', -1), 'files:4', 'wraps to the last section');
+});
+
+test('with a single group, Tab stays on its first item', () => {
+    const merged = mergeResults([{provider: provider('apps', 1), scored: [scored('1', 'A', 0.5), scored('2', 'B', 0.4)]}], {topHit: false});
+    assertEquals(jumpSection(merged, 'apps:2', 1), 'apps:1');
+    assertEquals(jumpSection(merged, 'apps:1', -1), 'apps:1');
+});
+
+test('Tab without a known selection starts at the first or the last section', () => {
+    const merged = threeGroups();
+    assertEquals(jumpSection(merged, null, 1), 'apps:1');
+    assertEquals(jumpSection(merged, 'gone', -1), 'files:4');
+});
+
+test('Tab with nothing to select gives null', () => {
+    assert(jumpSection(mergeResults([]), null, 1) === null, 'null');
 });

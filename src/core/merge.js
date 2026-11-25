@@ -113,3 +113,29 @@ export function nextSelection(previousKey, items, userNavigated) {
         return previousKey;
     return items[0].key;
 }
+
+/**
+ * Tab and Shift+Tab move between sections: the selection goes to the first item
+ * of the next (or previous) group, wrapping around. The top hit counts as a
+ * group of its own, as it is shown under its own heading.
+ *
+ * @param {ReturnType<typeof mergeResults>} merged
+ * @param {string | null} currentKey
+ * @param {1 | -1} direction
+ * @returns {string | null} the key to select, null when there is nothing to select
+ */
+export function jumpSection(merged, currentKey, direction) {
+    const groups = [];
+    if (merged.topHit)
+        groups.push([merged.topHit]);
+    for (const section of merged.sections)
+        groups.push(section.items);
+    const firsts = groups.filter(group => group.length > 0).map(group => group[0].key);
+    if (firsts.length === 0)
+        return null;
+    const current = groups.findIndex(group => group.some(item => item.key === currentKey));
+    const here = current < 0 ? -1 : firsts.indexOf(groups[current][0].key);
+    if (here < 0)
+        return firsts[direction > 0 ? 0 : firsts.length - 1];
+    return firsts[(here + direction + firsts.length) % firsts.length];
+}
