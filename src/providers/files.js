@@ -143,7 +143,8 @@ export class FilesProvider extends Provider {
     }
 
     get name() {
-        return this.#gettext ? this.#gettext('Files') : 'Files';
+        const _ = this.#gettext ?? (text => text);
+        return _('Files');
     }
 
     get priority() {
@@ -212,7 +213,8 @@ export class FilesProvider extends Provider {
     }
 
     secondaryActions(_result) {
-        return [{id: 'open-folder', label: this.#gettext('Show in Folder')}];
+        const _ = this.#gettext;
+        return [{id: 'open-folder', label: _('Show in Folder')}];
     }
 
     async activateAction(result, action) {

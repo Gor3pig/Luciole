@@ -1,0 +1,165 @@
+# Luciole translations (fr).
+# This file is distributed under the same license as the luciole package.
+# This file is distributed under the same license as the luciole package.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: luciole\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-25 20:19+0100\n"
+"PO-Revision-Date: 2026-11-25 20:00+0100\n"
+"Last-Translator: Luciole contributors\n"
+"Language-Team: fr <>\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/prefs.js src/providers/apps.js
+msgid "Applications"
+msgstr "Applications"
+
+#: src/prefs.js src/providers/files.js
+msgid "Files"
+msgstr "Fichiers"
+
+#: src/prefs.js
+msgid "General"
+msgstr "Général"
+
+#: src/prefs.js
+msgid "Shortcut"
+msgstr "Raccourci"
+
+#: src/prefs.js src/ui/results-view.js
+msgid "Results"
+msgstr "Résultats"
+
+#: src/prefs.js
+msgid "Results per source"
+msgstr "Résultats par source"
+
+#: src/prefs.js
+msgid "How many results each source shows at most"
+msgstr "Nombre maximal de résultats affichés par source"
+
+#: src/prefs.js
+msgid "History"
+msgstr "Historique"
+
+#: src/prefs.js
+msgid ""
+"Luciole remembers which results you open, only on this computer, to rank "
+"them better."
+msgstr "Luciole retient les résultats que vous ouvrez, uniquement sur cet ordinateur, pour mieux les classer."
+
+#: src/prefs.js
+msgid "Clear History"
+msgstr "Effacer l’historique"
+
+#: src/prefs.js
+msgid "Advanced"
+msgstr "Avancé"
+
+#: src/prefs.js
+msgid "Log Timings"
+msgstr "Journaliser les durées"
+
+#: src/prefs.js
+msgid "Writes debug messages to the system journal"
+msgstr "Écrit des messages de débogage dans le journal système"
+
+#: src/prefs.js
+msgid "Open Luciole"
+msgstr "Ouvrir Luciole"
+
+#: src/prefs.js
+msgid "Disabled"
+msgstr "Désactivé"
+
+#. Translators: %s is the name of another GNOME shortcut
+#: src/prefs.js
+#, javascript-format
+msgid "Already used by the GNOME shortcut “%s”"
+msgstr "Déjà utilisé par le raccourci GNOME « %s »"
+
+#: src/prefs.js
+msgid "Change…"
+msgstr "Modifier…"
+
+#: src/prefs.js
+msgid "Set Shortcut"
+msgstr "Définir le raccourci"
+
+#: src/prefs.js
+msgid ""
+"Press the new shortcut. Escape cancels, Backspace disables the shortcut."
+msgstr "Appuyez sur le nouveau raccourci. Échap annule, Retour arrière désactive le raccourci."
+
+#: src/prefs.js
+msgid "Cancel"
+msgstr "Annuler"
+
+#: src/prefs.js
+msgid "Sources"
+msgstr "Sources"
+
+#: src/prefs.js
+msgid "What Luciole searches. Applications are always listed before files."
+msgstr "Ce que Luciole recherche. Les applications sont toujours listées avant les fichiers."
+
+#: src/prefs.js
+msgid "Excluded Folders"
+msgstr "Dossiers exclus"
+
+#: src/prefs.js
+msgid ""
+"Files in these folders are never shown. A name such as “node_modules” "
+"excludes every folder with that name; hidden files are always left out."
+msgstr "Les fichiers de ces dossiers ne sont jamais affichés. Un nom comme « node_modules » exclut tous les dossiers portant ce nom ; les fichiers cachés sont toujours ignorés."
+
+#: src/prefs.js
+msgid "Add Folder…"
+msgstr "Ajouter un dossier…"
+
+#: src/prefs.js
+msgid "Excluded File Types"
+msgstr "Types de fichiers exclus"
+
+#: src/prefs.js
+msgid ""
+"Files with these extensions are never shown, for example “tmp” or “.log”."
+msgstr "Les fichiers ayant ces extensions ne sont jamais affichés, par exemple « tmp » ou « .log »."
+
+#: src/prefs.js
+msgid "Add Type"
+msgstr "Ajouter un type"
+
+#: src/prefs.js
+msgid "Remove"
+msgstr "Retirer"
+
+#: src/prefs.js
+msgid "Choose a Folder to Exclude"
+msgstr "Choisir un dossier à exclure"
+
+#: src/providers/files.js
+msgid "Show in Folder"
+msgstr "Afficher dans le dossier"
+
+#: src/ui/launcher.js
+msgid "Search applications and files"
+msgstr "Rechercher des applications et des fichiers"
+
+#: src/ui/launcher.js
+msgid "Search"
+msgstr "Rechercher"
+
+#: src/ui/launcher.js
+msgid "Luciole search"
+msgstr "Recherche Luciole"
+
+#: src/ui/results-view.js
+msgid "Top Hit"
+msgstr "Meilleur résultat"

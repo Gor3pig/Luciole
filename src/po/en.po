@@ -1,0 +1,165 @@
+# Luciole translations (en).
+# This file is distributed under the same license as the luciole package.
+# This file is distributed under the same license as the luciole package.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: luciole\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-25 20:19+0100\n"
+"PO-Revision-Date: 2026-11-25 20:00+0100\n"
+"Last-Translator: Luciole contributors\n"
+"Language-Team: en <>\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/prefs.js src/providers/apps.js
+msgid "Applications"
+msgstr "Applications"
+
+#: src/prefs.js src/providers/files.js
+msgid "Files"
+msgstr "Files"
+
+#: src/prefs.js
+msgid "General"
+msgstr "General"
+
+#: src/prefs.js
+msgid "Shortcut"
+msgstr "Shortcut"
+
+#: src/prefs.js src/ui/results-view.js
+msgid "Results"
+msgstr "Results"
+
+#: src/prefs.js
+msgid "Results per source"
+msgstr "Results per source"
+
+#: src/prefs.js
+msgid "How many results each source shows at most"
+msgstr "How many results each source shows at most"
+
+#: src/prefs.js
+msgid "History"
+msgstr "History"
+
+#: src/prefs.js
+msgid ""
+"Luciole remembers which results you open, only on this computer, to rank "
+"them better."
+msgstr "Luciole remembers which results you open, only on this computer, to rank them better."
+
+#: src/prefs.js
+msgid "Clear History"
+msgstr "Clear History"
+
+#: src/prefs.js
+msgid "Advanced"
+msgstr "Advanced"
+
+#: src/prefs.js
+msgid "Log Timings"
+msgstr "Log Timings"
+
+#: src/prefs.js
+msgid "Writes debug messages to the system journal"
+msgstr "Writes debug messages to the system journal"
+
+#: src/prefs.js
+msgid "Open Luciole"
+msgstr "Open Luciole"
+
+#: src/prefs.js
+msgid "Disabled"
+msgstr "Disabled"
+
+#. Translators: %s is the name of another GNOME shortcut
+#: src/prefs.js
+#, javascript-format
+msgid "Already used by the GNOME shortcut “%s”"
+msgstr "Already used by the GNOME shortcut “%s”"
+
+#: src/prefs.js
+msgid "Change…"
+msgstr "Change…"
+
+#: src/prefs.js
+msgid "Set Shortcut"
+msgstr "Set Shortcut"
+
+#: src/prefs.js
+msgid ""
+"Press the new shortcut. Escape cancels, Backspace disables the shortcut."
+msgstr "Press the new shortcut. Escape cancels, Backspace disables the shortcut."
+
+#: src/prefs.js
+msgid "Cancel"
+msgstr "Cancel"
+
+#: src/prefs.js
+msgid "Sources"
+msgstr "Sources"
+
+#: src/prefs.js
+msgid "What Luciole searches. Applications are always listed before files."
+msgstr "What Luciole searches. Applications are always listed before files."
+
+#: src/prefs.js
+msgid "Excluded Folders"
+msgstr "Excluded Folders"
+
+#: src/prefs.js
+msgid ""
+"Files in these folders are never shown. A name such as “node_modules” "
+"excludes every folder with that name; hidden files are always left out."
+msgstr "Files in these folders are never shown. A name such as “node_modules” excludes every folder with that name; hidden files are always left out."
+
+#: src/prefs.js
+msgid "Add Folder…"
+msgstr "Add Folder…"
+
+#: src/prefs.js
+msgid "Excluded File Types"
+msgstr "Excluded File Types"
+
+#: src/prefs.js
+msgid ""
+"Files with these extensions are never shown, for example “tmp” or “.log”."
+msgstr "Files with these extensions are never shown, for example “tmp” or “.log”."
+
+#: src/prefs.js
+msgid "Add Type"
+msgstr "Add Type"
+
+#: src/prefs.js
+msgid "Remove"
+msgstr "Remove"
+
+#: src/prefs.js
+msgid "Choose a Folder to Exclude"
+msgstr "Choose a Folder to Exclude"
+
+#: src/providers/files.js
+msgid "Show in Folder"
+msgstr "Show in Folder"
+
+#: src/ui/launcher.js
+msgid "Search applications and files"
+msgstr "Search applications and files"
+
+#: src/ui/launcher.js
+msgid "Search"
+msgstr "Search"
+
+#: src/ui/launcher.js
+msgid "Luciole search"
+msgstr "Luciole search"
+
+#: src/ui/results-view.js
+msgid "Top Hit"
+msgstr "Top Hit"

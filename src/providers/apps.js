@@ -36,7 +36,8 @@ export class AppsProvider extends Provider {
     }
 
     get name() {
-        return this.#gettext ? this.#gettext('Applications') : 'Applications';
+        const _ = this.#gettext ?? (text => text);
+        return _('Applications');
     }
 
     get priority() {
