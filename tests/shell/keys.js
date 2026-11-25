@@ -13,6 +13,8 @@
 //   key <name>       Down, Up, Return, BackSpace, Escape
 //   chord <a+b+c>    holds the modifiers, taps the last key (Control_L+Next)
 //   type <text>      types the characters one by one
+//   pointer <x> <y>  puts the pointer at x, y (first in the top-left corner, then moves by x, y)
+//   click            presses and releases the left button where the pointer is
 //   quit             stops the helper
 // It writes "ready" once the session is started.
 
@@ -26,6 +28,7 @@ const PATH = '/org/gnome/Mutter/RemoteDesktop';
 const KEY_CONTROL_L = 65507;
 const KEY_ALT_L = 65513;
 const KEY_SPACE = 32;
+const BTN_LEFT = 0x110;
 const KEY_ESCAPE = 65307;
 const NAMED_KEYS = {
     Down: 65364, Up: 65362, Return: 65293, BackSpace: 65288, Escape: KEY_ESCAPE, Tab: 65289,
@@ -54,7 +57,25 @@ function tap(keysym) {
     key(keysym, false);
 }
 
+function moveBy(dx, dy) {
+    call(sessionPath, sessionIface, 'NotifyPointerMotionRelative', new GLib.Variant('(dd)', [dx, dy]), null);
+}
+
 const commands = {
+    pointer(spec) {
+        const [x, y] = spec.split(' ').map(Number);
+        if (!Number.isFinite(x) || !Number.isFinite(y))
+            throw new Error(`bad position: ${spec}`);
+        // The corner is a known position (the pointer stops at the screen edge).
+        moveBy(-5000, 0);
+        moveBy(0, -5000);
+        moveBy(x, 0);
+        moveBy(0, y);
+    },
+    click() {
+        for (const pressed of [true, false])
+            call(sessionPath, sessionIface, 'NotifyPointerButton', new GLib.Variant('(ib)', [BTN_LEFT, pressed]), null);
+    },
     combo() {
         key(KEY_CONTROL_L, true);
         key(KEY_ALT_L, true);

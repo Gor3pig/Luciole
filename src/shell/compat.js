@@ -89,6 +89,11 @@ export function keyFocusActor() {
     return global.stage.get_key_focus();
 }
 
+/** The actor a pointer or touch event is aimed at, or null. */
+export function eventActor(event) {
+    return global.stage.get_event_actor(event);
+}
+
 /** Calls `handler` whenever the keyboard focus moves; returns a function that stops it. */
 export function connectKeyFocus(handler) {
     const id = global.stage.connect('notify::key-focus', handler);

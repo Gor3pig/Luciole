@@ -389,8 +389,9 @@ export class Launcher {
         });
 
         overlay.connect('button-press-event', (_actor, event) => {
-            // A click on the dimmed area outside the panel closes the launcher.
-            if (event.get_source() !== overlay)
+            // A click anywhere but on the panel closes the launcher.
+            const target = compat.eventActor(event);
+            if (target && panel.contains(target))
                 return Clutter.EVENT_PROPAGATE;
             this.close();
             return Clutter.EVENT_STOP;
