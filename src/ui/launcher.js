@@ -11,6 +11,8 @@ const CLOSE_MS = 90;
 const SLIDE_PX = 8;
 // Distance of the panel from the top of the monitor, as a fraction of its height.
 const TOP_FRACTION = 0.14;
+// Most of the monitor height the results may take before they scroll.
+const RESULTS_FRACTION = 0.5;
 
 /**
  * The floating launcher window: a full-monitor overlay that holds the input
@@ -25,6 +27,7 @@ export class Launcher {
     #gettext;
     #onQuery;
     #onActivate;
+    #onSecondary;
     #overlay = null;
     #panel = null;
     #entry = null;
@@ -35,6 +38,7 @@ export class Launcher {
     #selectedKey = null;
     #navigated = false;
     #queryAt = 0;
+    #doneAt = 0;
 
     /**
      * @param {object} options
@@ -42,12 +46,14 @@ export class Launcher {
      * @param {(text: string) => string} options.gettext
      * @param {(query: string) => void} options.onQuery - the text changed (also called with '' on open)
      * @param {(item: object) => void} options.onActivate - the user chose a result
+     * @param {(item: object) => void} options.onSecondary - the user asked for the other action (Ctrl+Enter)
      */
-    constructor({log, gettext, onQuery, onActivate}) {
+    constructor({log, gettext, onQuery, onActivate, onSecondary}) {
         this.#log = log;
         this.#gettext = gettext;
         this.#onQuery = onQuery;
         this.#onActivate = onActivate;
+        this.#onSecondary = onSecondary;
     }
 
     get isOpen() {
@@ -135,8 +141,9 @@ export class Launcher {
      * the user moves it, then stays on the same item as results come in.
      *
      * @param {ReturnType<import('../core/merge.js').mergeResults>} merged
+     * @param {{done: boolean}} [state] - done when every provider has answered
      */
-    showResults(merged) {
+    showResults(merged, state = {done: false}) {
         if (!this.#view || !this.#isOpen)
             return;
         this.#items = merged.items;
@@ -146,6 +153,10 @@ export class Launcher {
             const ms = (GLib.get_monotonic_time() - this.#queryAt) / 1000;
             this.#log.debug(`perf query to results: ${ms.toFixed(2)} ms`);
             this.#queryAt = 0;
+        }
+        if (state.done && this.#doneAt) {
+            const ms = (GLib.get_monotonic_time() - this.#doneAt) / 1000;
+            this.#log.debug(`perf query to final results: ${ms.toFixed(2)} ms`);
         }
         const first = merged.topHit ?? merged.items[0];
         this.#log.debug(`results: ${merged.items.length} first=${first ? first.result.title : '-'} query=${this.#entry.get_text()}`);
@@ -187,6 +198,14 @@ export class Launcher {
         this.close();
     }
 
+    #activateSecondary() {
+        const item = this.#items.find(candidate => candidate.key === this.#selectedKey);
+        if (!item)
+            return;
+        this.#log.guard('running the secondary action', () => this.#onSecondary(item));
+        this.close();
+    }
+
     #activateSelected() {
         const item = this.#items.find(candidate => candidate.key === this.#selectedKey);
         if (item)
@@ -213,6 +232,7 @@ export class Launcher {
         this.#overlay.set_size(monitor.width, monitor.height);
         this.#overlay.set_style(
             `padding-top: ${Math.round(monitor.height * TOP_FRACTION)}px;`);
+        this.#view.setMaxHeight(Math.round(monitor.height * RESULTS_FRACTION));
     }
 
     #ensureBuilt() {
@@ -258,6 +278,7 @@ export class Launcher {
         const text = entry.clutter_text;
         text.connect('text-changed', () => {
             this.#queryAt = GLib.get_monotonic_time();
+            this.#doneAt = this.#queryAt;
             this.#navigated = false;
             this.#onQuery(entry.get_text());
         });
@@ -266,7 +287,13 @@ export class Launcher {
             return Clutter.EVENT_STOP;
         });
         text.connect('key-press-event', (_actor, event) => {
-            switch (event.get_key_symbol()) {
+            const symbol = event.get_key_symbol();
+            const control = (event.get_state() & Clutter.ModifierType.CONTROL_MASK) !== 0;
+            if (control && (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_KP_Enter)) {
+                this.#activateSecondary();
+                return Clutter.EVENT_STOP;
+            }
+            switch (symbol) {
             case Clutter.KEY_Down:
                 this.#moveSelection(1);
                 return Clutter.EVENT_STOP;

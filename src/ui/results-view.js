@@ -3,6 +3,7 @@ import Gio from 'gi://Gio';
 import St from 'gi://St';
 
 import {splitByRanges} from '../core/text.js';
+import * as compat from '../shell/compat.js';
 
 const FALLBACK_ICON = 'application-x-executable-symbolic';
 
@@ -13,6 +14,7 @@ const FALLBACK_ICON = 'application-x-executable-symbolic';
  */
 export class ResultsView {
     #actor;
+    #box;
     #gettext;
     #onActivate;
     #rows = new Map();
@@ -20,11 +22,24 @@ export class ResultsView {
     constructor({gettext, onActivate}) {
         this.#gettext = gettext;
         this.#onActivate = onActivate;
-        this.#actor = new St.BoxLayout({
+        this.#box = new St.BoxLayout({
             style_class: 'luciole-results',
             orientation: Clutter.Orientation.VERTICAL,
             x_expand: true,
         });
+        // The list scrolls when it is taller than the room the window leaves it.
+        this.#actor = new St.ScrollView({
+            hscrollbar_policy: St.PolicyType.NEVER,
+            vscrollbar_policy: St.PolicyType.AUTOMATIC,
+            overlay_scrollbars: true,
+            x_expand: true,
+            child: this.#box,
+        });
+    }
+
+    /** Limits the height of the list, in logical pixels; beyond it, it scrolls. */
+    setMaxHeight(pixels) {
+        this.#actor.set_style(`max-height: ${pixels}px;`);
     }
 
     get actor() {
@@ -51,20 +66,22 @@ export class ResultsView {
 
     select(key) {
         for (const [rowKey, row] of this.#rows) {
-            if (rowKey === key)
+            if (rowKey === key) {
                 row.add_style_pseudo_class('selected');
-            else
+                compat.ensureVisible(this.#actor, row);
+            } else {
                 row.remove_style_pseudo_class('selected');
+            }
         }
     }
 
     clear() {
         this.#rows.clear();
-        this.#actor.destroy_all_children();
+        this.#box.destroy_all_children();
     }
 
     #addHeading(text) {
-        this.#actor.add_child(new St.Label({style_class: 'luciole-section-title', text}));
+        this.#box.add_child(new St.Label({style_class: 'luciole-section-title', text}));
     }
 
     #addRow(item) {
@@ -110,6 +127,6 @@ export class ResultsView {
         row.connect('clicked', () => this.#onActivate(item));
 
         this.#rows.set(item.key, row);
-        this.#actor.add_child(row);
+        this.#box.add_child(row);
     }
 }

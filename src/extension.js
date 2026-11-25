@@ -5,6 +5,7 @@ import {createLogger} from './core/log.js';
 import {ProviderRegistry} from './core/registry.js';
 import {SearchController} from './core/session.js';
 import {AppsProvider} from './providers/apps.js';
+import {FilesProvider} from './providers/files.js';
 import * as compat from './shell/compat.js';
 import {FrecencyStore} from './shell/persistence.js';
 import {measure} from './shell/perf.js';
@@ -13,7 +14,7 @@ import {Launcher} from './ui/launcher.js';
 
 const SHORTCUT_KEY = 'toggle-shortcut';
 // Most results the window shows, whatever the providers return.
-const MAX_TOTAL_RESULTS = 8;
+const MAX_TOTAL_RESULTS = 12;
 
 export default class LucioleExtension extends Extension {
     // Nothing is created at import time or in the constructor: everything is
@@ -48,6 +49,7 @@ export default class LucioleExtension extends Extension {
                 gettext: this.gettext.bind(this),
                 onQuery: query => backend.controller?.search(query),
                 onActivate: item => backend.controller?.activate(item),
+                onSecondary: item => backend.controller?.activateSecondary(item),
             });
             disposables.add(() => launcher.destroy());
 
@@ -90,6 +92,7 @@ export default class LucioleExtension extends Extension {
 
         const registry = new ProviderRegistry({log});
         registry.register('apps', () => new AppsProvider());
+        registry.register('files', () => new FilesProvider());
         disposables.add(() => registry.stop());
 
         const controller = new SearchController({
@@ -97,7 +100,7 @@ export default class LucioleExtension extends Extension {
             frecency,
             scheduler,
             log,
-            onUpdate: merged => measure(log, 'show results', () => launcher.showResults(merged)),
+            onUpdate: (merged, state) => measure(log, 'show results', () => launcher.showResults(merged, state)),
             onFrecencyChange: () => store.scheduleSave(frecency),
             mergeOptions: {maxTotal: MAX_TOTAL_RESULTS},
         });

@@ -12,6 +12,7 @@ import Shell from 'gi://Shell';
 import St from 'gi://St';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {ensureActorVisibleInScrollView} from 'resource:///org/gnome/shell/misc/animationUtils.js';
 import {PACKAGE_VERSION} from 'resource:///org/gnome/shell/misc/config.js';
 
 export const SHELL_MAJOR_VERSION = parseInt(PACKAGE_VERSION.split('.')[0], 10);
@@ -76,4 +77,9 @@ export function connectSessionModeChanged(disposables, handler) {
 
 export function connectMonitorsChanged(disposables, handler) {
     disposables.connect(Main.layoutManager, 'monitors-changed', handler);
+}
+
+/** Scrolls a St.ScrollView so that one of its descendants is fully visible. */
+export function ensureVisible(scrollView, actor) {
+    ensureActorVisibleInScrollView(scrollView, actor);
 }
