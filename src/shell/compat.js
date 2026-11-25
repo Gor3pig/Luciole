@@ -29,7 +29,9 @@ export function addKeybinding(settings, key, handler) {
         key,
         settings,
         Meta.KeyBindingFlags.IGNORE_AUTOREPEAT,
-        Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW,
+        // POPUP is the mode while the launcher holds the keyboard: without it the
+        // shortcut could open the launcher but never close it again.
+        Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW | Shell.ActionMode.POPUP,
         handler);
 }
 
@@ -80,6 +82,17 @@ export function connectSessionModeChanged(disposables, handler) {
 
 export function connectMonitorsChanged(disposables, handler) {
     disposables.connect(Main.layoutManager, 'monitors-changed', handler);
+}
+
+/** The actor that currently receives the keyboard, or null. */
+export function keyFocusActor() {
+    return global.stage.get_key_focus();
+}
+
+/** Calls `handler` whenever the keyboard focus moves; returns a function that stops it. */
+export function connectKeyFocus(handler) {
+    const id = global.stage.connect('notify::key-focus', handler);
+    return () => global.stage.disconnect(id);
 }
 
 /** Scrolls a St.ScrollView so that one of its descendants is fully visible. */

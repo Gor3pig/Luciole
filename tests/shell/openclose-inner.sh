@@ -75,6 +75,52 @@ if [ "$ENABLE" = 1 ]; then
     awk -v max="$MAX" -v budget="$OPEN_BUDGET_MS" 'BEGIN { exit !(max + 0 <= budget + 0) }' ||
         fail "opening is slower than the ${OPEN_BUDGET_MS} ms budget"
 
+    # The shortcut is a toggle: pressed again while the launcher is open, it closes it.
+    OPENED=$(count opened)
+    CLOSED=$(count closed)
+    combo
+    wait_count 'opened' $((OPENED + 1)) || fail "toggle: the launcher did not open"
+    combo
+    wait_count 'closed' $((CLOSED + 1)) || fail "toggle: the shortcut did not close the open launcher"
+    echo "toggle: the shortcut closes the open launcher"
+
+    # Super and Alt+Tab mean "I am going elsewhere": the shell ignores them while the
+    # launcher holds the keyboard, so the launcher closes (and the keys then work again).
+    for leave in "key Super_L" "chord Alt_L+Tab"; do
+        OPENED=$(count opened)
+        CLOSED=$(count closed)
+        combo
+        wait_count 'opened' $((OPENED + 1)) || fail "leave ($leave): the launcher did not open"
+        send "$leave"
+        wait_count 'closed' $((CLOSED + 1)) || fail "leave ($leave): the launcher stayed open"
+        sleep 0.5
+        # Super may have opened the overview: leave it.
+        escape
+        sleep 0.5
+    done
+    OPENED=$(count opened)
+    CLOSED=$(count closed)
+    combo
+    wait_count 'opened' $((OPENED + 1)) || fail "leave keys: the launcher does not open again afterwards"
+    escape
+    wait_count 'closed' $((CLOSED + 1)) || fail "leave keys: the launcher does not close on Escape afterwards"
+    echo "leave keys: Super and Alt+Tab close the launcher, and it works again afterwards"
+
+    # Whatever takes the keyboard away (here the overview, opened from outside the
+    # keyboard path), the launcher closes: nothing typed would reach it any more.
+    OPENED=$(count opened)
+    CLOSED=$(count closed)
+    combo
+    wait_count 'opened' $((OPENED + 1)) || fail "focus: the launcher did not open"
+    gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.freedesktop.DBus.Properties.Set \
+        org.gnome.Shell OverviewActive '<true>' >/dev/null 2>&1 || fail "focus: could not open the overview"
+    wait_count 'keyboard focus left' 1 || fail "focus: the launcher did not notice the keyboard going elsewhere"
+    wait_count 'closed' $((CLOSED + 1)) || fail "focus: the launcher stayed open"
+    gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.freedesktop.DBus.Properties.Set \
+        org.gnome.Shell OverviewActive '<false>' >/dev/null 2>&1 || true
+    sleep 0.7
+    echo "focus: the launcher closes when something else takes the keyboard"
+
     # Disabling the extension while the launcher is open must release the keyboard
     # and free the shortcut; re-enabling must then work normally.
     OPENED=$(count opened)

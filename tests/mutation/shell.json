@@ -1,0 +1,36 @@
+{
+ "description": "Mutants for the launcher behaviour that only a real GNOME Shell can show (keyboard, focus, shortcut).",
+ "slow": true,
+ "timeout": 400,
+ "command": [
+  "sh",
+  "tests/shell/openclose.sh",
+  "40"
+ ],
+ "mutants": [
+  {
+   "file": "src/shell/compat.js",
+   "label": "shortcut cannot close the open launcher",
+   "old": "Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW | Shell.ActionMode.POPUP,",
+   "new": "Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW,"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "Super and Alt+Tab ignored",
+   "old": "            if (isLeaveKey(event)) {\n                this.close();",
+   "new": "            if (false) {\n                this.close();"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "keyboard focus not watched",
+   "old": "this.#stopFocusWatch = compat.connectKeyFocus(() => this.#checkFocus());",
+   "new": "this.#stopFocusWatch = null;"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "focus loss never closes",
+   "old": "        if (focus && this.#overlay.contains(focus))\n            return;",
+   "new": "        if (true)\n            return;"
+  }
+ ]
+}

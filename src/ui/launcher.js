@@ -19,6 +19,20 @@ const TOP_FRACTION = 0.14;
 const RESULTS_FRACTION = 0.5;
 
 /**
+ * Keys that mean "I am going elsewhere": the Super key (Activities) and Alt+Tab
+ * (windows). While the launcher holds the keyboard the shell ignores them, so
+ * the launcher closes instead of leaving the user facing a window that seems
+ * to ignore the system.
+ */
+function isLeaveKey(event) {
+    const symbol = event.get_key_symbol();
+    if (symbol === Clutter.KEY_Super_L || symbol === Clutter.KEY_Super_R)
+        return true;
+    const alt = (event.get_state() & Clutter.ModifierType.MOD1_MASK) !== 0;
+    return alt && (symbol === Clutter.KEY_Tab || symbol === Clutter.KEY_ISO_Left_Tab);
+}
+
+/**
  * The floating launcher window: a full-monitor overlay that holds the input
  * grab, with the panel centred near the top. Appearance lives entirely in
  * stylesheet.css (and its dark variant); this file only assigns style classes.
@@ -37,6 +51,7 @@ export class Launcher {
     #entry = null;
     #view = null;
     #grab = null;
+    #stopFocusWatch = null;
     #isOpen = false;
     #items = [];
     #merged = null;
@@ -96,6 +111,10 @@ export class Launcher {
         }
         this.#isOpen = true;
         this.#entry.grab_key_focus();
+        // If the keyboard goes anywhere else (the overview taking it, a dialog, a
+        // widget that disappears), nothing typed would reach the launcher any more
+        // and it could not even be closed with Escape: it closes instead.
+        this.#stopFocusWatch = compat.connectKeyFocus(() => this.#checkFocus());
         this.#log.debug('opened');
         this.#onQuery('');
 
@@ -122,6 +141,7 @@ export class Launcher {
         if (!this.#isOpen)
             return;
         this.#isOpen = false;
+        this.#unwatchFocus();
         this.#releaseGrab();
         this.#view.clear();
         this.#log.debug('closed');
@@ -177,6 +197,7 @@ export class Launcher {
 
     destroy() {
         this.#isOpen = false;
+        this.#unwatchFocus();
         this.#releaseGrab();
         if (this.#overlay) {
             this.#overlay.remove_all_transitions();
@@ -232,6 +253,23 @@ export class Launcher {
         const item = this.#items.find(candidate => candidate.key === this.#selectedKey);
         if (item)
             this.#activate(item);
+    }
+
+    #checkFocus() {
+        if (!this.#isOpen || !this.#overlay)
+            return;
+        const focus = compat.keyFocusActor();
+        if (focus && this.#overlay.contains(focus))
+            return;
+        this.#log.debug('keyboard focus left the launcher');
+        this.close();
+    }
+
+    #unwatchFocus() {
+        const stop = this.#stopFocusWatch;
+        this.#stopFocusWatch = null;
+        if (stop)
+            stop();
     }
 
     #releaseGrab() {
@@ -311,6 +349,10 @@ export class Launcher {
             return Clutter.EVENT_STOP;
         });
         text.connect('key-press-event', (_actor, event) => {
+            if (isLeaveKey(event)) {
+                this.close();
+                return Clutter.EVENT_PROPAGATE;
+            }
             const symbol = event.get_key_symbol();
             const control = (event.get_state() & Clutter.ModifierType.CONTROL_MASK) !== 0;
             if (control && (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_KP_Enter)) {
