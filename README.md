@@ -27,8 +27,10 @@ systems.
 
 ## Requirements
 
-- GNOME Shell 51 on Wayland. Version 50 is declared in `metadata.json` but has
-  not been tested yet.
+- GNOME Shell 51 or 50 on Wayland. Both pass the automated shell tests (version 51
+  on Fedora 45, version 50.6 in a Fedora 44 container, headless). Neither has been
+  tried on a wide range of real desktops yet, and version 50 has not been looked at
+  with a screenshot or with a screen reader.
 - `localsearch` (the GNOME file indexer) for file results. Without it the
   application results keep working and a single warning is logged.
 

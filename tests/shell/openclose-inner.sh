@@ -100,16 +100,39 @@ if [ "$ENABLE" = 1 ]; then
         org.freedesktop.login1.Session LockedHint 2>&1)
     OPENED=$(count opened)
     CLOSED=$(count closed)
+    DISABLINGS=$(count disabling)
     combo
     wait_count 'opened' $((OPENED + 1)) || fail "the launcher did not open before the lock test"
     gdbus call --session --dest org.gnome.ScreenSaver --object-path /org/gnome/ScreenSaver \
         --method org.gnome.ScreenSaver.Lock >/dev/null || fail "could not lock the screen"
-    wait_count 'closed' $((CLOSED + 1)) || fail "the launcher stayed open after the screen locked"
-    OPENED=$(count opened)
-    combo
     sleep 1
-    [ "$(count opened)" = "$OPENED" ] || fail "the launcher opened on a locked screen"
-    echo "screen lock: the open launcher closed, and the shortcut is ignored while locked"
+    if ! gdbus call --session --dest org.gnome.ScreenSaver --object-path /org/gnome/ScreenSaver \
+        --method org.gnome.ScreenSaver.GetActive 2>&1 | grep -q true; then
+        # Without a login session (a container, say) the shell cannot lock the screen at
+        # all. Only that exact situation is reported as "not exercised"; anywhere else a
+        # screen that does not lock is a failure.
+        if grep -q 'Could not get proxy for session' "$LOG"; then
+            echo "screen lock: NOT EXERCISED, this environment has no login session so the screen cannot lock"
+            LOCK_SKIPPED=1
+        else
+            fail "the screen did not lock"
+        fi
+    fi
+    if [ -z "${LOCK_SKIPPED:-}" ]; then
+        # Locking either closes the launcher or, in shells that switch extensions off while
+        # the lock screen is shown, disables the extension, which destroys the launcher.
+        i=0
+        until [ "$(count closed)" -ge $((CLOSED + 1)) ] || [ "$(count disabling)" -ge $((DISABLINGS + 1)) ]; do
+            i=$((i + 1))
+            [ "$i" -gt 100 ] && fail "the launcher stayed open after the screen locked"
+            sleep 0.05
+        done
+        OPENED=$(count opened)
+        combo
+        sleep 1
+        [ "$(count opened)" = "$OPENED" ] || fail "the launcher opened on a locked screen"
+        echo "screen lock: the open launcher closed, and the shortcut is ignored while locked"
+    fi
     # The nested shell told logind that its session is locked: put it back.
     busctl call org.freedesktop.login1 /org/freedesktop/login1/session/auto \
         org.freedesktop.login1.Session SetLockedHint b false >/dev/null 2>&1 || true

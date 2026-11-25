@@ -40,12 +40,13 @@ wait_log "search ready: apps, files" || fail "both providers did not start"
 combo
 wait_log "[Luciole] opened" || fail "the launcher did not open"
 
-# Three visible rapport files (the hidden folder and node_modules are excluded) plus the
-# application whose keyword is "Rappel": 4 results, never 5 or 6.
-typed rapp
-wait_log "results: 4 first=" 1 8 || fail "expected 4 results for 'rapp'; saw: $(grep -F 'query=rapp' "$LOG" | tail -n 2 | tr '\n' '|')"
-grep -E "results: 4 first=[Rr]apport.* query=rapp" "$LOG" >/dev/null || fail "the best result is not one of the rapport files"
-if grep -E "results: [5-9] .*query=rapp" "$LOG" >/dev/null; then
+# Three visible quokka files (the hidden folder and node_modules are excluded): 3 results,
+# never 4 or more. No installed application is called "quokka", so the count does not
+# depend on the machine.
+typed quok
+wait_log "results: 3 first=" 1 8 || fail "expected 3 results for 'quok'; saw: $(grep -F 'query=quok' "$LOG" | tail -n 2 | tr '\n' '|')"
+grep -E "results: 3 first=[Qq]uokka.* query=quok" "$LOG" >/dev/null || fail "the best result is not one of the quokka files"
+if grep -E "results: [4-9] .*query=quok" "$LOG" >/dev/null; then
     fail "hidden or excluded files were shown"
 fi
 echo "ok: files are found, hidden and excluded folders are left out"
@@ -64,11 +65,10 @@ wait_log "selected: " 2 || fail "Shift+Tab did not select anything"
 grep 'selected: ' "$LOG" | tail -n 1 | grep -qF "selected: apps:luciole-test-facture.desktop" || fail "Shift+Tab did not come back to the top hit"
 echo "ok: Tab and Shift+Tab move between sections"
 
-# Ctrl+Enter on a file does not crash and closes the launcher (the file manager is not started here).
+# Opening a file is covered by the unit tests, with an injected opener: the files here do not exist.
 clear_entry 5
-typed rapp
-wait_log "results: 4 first=" 2 || fail "results did not come back"
-press Return >/dev/null 2>&1 || true
+typed quok
+wait_log "results: 3 first=" 2 || fail "results did not come back"
 
 grep 'perf query to final results:' "$LOG" | sed -n 's/.*final results: \([0-9.]*\) ms.*/\1/p' >"$LOG.q"
 [ -s "$LOG.q" ] || fail "no timing was recorded for the final results"

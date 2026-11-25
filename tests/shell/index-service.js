@@ -15,17 +15,17 @@ import GLib from 'gi://GLib';
 import Tracker from 'gi://Tracker';
 
 const FILES = [
-    ['/home/tester/Documents', 'Rapport annuel.odt'],
-    ['/home/tester/Documents', 'Rapport trimestriel.odt'],
+    ['/home/tester/Documents', 'Quokka annuel.odt'],
+    ['/home/tester/Documents', 'Quokka trimestriel.odt'],
     ['/home/tester/Documents', 'Facture mars.pdf'],
-    ['/home/tester/Images', 'rapport-photo.png'],
-    ['/home/tester/.cache', 'rapport-cache.txt'],
-    ['/home/tester/projet/node_modules/lib', 'rapport.js'],
+    ['/home/tester/Images', 'quokka-photo.png'],
+    ['/home/tester/.cache', 'quokka-cache.txt'],
+    ['/home/tester/projet/node_modules/lib', 'quokka.js'],
 ];
 
 // INDEX_EXTRA=<n> adds n more files, to see the list scroll.
 for (let i = 1; i <= Number(GLib.getenv('INDEX_EXTRA') ?? 0); i++)
-    FILES.push(['/home/tester/Archives', `rapport-archive-${String(i).padStart(2, '0')}.txt`]);
+    FILES.push(['/home/tester/Archives', `quokka-archive-${String(i).padStart(2, '0')}.txt`]);
 
 const database = Tracker.SparqlConnection.new(
     Tracker.SparqlConnectionFlags.NONE, null, Tracker.sparql_get_ontology_nepomuk(), null);

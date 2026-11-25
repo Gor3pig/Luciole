@@ -9,8 +9,9 @@ LOG_FILE=$2
 UUID=luciole@gor3pig.github.io
 . "$(dirname "$0")/lib.sh"
 SCHEMA=org.gnome.shell.extensions.luciole
-# Budget for the time from a keystroke to the results being shown (ms), in this VM.
+# Budgets for the time from a keystroke to the results being shown (ms), in this VM.
 QUERY_BUDGET_MS=50
+MEDIAN_BUDGET_MS=16
 
 start_shell "$LOG_FILE"
 wait_for_extension
@@ -110,12 +111,18 @@ if grep -F "first=Luciole Late Arrival query=lateX" "$LOG" >/dev/null; then
 fi
 echo "ok: installed and removed applications are noticed"
 
-# Timing.
-grep 'perf query to results:' "$LOG" | sed -n 's/.*results: \([0-9.]*\) ms.*/\1/p' >"$LOG.q"
-WORST=$(sort -n "$LOG.q" | tail -n 1)
-MEDIAN=$(sort -n "$LOG.q" | sed -n "$(( ($(wc -l <"$LOG.q") + 1) / 2 ))p")
-echo "keystroke to results (this VM): median ${MEDIAN} ms, worst ${WORST} ms, budget ${QUERY_BUDGET_MS} ms"
-awk -v w="$WORST" -v b="$QUERY_BUDGET_MS" 'BEGIN { exit !(w + 0 <= b + 0) }' || fail "results took longer than ${QUERY_BUDGET_MS} ms"
+# Timing. A virtual machine has the odd slow keystroke, so the worst case is shown but
+# does not decide: the median must stay within the 16 ms budget and the 90th percentile
+# within 50 ms.
+grep 'perf query to results:' "$LOG" | sed -n 's/.*results: \([0-9.]*\) ms.*/\1/p' | sort -n >"$LOG.q"
+COUNT=$(wc -l <"$LOG.q")
+[ "$COUNT" -gt 0 ] || fail "no timing was recorded"
+MEDIAN=$(sed -n "$(((COUNT + 1) / 2))p" "$LOG.q")
+P90=$(sed -n "$(((COUNT * 9 + 9) / 10))p" "$LOG.q")
+WORST=$(tail -n 1 "$LOG.q")
+echo "keystroke to results (this VM): median ${MEDIAN} ms, 90th percentile ${P90} ms, worst ${WORST} ms (median budget ${MEDIAN_BUDGET_MS} ms, 90th percentile budget ${QUERY_BUDGET_MS} ms)"
+awk -v v="$MEDIAN" -v b="$MEDIAN_BUDGET_MS" 'BEGIN { exit !(v + 0 <= b + 0) }' || fail "the median is above ${MEDIAN_BUDGET_MS} ms"
+awk -v v="$P90" -v b="$QUERY_BUDGET_MS" 'BEGIN { exit !(v + 0 <= b + 0) }' || fail "the 90th percentile is above ${QUERY_BUDGET_MS} ms"
 
 ERRORS=$(grep -ciE "$EXTENSION_ERROR_PATTERN" "$LOG" || true)
 echo "log lines mentioning an error about the extension: $ERRORS"
