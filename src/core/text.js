@@ -54,3 +54,28 @@ export function mergeRanges(ranges) {
     }
     return merged;
 }
+
+/**
+ * Cuts a text into the parts to show: matched ranges and the text around them.
+ *
+ * @param {string} text
+ * @param {Array<[number, number]>} ranges - [start, end) positions, any order
+ * @returns {Array<{text: string, match: boolean}>}
+ */
+export function splitByRanges(text, ranges) {
+    const parts = [];
+    let at = 0;
+    for (const [start, end] of mergeRanges(ranges)) {
+        const from = Math.max(at, Math.min(start, text.length));
+        const to = Math.min(end, text.length);
+        if (to <= from)
+            continue;
+        if (from > at)
+            parts.push({text: text.slice(at, from), match: false});
+        parts.push({text: text.slice(from, to), match: true});
+        at = to;
+    }
+    if (at < text.length)
+        parts.push({text: text.slice(at), match: false});
+    return parts;
+}
