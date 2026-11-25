@@ -90,6 +90,13 @@ export default class LucioleExtension extends Extension {
         // Last in, first out: the history is saved after everything else stopped.
         disposables.add(() => store.save(frecency));
 
+        // The preferences ask for the history to be erased by changing this counter.
+        disposables.connect(settings, 'changed::history-generation', () => {
+            frecency.clear();
+            store.save(frecency);
+            log.debug('usage history erased');
+        });
+
         const registry = new ProviderRegistry({log});
         registry.register('apps', () => new AppsProvider());
         registry.register('files', () => new FilesProvider());

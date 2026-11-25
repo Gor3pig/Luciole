@@ -23,6 +23,18 @@ const shellOnly = [
     'resource:///org/gnome/shell/*',
 ];
 const gtkOnly = ['gi://Gtk', 'gi://Gdk', 'gi://Adw'];
+// Same idea for preferences. The official preferences API lives under
+// resource:///org/gnome/Shell/Extensions/js and must stay importable, so the
+// shell's own folders are listed one by one instead of by a broad pattern.
+const prefsForbiddenModules = [
+    'gi://Shell', 'gi://St', 'gi://Clutter', 'gi://Meta', 'gi://Mtk',
+    'resource:///org/gnome/shell/extensions/extension.js',
+];
+const prefsForbiddenFolders = [
+    'resource:///org/gnome/shell/ui/*',
+    'resource:///org/gnome/shell/misc/*',
+    'resource:///org/gnome/shell/gdm/*',
+];
 
 export default [
     {ignores: ['node_modules/', 'dist/']},
@@ -68,12 +80,17 @@ export default [
         },
     },
     {
-        // Preferences run in a separate process: no shell internals there.
+        // Preferences run in a separate process: no shell internals there, except
+        // the official preferences API every extension uses.
         files: ['src/prefs.js', 'src/prefs/**/*.js'],
         rules: {
             'no-restricted-imports': ['error', {
+                paths: prefsForbiddenModules.map(name => ({
+                    name,
+                    message: 'Preferences must not import GNOME Shell modules.',
+                })),
                 patterns: [{
-                    group: shellOnly,
+                    group: prefsForbiddenFolders,
                     message: 'Preferences must not import GNOME Shell modules.',
                 }],
             }],

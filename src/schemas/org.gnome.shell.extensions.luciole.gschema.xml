@@ -33,6 +33,11 @@
       <summary>File types excluded from file results</summary>
     </key>
 
+    <key name="history-generation" type="i">
+      <default>0</default>
+      <summary>Incremented by the preferences to ask for the usage history to be erased</summary>
+    </key>
+
     <key name="debug-timings" type="b">
       <default>false</default>
       <summary>Log debug messages and timings</summary>
