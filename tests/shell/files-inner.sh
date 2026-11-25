@@ -63,7 +63,7 @@ press Return >/dev/null 2>&1 || true
 grep 'perf query to final results:' "$LOG" | sed -n 's/.*final results: \([0-9.]*\) ms.*/\1/p' >"$LOG.q"
 [ -s "$LOG.q" ] || fail "no timing was recorded for the final results"
 WORST=$(sort -n "$LOG.q" | tail -n 1)
-echo "keystroke to complete results, files included, 80 ms debounce included (this VM): worst ${WORST} ms, budget ${FILES_BUDGET_MS} ms"
+echo "keystroke to complete results, files included, 50 ms debounce included (this VM): worst ${WORST} ms, budget ${FILES_BUDGET_MS} ms"
 awk -v w="$WORST" -v b="$FILES_BUDGET_MS" 'BEGIN { exit !(w + 0 <= b + 0) }' || fail "results took longer than ${FILES_BUDGET_MS} ms"
 
 ERRORS=$(grep -ciE "$EXTENSION_ERROR_PATTERN" "$LOG" || true)

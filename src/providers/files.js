@@ -157,7 +157,7 @@ export class FilesProvider extends Provider {
     }
 
     get debounceMs() {
-        return 80;
+        return 50;
     }
 
     get timeoutMs() {
