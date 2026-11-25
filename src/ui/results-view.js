@@ -4,6 +4,7 @@ import St from 'gi://St';
 
 import {splitByRanges} from '../core/text.js';
 import * as compat from '../shell/compat.js';
+import {describeList, describeResult, setSelected} from './a11y.js';
 
 const FALLBACK_ICON = 'application-x-executable-symbolic';
 
@@ -35,6 +36,7 @@ export class ResultsView {
             x_expand: true,
             child: this.#box,
         });
+        describeList(this.#box, gettext('Results'));
     }
 
     /** Limits the height of the list, in logical pixels; beyond it, it scrolls. */
@@ -53,7 +55,8 @@ export class ResultsView {
     update(merged, selectedKey) {
         this.clear();
         if (merged.topHit) {
-            this.#addHeading(this.#gettext('Top Hit'));
+            const _ = this.#gettext;
+            this.#addHeading(_('Top Hit'));
             this.#addRow(merged.topHit);
         }
         for (const section of merged.sections) {
@@ -68,9 +71,11 @@ export class ResultsView {
         for (const [rowKey, row] of this.#rows) {
             if (rowKey === key) {
                 row.add_style_pseudo_class('selected');
+                setSelected(row, true);
                 compat.ensureVisible(this.#actor, row);
             } else {
                 row.remove_style_pseudo_class('selected');
+                setSelected(row, false);
             }
         }
     }
@@ -124,6 +129,7 @@ export class ResultsView {
             x_expand: true,
             child: content,
         });
+        describeResult(row, result.title, result.subtitle);
         row.connect('clicked', () => this.#onActivate(item));
 
         this.#rows.set(item.key, row);

@@ -2,8 +2,9 @@ import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 
-import {nextSelection} from '../core/merge.js';
+import {jumpSection, nextSelection} from '../core/merge.js';
 import * as compat from '../shell/compat.js';
+import {describeWindow} from './a11y.js';
 import {ResultsView} from './results-view.js';
 
 const OPEN_MS = 120;
@@ -35,6 +36,7 @@ export class Launcher {
     #grab = null;
     #isOpen = false;
     #items = [];
+    #merged = null;
     #selectedKey = null;
     #navigated = false;
     #queryAt = 0;
@@ -74,6 +76,7 @@ export class Launcher {
         this.#ensureBuilt();
         this.#place();
         this.#items = [];
+        this.#merged = null;
         this.#selectedKey = null;
         this.#navigated = false;
         this.#entry.set_text('');
@@ -146,6 +149,7 @@ export class Launcher {
     showResults(merged, state = {done: false}) {
         if (!this.#view || !this.#isOpen)
             return;
+        this.#merged = merged;
         this.#items = merged.items;
         this.#selectedKey = nextSelection(this.#selectedKey, this.#items, this.#navigated);
         this.#view.update(merged, this.#selectedKey);
@@ -188,9 +192,24 @@ export class Launcher {
             return;
         const current = this.#items.findIndex(item => item.key === this.#selectedKey);
         const next = Math.min(this.#items.length - 1, Math.max(0, current + delta));
-        this.#selectedKey = this.#items[next].key;
+        this.#choose(this.#items[next].key);
         this.#navigated = true;
-        this.#view.select(this.#selectedKey);
+    }
+
+    #choose(key) {
+        this.#selectedKey = key;
+        this.#view.select(key);
+        this.#log.debug(`selected: ${key}`);
+    }
+
+    #jumpSection(direction) {
+        if (!this.#merged)
+            return;
+        const key = jumpSection(this.#merged, this.#selectedKey, direction);
+        if (key === null)
+            return;
+        this.#choose(key);
+        this.#navigated = true;
     }
 
     #activate(item) {
@@ -239,9 +258,10 @@ export class Launcher {
         if (this.#overlay)
             return;
 
+        const _ = this.#gettext;
         const entry = new St.Entry({
             style_class: 'luciole-entry',
-            hint_text: this.#gettext('Search applications and files'),
+            hint_text: _('Search applications and files'),
             can_focus: true,
             x_expand: true,
         });
@@ -249,7 +269,7 @@ export class Launcher {
             style_class: 'luciole-entry-icon',
             icon_name: 'edit-find-symbolic',
         }));
-        entry.accessible_name = this.#gettext('Search');
+        entry.accessible_name = _('Search');
 
         const view = new ResultsView({
             gettext: this.#gettext,
@@ -274,6 +294,7 @@ export class Launcher {
             visible: false,
         });
         overlay.add_child(panel);
+        describeWindow(overlay, _('Luciole search'));
 
         const text = entry.clutter_text;
         text.connect('text-changed', () => {
@@ -299,6 +320,12 @@ export class Launcher {
                 return Clutter.EVENT_STOP;
             case Clutter.KEY_Up:
                 this.#moveSelection(-1);
+                return Clutter.EVENT_STOP;
+            case Clutter.KEY_Tab:
+                this.#jumpSection(1);
+                return Clutter.EVENT_STOP;
+            case Clutter.KEY_ISO_Left_Tab:
+                this.#jumpSection(-1);
                 return Clutter.EVENT_STOP;
             default:
                 return Clutter.EVENT_PROPAGATE;
