@@ -1,0 +1,14 @@
+{
+  "name": "luciole",
+  "private": true,
+  "type": "module",
+  "description": "Spotlight-style launcher for GNOME Shell",
+  "scripts": {
+    "lint": "eslint .",
+    "test": "gjs -m tests/run.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.15.0"
+  }
+}
