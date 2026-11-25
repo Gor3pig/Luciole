@@ -42,6 +42,7 @@ export function recordingLog() {
 export function fakeProvider(scheduler, {
     id,
     priority = 100,
+    scoreWeight = 1,
     latency = 0,
     results = [],
     error = null,
@@ -54,12 +55,14 @@ export function fakeProvider(scheduler, {
         id,
         name: id,
         priority,
+        scoreWeight,
         debounceMs,
         timeoutMs,
         maxResults,
         searches: [],
         cancellables: [],
         activated: [],
+        actions: [],
         destroyed: 0,
         async init() {},
         destroy() {
@@ -81,6 +84,10 @@ export function fakeProvider(scheduler, {
         },
         async activate(result) {
             provider.activated.push(result.id);
+        },
+        secondaryActions: () => [],
+        async activateAction(result, action) {
+            provider.actions.push(`${action.id}:${result.id}`);
         },
     };
     return provider;

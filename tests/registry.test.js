@@ -141,6 +141,7 @@ test('a provider that fails to clean up does not stop the others', async () => {
 
 test('validateProvider accepts a base class instance and rejects bad shapes', () => {
     validateProvider(new Simple('ok'));
+    assertEquals(new Simple('ok').scoreWeight, 1, 'a provider counts fully by default');
     assertThrows(() => validateProvider(null));
     assertThrows(() => validateProvider({id: '', search() {}, activate() {}}));
     assertThrows(() => validateProvider({id: 'x', activate() {}}));
@@ -148,6 +149,9 @@ test('validateProvider accepts a base class instance and rejects bad shapes', ()
     const noNumbers = new Simple('n');
     Object.defineProperty(noNumbers, 'timeoutMs', {value: 'soon'});
     assertThrows(() => validateProvider(noNumbers));
+    const noWeight = new Simple('w');
+    Object.defineProperty(noWeight, 'scoreWeight', {value: 'heavy'});
+    assertThrows(() => validateProvider(noWeight));
 });
 
 test('a provider missing search() or activate() is rejected even if the rest is valid', () => {

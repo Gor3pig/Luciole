@@ -3,9 +3,7 @@
  * @property {string} key - "<provider id>:<result id>", unique
  * @property {string} providerId
  * @property {object} result - the provider's result
- * @property {number} text
- * @property {number} bonus
- * @property {number} final
+ * @property {number} final - the score the order is based on
  * @property {Array<[number, number]>} ranges
  */
 
@@ -18,7 +16,7 @@ const compareItems = (a, b) =>
  * Merges what the providers returned into what the window shows: an optional
  * top hit, then one section per provider, in provider priority order.
  *
- * @param {Array<{provider: {id: string, name: string, priority: number, maxResults?: number}, scored: Array<{result: object, text: number, bonus: number, final: number, ranges: Array}>}>} entries
+ * @param {Array<{provider: {id: string, name: string, priority: number, maxResults?: number}, scored: Array<{result: object, final: number, ranges: Array}>}>} entries
  * @param {object} [options]
  * @param {number} [options.topHitMin] - minimum score for a top hit
  * @param {boolean} [options.topHit] - false to never pick a top hit
@@ -35,8 +33,6 @@ export function mergeResults(entries, {topHitMin = 0.55, topHit = true, maxTotal
                 key: `${provider.id}:${s.result.id}`,
                 providerId: provider.id,
                 result: s.result,
-                text: s.text,
-                bonus: s.bonus,
                 final: s.final,
                 ranges: s.ranges,
             };

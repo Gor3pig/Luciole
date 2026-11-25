@@ -360,3 +360,54 @@ test('a provider that reports its own cancellation is not an error', async () =>
     await c.search('fi');
     assertEquals(log.lines, []);
 });
+
+test('the secondary action of an item runs through its provider', async () => {
+    const scheduler = new FakeScheduler();
+    const files = fakeProvider(scheduler, {id: 'files'});
+    files.secondaryActions = () => [{id: 'open-folder'}, {id: 'other'}];
+    const c = new SearchController({
+        getProviders: () => [files], frecency: new Frecency(), scheduler, log: recordingLog(), onUpdate() {},
+    });
+    const ok = await c.activateSecondary({key: 'files:1', providerId: 'files', result: result('1', 'a.odt')});
+    assert(ok, 'ran');
+    assertEquals(files.actions, ['open-folder:1'], 'only the first action');
+});
+
+test('an item whose provider has no secondary action does nothing', async () => {
+    const scheduler = new FakeScheduler();
+    const apps = fakeProvider(scheduler, {id: 'apps'});
+    const c = new SearchController({
+        getProviders: () => [apps], frecency: new Frecency(), scheduler, log: recordingLog(), onUpdate() {},
+    });
+    assertEquals(await c.activateSecondary({key: 'apps:1', providerId: 'apps', result: result('1', 'A')}), false);
+    assertEquals(await c.activateSecondary({key: 'x:1', providerId: 'x', result: result('1', 'X')}), false);
+    assertEquals(apps.actions, []);
+});
+
+test('a failing secondary action is logged, not thrown', async () => {
+    const scheduler = new FakeScheduler();
+    const files = fakeProvider(scheduler, {id: 'files'});
+    files.secondaryActions = () => [{id: 'open-folder'}];
+    files.activateAction = async () => {
+        throw new Error('no file manager');
+    };
+    const log = recordingLog();
+    const c = new SearchController({getProviders: () => [files], frecency: new Frecency(), scheduler, log, onUpdate() {}});
+    assertEquals(await c.activateSecondary({key: 'files:1', providerId: 'files', result: result('1', 'a')}), false);
+    assert(log.lines.some(l => l.includes('no file manager')), 'logged');
+});
+
+test('a provider\'s weight lowers its scores against the others', async () => {
+    const scheduler = new FakeScheduler();
+    const apps = fakeProvider(scheduler, {id: 'apps', priority: 2, results: [result('1', 'Facture Express')]});
+    const files = fakeProvider(scheduler, {id: 'files', priority: 1, scoreWeight: 0.9, results: [result('2', 'Facture mars.pdf', {providerScore: 1})]});
+    const updates = [];
+    const c = new SearchController({
+        getProviders: () => [files, apps], frecency: new Frecency(), scheduler, log: recordingLog(),
+        onUpdate: m => updates.push({titles: m.items.map(i => i.result.title), finals: m.items.map(i => i.final)}),
+    });
+    await c.search('factu');
+    const last = updates[updates.length - 1];
+    assertEquals(last.titles[0], 'Facture Express', 'the application first despite the file coming first in priority');
+    assert(Math.abs(last.finals[1] - 0.9 * 0.96) < 1e-9, `file score is weighted: ${last.finals[1]}`);
+});

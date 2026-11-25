@@ -1,7 +1,7 @@
 import {mergeResults, nextSelection} from '../src/core/merge.js';
 import {assert, assertEquals, test} from './harness.js';
 
-const scored = (id, title, final, extra = {}) => ({result: {id, title, ...extra}, text: final, bonus: 0, final, ranges: []});
+const scored = (id, title, final, extra = {}) => ({result: {id, title, ...extra}, final, ranges: []});
 const provider = (id, priority, extra = {}) => ({id, name: id.toUpperCase(), priority, ...extra});
 const titles = items => items.map(item => item.result.title);
 

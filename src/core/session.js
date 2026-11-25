@@ -110,6 +110,21 @@ export class SearchController {
         return done;
     }
 
+    /**
+     * Runs the first secondary action of an item (for a file: show its folder).
+     * Resolves to whether there was one and it worked.
+     */
+    async activateSecondary(item) {
+        const provider = this.#getProviders().find(p => p.id === item.providerId);
+        const [action] = provider?.secondaryActions?.(item.result) ?? [];
+        if (!action)
+            return false;
+        return this.#log.guardAsync(`action ${action.id} on ${item.key}`, async () => {
+            await provider.activateAction(item.result, action);
+            return true;
+        }, false);
+    }
+
     /** Cancels everything in flight. Results that arrive afterwards are ignored. */
     dispose() {
         this.#cancelCurrent();
@@ -177,8 +192,10 @@ export class SearchController {
             const scored = matcher.isEmpty
                 ? scoreForEmptyQuery(result, this.#frecency, now)
                 : scoreResult(result, matcher, this.#frecency, now);
-            if (scored)
-                store.set(result.id, {result, ...scored});
+            if (scored) {
+                const weight = provider.scoreWeight ?? 1;
+                store.set(result.id, {result, final: scored.final * weight, ranges: scored.ranges});
+            }
         }
         this.#schedulePublish();
     }

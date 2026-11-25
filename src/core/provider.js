@@ -37,6 +37,15 @@ export class Provider {
         return 100;
     }
 
+    /**
+     * How much this provider's scores count against the others (1 = fully). A
+     * provider whose matches are less likely to be what the user wants, such as
+     * files next to applications, uses a value below 1.
+     */
+    get scoreWeight() {
+        return 1;
+    }
+
     /** Wait this long (ms) after the last keystroke before searching; 0 for cheap sources. */
     get debounceMs() {
         return 0;
@@ -101,7 +110,7 @@ export function validateProvider(provider) {
         if (typeof provider[name] !== 'function')
             throw new TypeError(`provider "${provider.id}" must implement ${name}()`);
     }
-    for (const name of ['priority', 'debounceMs', 'timeoutMs', 'maxResults']) {
+    for (const name of ['priority', 'scoreWeight', 'debounceMs', 'timeoutMs', 'maxResults']) {
         if (!Number.isFinite(provider[name]))
             throw new TypeError(`provider "${provider.id}": ${name} must be a number`);
     }
