@@ -2,7 +2,7 @@
 # Enables and disables the extension N times inside a private, headless
 # GNOME Shell, and checks its state, its log and its memory behaviour.
 #
-#   sh tests/shell/cycle.sh [cycles]      (default: 60)
+#   sh tests/shell/cycle.sh [cycles]      (default: 100)
 #
 # GNOME Shell itself grows by a few hundred kB per enable/disable cycle, even
 # with an empty extension. The memory check is therefore differential: the same
@@ -14,16 +14,21 @@
 set -eu
 
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
-CYCLES=${1:-60}
+CYCLES=${1:-100}
 UUID=luciole@luciole.dev
 CONTROL=control@example.invalid
-# Allowed growth above the control, in kB, between cycle 10 and the last cycle.
-MAX_EXTRA_KB=5120
+# Allowed growth above the control, in kB, over the second half of the run.
+# Measured noise: the same extension grows by 11 to 17 MB (empty control) or 14 to 25 MB
+# (Luciole) over 50 cycles from one run to the next, so the limit sits above that noise.
+# It catches leaks of roughly 0.5 MB per enable/disable cycle or more; smaller ones
+# are not visible in resident memory without forcing garbage collection.
+MAX_EXTRA_KB=20480
 
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
 glib-compile-schemas "$ROOT/src/schemas"
+. "$ROOT/tests/shell/lib.sh"
 
 run() { # run <name> <uuid> <extensions dir>
     echo "######## $1 ($CYCLES cycles)"
@@ -32,11 +37,7 @@ run() { # run <name> <uuid> <extensions dir>
         2>&1 | tee "$WORK/$1.out" | grep -vE '^cycle [0-9]+:|dbus-daemon\[|^$|libedbus|Gdk-Message|connection to the bus|ibus|atspi|portal'
 }
 
-# Control: an extension that does nothing.
-CDIR="$WORK/control-data/gnome-shell/extensions/$CONTROL"
-mkdir -p "$CDIR"
-printf '{"uuid":"%s","name":"Control","description":"empty","shell-version":["50","51"]}\n' "$CONTROL" >"$CDIR/metadata.json"
-printf 'import {Extension} from "resource:///org/gnome/shell/extensions/extension.js";\nexport default class Control extends Extension { enable() {} disable() {} }\n' >"$CDIR/extension.js"
+make_control_extension "$WORK/control-data" "$CONTROL"
 
 # Luciole, linked from the working tree.
 mkdir -p "$WORK/luciole-data/gnome-shell/extensions"
@@ -60,12 +61,12 @@ growth() { sed -n 's/^growth_kb=//p' "$WORK/$1.out" | tail -n 1; }
 CG=$(growth control)
 LG=$(growth luciole)
 if [ -z "$CG" ] || [ -z "$LG" ]; then
-    echo "FAIL: memory growth could not be measured (need at least 10 cycles)"
+    echo "FAIL: memory growth could not be measured (need at least 40 cycles)"
     exit 1
 fi
 EXTRA=$((LG - CG))
 echo
-echo "memory growth from cycle 10: control ${CG} kB, Luciole ${LG} kB, extra ${EXTRA} kB (limit ${MAX_EXTRA_KB} kB)"
+echo "memory growth over the second half of the run: control ${CG} kB, Luciole ${LG} kB, extra ${EXTRA} kB (limit ${MAX_EXTRA_KB} kB)"
 if [ "$EXTRA" -gt "$MAX_EXTRA_KB" ]; then
     echo "FAIL: Luciole grows more than the empty control"
     exit 1

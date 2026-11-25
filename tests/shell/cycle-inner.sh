@@ -3,83 +3,41 @@
 set -u
 
 CYCLES=$1
-LOG=$2
+LOG_FILE=$2
 UUID=$3
-DEST=org.gnome.Shell.Extensions
-OBJ=/org/gnome/Shell/Extensions
-STATE_ENABLED=1.0
-STATE_DISABLED=2.0
+. "$(dirname "$0")/lib.sh"
 
-gnome-shell --headless --wayland --no-x11 --virtual-monitor 1280x720 >"$LOG" 2>&1 &
-SHELL_PID=$!
-trap 'kill "$SHELL_PID" 2>/dev/null; wait "$SHELL_PID" 2>/dev/null' EXIT
+start_shell "$LOG_FILE"
+wait_for_extension
+echo "extension discovered, initial state $(ext_state)"
 
-call() {
-    method=$1
-    shift
-    gdbus call --session --dest "$DEST" --object-path "$OBJ" --method "$DEST.$method" "$@" 2>&1
-}
-
-state() {
-    call GetExtensionInfo "$UUID" | sed -n "s/.*'state': <\([0-9.]*\)>.*/\1/p"
-}
-
-rss_kb() {
-    awk '/^VmRSS:/ {print $2}' "/proc/$SHELL_PID/status"
-}
-
-# wait_state <wanted> : polls for up to 10 s.
-wait_state() {
-    i=0
-    while [ "$i" -lt 100 ]; do
-        [ "$(state)" = "$1" ] && return 0
-        sleep 0.1
-        i=$((i + 1))
-    done
-    return 1
-}
-
-fail() {
-    echo "FAIL: $1"
-    echo "---- last lines of the shell log ----"
-    tail -n 25 "$LOG"
-    exit 1
-}
-
-# Wait for the shell to discover the extension (it answers with a state).
-i=0
-until [ -n "$(state)" ]; do
-    i=$((i + 1))
-    [ "$i" -gt 200 ] && fail "the shell never listed $UUID"
-    kill -0 "$SHELL_PID" 2>/dev/null || fail "the shell exited during startup"
-    sleep 0.1
-done
-echo "extension discovered, initial state $(state)"
-
-BASE_RSS=
 n=1
 while [ "$n" -le "$CYCLES" ]; do
-    call EnableExtension "$UUID" >/dev/null
-    wait_state "$STATE_ENABLED" || fail "cycle $n: not ENABLED (state=$(state))"
-    call DisableExtension "$UUID" >/dev/null
-    wait_state "$STATE_DISABLED" || fail "cycle $n: not DISABLED (state=$(state))"
+    ext_call EnableExtension "$UUID" >/dev/null
+    wait_ext_state "$STATE_ENABLED" || fail "cycle $n: not ENABLED (state=$(ext_state))"
+    ext_call DisableExtension "$UUID" >/dev/null
+    wait_ext_state "$STATE_DISABLED" || fail "cycle $n: not DISABLED (state=$(ext_state))"
     kill -0 "$SHELL_PID" 2>/dev/null || fail "cycle $n: the shell died"
-    [ "$n" -eq 10 ] && BASE_RSS=$(rss_kb)
-    [ $((n % 10)) -eq 0 ] && echo "cycle $n: resident memory $(rss_kb) kB"
+    [ $((n % 10)) -eq 0 ] && rss_kb >>"$LOG.rss"
     n=$((n + 1))
 done
 
 LAST_RSS=$(rss_kb)
 echo "$CYCLES enable/disable cycles done, shell alive"
-if [ -n "$BASE_RSS" ]; then
-    echo "resident memory: ${BASE_RSS} kB after cycle 10, ${LAST_RSS} kB at the end"
-    echo "growth_kb=$((LAST_RSS - BASE_RSS))"
+# One sample every 10 cycles. A shell warms up (caches, JavaScript heap) before its
+# memory settles, so a total growth says little. A leak keeps growing, so what counts
+# is the growth in the second half of the run, once the curve should be flat.
+SAMPLES=$(wc -l <"$LOG.rss")
+if [ "$SAMPLES" -ge 4 ]; then
+    MIDDLE=$(sed -n "$(((SAMPLES + 1) / 2))p" "$LOG.rss")
+    echo "resident memory samples (kB): $(tr '\n' ' ' <"$LOG.rss")"
+    echo "growth_kb=$((LAST_RSS - MIDDLE))"
 fi
 
-ERRORS=$(grep -ciE 'JS ERROR|luciole.*(error|critical|warning)|already disposed' "$LOG" || true)
+ERRORS=$(grep -ciE "$EXTENSION_ERROR_PATTERN" "$LOG" || true)
 echo "log lines mentioning an error about the extension or a disposed object: $ERRORS"
 if [ "$ERRORS" -gt 0 ]; then
-    grep -iE 'JS ERROR|luciole|already disposed' "$LOG" | head -20
+    grep -iE "$EXTENSION_ERROR_PATTERN" "$LOG" | head -20
     fail "errors found in the shell log"
 fi
 
