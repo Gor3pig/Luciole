@@ -15,6 +15,9 @@ SCHEMA=org.gnome.shell.extensions.luciole
 # Budget for the synchronous part of opening the launcher (ms). The first open
 # builds the actors, so it is the slowest.
 OPEN_BUDGET_MS=50
+# Growth allowed for what the JavaScript heap keeps alive after a collection, over the cycles
+# that follow the warm-up (measured: about 110 kB, a fixed cost; this catches a leak of a few kB per cycle).
+MAX_HEAP_GROWTH=262144
 
 start_shell "$LOG_FILE"
 wait_for_extension
@@ -38,6 +41,8 @@ wait_count() { # wait_count <message> <at least n>: polls for up to 5 s
     return 1
 }
 
+WARM_UP=$((CYCLES / 4))
+HEAP_START=""
 n=1
 while [ "$n" -le "$CYCLES" ]; do
     combo
@@ -50,9 +55,19 @@ while [ "$n" -le "$CYCLES" ]; do
         escape
     fi
     kill -0 "$SHELL_PID" 2>/dev/null || fail "cycle $n: the shell died"
+    [ "$n" -eq "$WARM_UP" ] && HEAP_START=$(heap_bytes)
     [ $((n % 10)) -eq 0 ] && rss_kb >>"$LOG.rss"
     n=$((n + 1))
 done
+
+# What the code keeps alive after a collection, from the end of the warm-up to the end of the
+# cycles. (Resident size is a sawtooth, the collector runs late: it is printed, not judged.)
+HEAP_END=$(heap_bytes)
+if [ "$ENABLE" = 1 ]; then
+    [ -n "$HEAP_START" ] && [ -n "$HEAP_END" ] || fail "the JavaScript heap could not be measured (need at least 8 cycles)"
+    echo "JavaScript heap after garbage collection: ${HEAP_START} bytes after warm-up, ${HEAP_END} bytes at the end, growth $((HEAP_END - HEAP_START)) bytes (limit ${MAX_HEAP_GROWTH})"
+    [ $((HEAP_END - HEAP_START)) -le "$MAX_HEAP_GROWTH" ] || fail "opening and closing keeps growing what the shell holds"
+fi
 
 LAST_RSS=$(rss_kb)
 echo "$CYCLES open/close cycles done, shell alive"
@@ -63,7 +78,7 @@ SAMPLES=$(wc -l <"$LOG.rss")
 if [ "$SAMPLES" -ge 4 ]; then
     MIDDLE=$(sed -n "$(((SAMPLES + 1) / 2))p" "$LOG.rss")
     echo "resident memory samples (kB): $(tr '\n' ' ' <"$LOG.rss")"
-    echo "growth_kb=$((LAST_RSS - MIDDLE))"
+    echo "resident growth (information only): $((LAST_RSS - MIDDLE)) kB"
 fi
 
 if [ "$ENABLE" = 1 ]; then
@@ -83,6 +98,33 @@ if [ "$ENABLE" = 1 ]; then
     combo
     wait_count 'closed' $((CLOSED + 1)) || fail "toggle: the shortcut did not close the open launcher"
     echo "toggle: the shortcut closes the open launcher"
+
+    # Pointer clicks: anywhere but the panel closes the launcher (the empty window, the top
+    # bar, a corner); a click on the text field does not. The test monitor is 1280x720, so the
+    # panel is the strip around x 329-951, y 101-179.
+    for spot in "640 650" "100 300" "640 8" "3 3" "1200 300"; do
+        OPENED=$(count opened)
+        CLOSED=$(count closed)
+        combo
+        wait_count 'opened' $((OPENED + 1)) || fail "click ($spot): the launcher did not open"
+        pointer $spot
+        sleep 0.2
+        click
+        wait_count 'closed' $((CLOSED + 1)) || fail "click outside the panel at $spot did not close the launcher"
+        sleep 0.3
+    done
+    OPENED=$(count opened)
+    CLOSED=$(count closed)
+    combo
+    wait_count 'opened' $((OPENED + 1)) || fail "click inside: the launcher did not open"
+    pointer 640 120
+    sleep 0.2
+    click
+    sleep 0.8
+    [ "$(count closed)" = "$CLOSED" ] || fail "a click on the text field closed the launcher"
+    escape
+    wait_count 'closed' $((CLOSED + 1)) || fail "click inside: Escape did not close the launcher afterwards"
+    echo "clicks: outside the panel closes, inside the panel does not"
 
     # Super and Alt+Tab mean "I am going elsewhere": the shell ignores them while the
     # launcher holds the keyboard, so the launcher closes (and the keys then work again).
@@ -126,13 +168,15 @@ if [ "$ENABLE" = 1 ]; then
     OPENED=$(count opened)
     combo
     wait_count 'opened' $((OPENED + 1)) || fail "the launcher did not open before the disable test"
+    [ "$(luciole_actors)" -gt 0 ] || fail "the actor check is blind: no actor of the extension found while the launcher is open"
     ext_call DisableExtension "$UUID" >/dev/null
     wait_ext_state "$STATE_DISABLED" || fail "disable while open: not DISABLED (state=$(ext_state))"
     OPENED=$(count opened)
     combo
     sleep 0.5
     [ "$(count opened)" = "$OPENED" ] || fail "the shortcut still works after the extension was disabled"
-    echo "disable while open: clean, and the shortcut is freed"
+    [ "$(luciole_actors)" = 0 ] || fail "disable: actors of the extension are still in the scene ($(luciole_actors))"
+    echo "disable while open: clean, the shortcut is freed, no actor is left in the scene"
     ext_call EnableExtension "$UUID" >/dev/null
     wait_ext_state "$STATE_ENABLED" || fail "re-enable: not ENABLED (state=$(ext_state))"
     CLOSED=$(count closed)

@@ -31,6 +31,36 @@
    "label": "focus loss never closes",
    "old": "        if (focus && this.#overlay.contains(focus))\n            return;",
    "new": "        if (true)\n            return;"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "outside click detected as before (event source)",
+   "old": "            const target = compat.eventActor(event);\n            if (target && panel.contains(target))\n                return Clutter.EVENT_PROPAGATE;",
+   "new": "            if (event.get_source() !== overlay)\n                return Clutter.EVENT_PROPAGATE;"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "a click inside the panel closes too",
+   "old": "            if (target && panel.contains(target))\n                return Clutter.EVENT_PROPAGATE;",
+   "new": "            if (false)\n                return Clutter.EVENT_PROPAGATE;"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "outside click never closes",
+   "old": "            if (target && panel.contains(target))\n                return Clutter.EVENT_PROPAGATE;",
+   "new": "            if (true)\n                return Clutter.EVENT_PROPAGATE;"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "a leak of about 16 kB per opening",
+   "old": "        this.#log.debug('opened');\n",
+   "new": "        this.#log.debug('opened');\n        (globalThis.luciolePile ??= []).push(new Array(2000).fill('x'));\n"
+  },
+  {
+   "file": "src/extension.js",
+   "label": "the launcher is not destroyed on disable",
+   "old": "            disposables.add(() => launcher.destroy());\n",
+   "new": ""
   }
  ]
 }

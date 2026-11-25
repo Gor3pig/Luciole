@@ -1,0 +1,18 @@
+{
+ "description": "Mutants that leak at enable/disable time; only the cycle test in a real shell can see them.",
+ "slow": true,
+ "timeout": 400,
+ "command": [
+  "sh",
+  "tests/shell/cycle.sh",
+  "60"
+ ],
+ "mutants": [
+  {
+   "file": "src/extension.js",
+   "label": "a leak of about 16 kB per enable",
+   "old": "        this._disposables = disposables;\n",
+   "new": "        this._disposables = disposables;\n        (globalThis.luciolePile ??= []).push(new Array(2000).fill('x'));\n"
+  }
+ ]
+}

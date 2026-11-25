@@ -64,7 +64,7 @@ awk -v n="$ACTIONS" -v seed="$SEED" 'BEGIN {
 # SOAK_ACTIONS_FILE=<file> replaces the random actions with a fixed script (for bisecting).
 [ -z "${SOAK_ACTIONS_FILE:-}" ] || cp "$SOAK_ACTIONS_FILE" "$WORK/actions.txt"
 
-XDG_DATA_HOME="$WORK/data" XDG_CONFIG_HOME="$WORK/config" XDG_CACHE_HOME="$WORK/cache" \
+SHELL_EXTRA_ARGS=--unsafe-mode XDG_DATA_HOME="$WORK/data" XDG_CONFIG_HOME="$WORK/config" XDG_CACHE_HOME="$WORK/cache" \
     XDG_DATA_DIRS="$WORK/services:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" \
     GSETTINGS_BACKEND=keyfile GSETTINGS_SCHEMA_DIR="$ROOT/src/schemas" G_MESSAGES_DEBUG=all XDG_SESSION_TYPE=wayland \
     dbus-run-session -- sh "$ROOT/tests/shell/soak-inner.sh" "$WORK" "$WORK/shell.log" "$UUID" \

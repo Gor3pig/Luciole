@@ -65,6 +65,8 @@ send() { # send <command line for keys.js>
 combo() { send combo; }
 escape() { send escape; }
 typed() { send "type $1"; }
+pointer() { send "pointer $1 $2"; }
+click() { send click; }
 press() { send "key $1"; }
 chord() { send "chord $1"; }
 
@@ -82,6 +84,33 @@ ext_call() {
 
 ext_state() {
     ext_call GetExtensionInfo "$UUID" | sed -n "s/.*'state': <\([0-9.]*\)>.*/\1/p"
+}
+
+# heap_bytes: the JavaScript heap of the shell (objects and what they own) after a forced
+# garbage collection, in bytes.
+# Resident memory is a poor leak detector: the collector only runs when about 40 MB of
+# garbage has built up, so it rises and falls in a sawtooth. What is still alive right after
+# a collection is what the code really keeps. Needs the shell started with --unsafe-mode
+# (SHELL_EXTRA_ARGS), which is only done by the tests that measure memory.
+heap_bytes() {
+    _heap_file="${WORK:-/tmp}/heap-$$.json"
+    gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval \
+        "imports.system.gc(); imports.system.dumpMemoryInfo('$_heap_file'); 1" >/dev/null 2>&1
+    # gcBytes counts the objects themselves, mallocBytes what they own (array contents, string
+    # text): both are needed, a leaked array shows mostly in the second. The first occurrence of
+    # each is the whole heap; the ones further down belong to a single zone.
+    _gc=$(sed -n 's/^ *"gcBytes": \([0-9]*\),.*/\1/p' "$_heap_file" | head -n 1)
+    _malloc=$(sed -n 's/^ *"mallocBytes": \([0-9]*\),.*/\1/p' "$_heap_file" | head -n 1)
+    rm -f "$_heap_file"
+    [ -n "$_gc" ] && [ -n "$_malloc" ] && echo $((_gc + _malloc))
+}
+
+# luciole_actors: how many actors of the extension (style class "luciole-...") are still in the
+# scene. Needs the shell started with --unsafe-mode.
+luciole_actors() {
+    gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval \
+        "(function count(actor) { return ((actor.style_class || '').includes('luciole') ? 1 : 0) + actor.get_children().reduce((sum, child) => sum + count(child), 0); })(global.stage)" \
+        2>/dev/null | sed -n "s/^(true, '\\([0-9]*\\)')\$/\\1/p"
 }
 
 rss_kb() {

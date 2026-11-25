@@ -9,10 +9,11 @@ WORK=$1
 LOG_FILE=$2
 UUID=$3
 . "$(dirname "$0")/lib.sh"
-# Growth allowed over the second half of the run, in kB. The shell's memory is a sawtooth
-# (garbage collection), so this only catches leaks of roughly 100 kB per opening or more;
-# finer ones are the job of the differential tests (cycle.sh, openclose.sh).
-MAX_GROWTH_KB=30720
+# Growth allowed for what the shell keeps alive after a garbage collection (see heap_bytes in
+# lib.sh), between the end of the warm-up and the end of the run: about 370 openings, so this
+# catches a leak of a few kB per opening. The resident size is printed for information only: it
+# is a sawtooth (the collector runs late), which made it useless as a pass/fail criterion.
+MAX_HEAP_GROWTH=1048576
 
 start_shell "$LOG_FILE"
 wait_for_extension
@@ -28,6 +29,8 @@ start_keys
 count() { grep -c "\[Luciole\] $1" "$LOG" || true; }
 
 TOTAL=$(wc -l <"$WORK/actions.txt")
+WARM_UP=$((TOTAL / 5))
+HEAP_START=""
 n=0
 while IFS= read -r action; do
     case "$action" in
@@ -47,6 +50,8 @@ while IFS= read -r action; do
         *) send "$action" ;;
     esac
     n=$((n + 1))
+    # What the code keeps alive is measured after warm-up, once caches and the like are built.
+    [ "$n" -eq "$WARM_UP" ] && HEAP_START=$(heap_bytes)
     if [ $((n % 250)) -eq 0 ]; then
         kill -0 "$SHELL_PID" 2>/dev/null || fail "the shell died after $n actions"
         rss_kb >>"$LOG.rss"
@@ -94,14 +99,12 @@ if [ "$ERRORS" -gt 0 ]; then
     fail "errors found in the shell log"
 fi
 
-if [ -n "${SOAK_GC:-}" ]; then
-    echo "rss before gc: $(rss_kb) kB"
-    for _ in 1 2 3; do
-        gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval 'global.run_gc(); 1' >/dev/null 2>&1
-        sleep 1
-    done
-    echo "rss after gc:  $(rss_kb) kB"
-    echo "eval check: $(gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval '1+1' 2>&1)"
+HEAP_END=$(heap_bytes)
+if [ -n "$HEAP_START" ] && [ -n "$HEAP_END" ]; then
+    echo "JavaScript heap after garbage collection: ${HEAP_START} bytes after warm-up, ${HEAP_END} bytes at the end, growth $((HEAP_END - HEAP_START)) bytes (limit ${MAX_HEAP_GROWTH})"
+    [ $((HEAP_END - HEAP_START)) -le "$MAX_HEAP_GROWTH" ] || fail "what the shell keeps alive kept growing"
+else
+    fail "the JavaScript heap could not be measured"
 fi
 
 SAMPLES=$(wc -l <"$LOG.rss")
@@ -109,7 +112,6 @@ if [ "$SAMPLES" -ge 4 ]; then
     MIDDLE=$(sed -n "$(((SAMPLES + 1) / 2))p" "$LOG.rss")
     LAST=$(tail -n 1 "$LOG.rss")
     echo "memory samples (kB): $(tr '\n' ' ' <"$LOG.rss")"
-    echo "memory growth over the second half: $((LAST - MIDDLE)) kB (limit $MAX_GROWTH_KB kB)"
-    [ $((LAST - MIDDLE)) -le "$MAX_GROWTH_KB" ] || fail "memory kept growing"
+    echo "resident memory growth over the second half (information only): $((LAST - MIDDLE)) kB"
 fi
 echo "PASS"

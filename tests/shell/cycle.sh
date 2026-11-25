@@ -6,10 +6,11 @@
 #
 #   sh tests/shell/cycle.sh [cycles]      (default: 100)
 #
-# GNOME Shell itself grows by a few hundred kB per enable/disable cycle, even
+# GNOME Shell itself keeps a little more alive at every enable/disable cycle, even
 # with an empty extension. The memory check is therefore differential: the same
 # cycles are run with an empty control extension, and only the growth above the
-# control counts.
+# control counts. Memory is the JavaScript heap after a forced collection, not the
+# resident size (a sawtooth, because the collector runs late).
 #
 # Safety: each shell runs on its own D-Bus session with an in-memory settings
 # backend, so the real session and its settings are never touched.
@@ -19,13 +20,10 @@ ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 CYCLES=${1:-100}
 UUID=luciole@gor3pig.github.io
 CONTROL=control@example.invalid
-# Allowed growth above the control, in kB, over the second half of the run.
-# Measured noise: the same extension, run again, differs by about 9 MB over 50 cycles
-# (extra growth seen for Luciole: 1, 11, 19 MB), so the limit sits above that noise.
-# It catches leaks of roughly 1 MB per enable/disable cycle or more; smaller ones are not
-# visible in resident memory without forcing garbage collection. The open/close test
-# (openclose.sh) is far more sensitive, because its memory curve is flat once warm.
-MAX_EXTRA_KB=25600
+# Allowed growth above the control, in bytes, of what the JavaScript heap keeps alive after a
+# garbage collection, from the end of the warm-up (a quarter of the cycles) to the end.
+MAX_EXTRA_BYTES=200000
+# (measured: 20 to 45 kB over 75 cycles; this catches a leak of a few kB per cycle)
 
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
@@ -35,7 +33,7 @@ glib-compile-schemas "$ROOT/src/schemas"
 
 run() { # run <name> <uuid> <extensions dir>
     echo "######## $1 ($CYCLES cycles)"
-    XDG_DATA_HOME="$3" GSETTINGS_BACKEND=memory XDG_SESSION_TYPE=wayland \
+    SHELL_EXTRA_ARGS=--unsafe-mode XDG_DATA_HOME="$3" GSETTINGS_BACKEND=memory XDG_SESSION_TYPE=wayland \
         dbus-run-session -- sh "$ROOT/tests/shell/cycle-inner.sh" "$CYCLES" "$WORK/$1.log" "$2" \
         2>&1 | tee "$WORK/$1.out" | grep -vE '^cycle [0-9]+:|dbus-daemon\[|^$|libedbus|Gdk-Message|connection to the bus|ibus|atspi|portal'
 }
@@ -60,20 +58,20 @@ passed control
 run luciole "$UUID" "$WORK/luciole-data"
 passed luciole
 
-growth() { sed -n 's/^growth_kb=//p' "$WORK/$1.out" | tail -n 1; }
+growth() { sed -n 's/^heap_growth=//p' "$WORK/$1.out" | tail -n 1; }
 CG=$(growth control)
 LG=$(growth luciole)
 if [ -z "$CG" ] || [ -z "$LG" ]; then
-    echo "FAIL: memory growth could not be measured (need at least 40 cycles)"
+    echo "FAIL: heap growth could not be measured (need at least 8 cycles)"
     exit 1
 fi
-# A control whose memory dropped (a garbage collection) is no baseline to subtract.
+# A control whose heap shrank is no baseline to subtract.
 [ "$CG" -lt 0 ] && CG=0
 EXTRA=$((LG - CG))
 echo
-echo "memory growth over the second half of the run: control ${CG} kB, Luciole ${LG} kB, extra ${EXTRA} kB (limit ${MAX_EXTRA_KB} kB)"
-if [ "$EXTRA" -gt "$MAX_EXTRA_KB" ]; then
-    echo "FAIL: Luciole grows more than the empty control"
+echo "heap growth after warm-up: control ${CG} bytes, Luciole ${LG} bytes, extra ${EXTRA} bytes (limit ${MAX_EXTRA_BYTES} bytes)"
+if [ "$EXTRA" -gt "$MAX_EXTRA_BYTES" ]; then
+    echo "FAIL: Luciole keeps more alive than the empty control"
     exit 1
 fi
 echo "PASS"

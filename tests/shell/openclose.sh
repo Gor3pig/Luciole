@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # Opens and closes the launcher N times with the real keyboard shortcut inside a
 # private, headless GNOME Shell (keys are injected through Mutter's remote
-# desktop interface), then checks timing, memory, screen lock and clean-up.
+# desktop interface), then checks timing, memory (what the JavaScript heap keeps alive
+# after a collection), the keys and clicks that close the launcher, screen lock and clean-up.
 #
 #   sh tests/shell/openclose.sh [cycles]      (default: 150)
 #
@@ -14,9 +15,6 @@ set -eu
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 CYCLES=${1:-150}
 UUID=luciole@gor3pig.github.io
-CONTROL=control@example.invalid
-# Allowed growth above the control, in kB, over the second half of the run (steady state).
-MAX_EXTRA_KB=3072
 
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
@@ -24,14 +22,13 @@ trap 'rm -rf "$WORK"' EXIT
 glib-compile-schemas "$ROOT/src/schemas"
 . "$ROOT/tests/shell/lib.sh"
 
-make_control_extension "$WORK/control-data" "$CONTROL"
 mkdir -p "$WORK/luciole-data/gnome-shell/extensions"
 ln -s "$ROOT/src" "$WORK/luciole-data/gnome-shell/extensions/$UUID"
 
 run() { # run <name> <enable 0|1> <uuid> <data dir>
     mkdir -p "$WORK/config-$1/glib-2.0/settings"
     echo "######## $1 ($CYCLES cycles)"
-    XDG_DATA_HOME="$4" XDG_CONFIG_HOME="$WORK/config-$1" XDG_CACHE_HOME="$WORK/cache-$1" GSETTINGS_BACKEND=keyfile \
+    SHELL_EXTRA_ARGS=--unsafe-mode XDG_DATA_HOME="$4" XDG_CONFIG_HOME="$WORK/config-$1" XDG_CACHE_HOME="$WORK/cache-$1" GSETTINGS_BACKEND=keyfile \
         GSETTINGS_SCHEMA_DIR="$ROOT/src/schemas" G_MESSAGES_DEBUG=all XDG_SESSION_TYPE=wayland \
         dbus-run-session -- sh "$ROOT/tests/shell/openclose-inner.sh" "$1" "$2" "$CYCLES" "$3" "$WORK/$1.log" \
         2>&1 | tee "$WORK/$1.out" | grep -vE '^cycle [0-9]+:|dbus-daemon\[|^$|libedbus|Gdk-Message|connection to the bus|ibus|atspi|portal'
@@ -42,22 +39,4 @@ run() { # run <name> <enable 0|1> <uuid> <data dir>
 }
 
 run luciole 1 "$UUID" "$WORK/luciole-data"
-run control 0 "$CONTROL" "$WORK/control-data"
-
-growth() { sed -n 's/^growth_kb=//p' "$WORK/$1.out" | tail -n 1; }
-CG=$(growth control)
-LG=$(growth luciole)
-if [ -z "$CG" ] || [ -z "$LG" ]; then
-    echo "FAIL: memory growth could not be measured (need at least 40 cycles)"
-    exit 1
-fi
-# A control whose memory dropped (a garbage collection) is no baseline to subtract.
-[ "$CG" -lt 0 ] && CG=0
-EXTRA=$((LG - CG))
-echo
-echo "memory growth over the second half of the run: control ${CG} kB, Luciole ${LG} kB, extra ${EXTRA} kB (limit ${MAX_EXTRA_KB} kB)"
-if [ "$EXTRA" -gt "$MAX_EXTRA_KB" ]; then
-    echo "FAIL: opening and closing grows memory more than the control"
-    exit 1
-fi
 echo "PASS"
