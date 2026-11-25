@@ -116,7 +116,7 @@ export class Launcher {
         // and it could not even be closed with Escape: it closes instead.
         this.#stopFocusWatch = compat.connectKeyFocus(() => this.#checkFocus());
         this.#log.debug('opened');
-        this.#onQuery('');
+        this.#log.guard('searching the recent items', () => this.#onQuery(''));
 
         if (compat.useMotion()) {
             this.#overlay.opacity = 0;
@@ -342,7 +342,7 @@ export class Launcher {
             this.#queryAt = GLib.get_monotonic_time();
             this.#doneAt = this.#queryAt;
             this.#navigated = false;
-            this.#onQuery(entry.get_text());
+            this.#log.guard('searching', () => this.#onQuery(entry.get_text()));
         });
         text.connect('activate', () => {
             this.#activateSelected();
