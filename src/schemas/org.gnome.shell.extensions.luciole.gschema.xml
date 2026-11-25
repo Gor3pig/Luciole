@@ -3,7 +3,7 @@
   <schema id="org.gnome.shell.extensions.luciole" path="/org/gnome/shell/extensions/luciole/">
 
     <key name="toggle-shortcut" type="as">
-      <default>["&lt;Alt&gt;space"]</default>
+      <default>["&lt;Control&gt;&lt;Alt&gt;space"]</default>
       <summary>Shortcut that opens the launcher</summary>
     </key>
 
