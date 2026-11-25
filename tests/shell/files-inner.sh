@@ -54,6 +54,14 @@ typed factu
 wait_log "results: 2 first=Facture Express query=factu" 1 8 || fail "expected the application and the file for 'factu'; saw: $(grep -F 'query=factu' "$LOG" | tail -n 2 | tr '\n' '|')"
 echo "ok: an application and a file for the same word are both shown"
 
+# Tab moves between sections: from the top hit (the application) to the files, and back with Shift+Tab.
+press Tab
+wait_log "selected: files:file:///home/tester/Documents/Facture" 1 || fail "Tab did not move to the files section"
+press ISO_Left_Tab
+wait_log "selected: " 2 || fail "Shift+Tab did not select anything"
+grep 'selected: ' "$LOG" | tail -n 1 | grep -qF "selected: apps:luciole-test-facture.desktop" || fail "Shift+Tab did not come back to the top hit"
+echo "ok: Tab and Shift+Tab move between sections"
+
 # Ctrl+Enter on a file does not crash and closes the launcher (the file manager is not started here).
 clear_entry 5
 typed rapp

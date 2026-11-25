@@ -20,6 +20,10 @@ const FILES = [
     ['/home/tester/projet/node_modules/lib', 'rapport.js'],
 ];
 
+// INDEX_EXTRA=<n> adds n more files, to see the list scroll.
+for (let i = 1; i <= Number(GLib.getenv('INDEX_EXTRA') ?? 0); i++)
+    FILES.push(['/home/tester/Archives', `rapport-archive-${String(i).padStart(2, '0')}.txt`]);
+
 const database = Tracker.SparqlConnection.new(
     Tracker.SparqlConnectionFlags.NONE, null, Tracker.sparql_get_ontology_nepomuk(), null);
 for (const [folder, name] of FILES) {

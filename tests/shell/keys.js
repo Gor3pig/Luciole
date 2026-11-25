@@ -8,6 +8,7 @@
 //   combo            Ctrl+Alt+Space
 //   escape           the Escape key
 //   key <name>       Down, Up, Return, BackSpace, Escape
+//   chord <a+b+c>    holds the modifiers, taps the last key (Control_L+Next)
 //   type <text>      types the characters one by one
 //   quit             stops the helper
 // It writes "ready" once the session is started.
@@ -23,7 +24,10 @@ const KEY_CONTROL_L = 65507;
 const KEY_ALT_L = 65513;
 const KEY_SPACE = 32;
 const KEY_ESCAPE = 65307;
-const NAMED_KEYS = {Down: 65364, Up: 65362, Return: 65293, BackSpace: 65288, Escape: KEY_ESCAPE};
+const NAMED_KEYS = {
+    Down: 65364, Up: 65362, Return: 65293, BackSpace: 65288, Escape: KEY_ESCAPE, Tab: 65289,
+    ISO_Left_Tab: 65056, Next: 65366, Prior: 65365, Right: 65363, Left: 65361, Control_L: KEY_CONTROL_L, Alt_L: KEY_ALT_L, Shift_L: 65505,
+};
 
 const bus = Gio.bus_get_sync(Gio.BusType.SESSION, null);
 
@@ -62,6 +66,19 @@ const commands = {
         if (!(name in NAMED_KEYS))
             throw new Error(`unknown key ${name}`);
         tap(NAMED_KEYS[name]);
+    },
+    chord(spec) {
+        const names = spec.split('+');
+        const last = names.pop();
+        for (const name of [...names, last]) {
+            if (!(name in NAMED_KEYS))
+                throw new Error(`unknown key ${name}`);
+        }
+        for (const name of names)
+            key(NAMED_KEYS[name], true);
+        tap(NAMED_KEYS[last]);
+        for (const name of names.reverse())
+            key(NAMED_KEYS[name], false);
     },
     type(text) {
         for (const character of text) {

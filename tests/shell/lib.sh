@@ -12,8 +12,14 @@ EXTENSION_ERROR_PATTERN='JS ERROR|CRITICAL.*\[Luciole\]|WARNING.*\[Luciole\]|\[L
 # start_shell <logfile>: starts a headless shell and stops it when the script exits.
 start_shell() {
     LOG=$1
-    gnome-shell --headless --wayland --no-x11 --virtual-monitor 1280x720 >"$LOG" 2>&1 &
+    # A name of our own for the shell's display, and the same name announced to
+    # everything the private bus starts (a preferences window, a portal...): without
+    # it a graphical program would fall back to the real session's display.
+    WAYLAND_NAME="luciole-test-$$"
+    gnome-shell --headless --wayland --no-x11 --wayland-display="$WAYLAND_NAME" --virtual-monitor 1280x720 >"$LOG" 2>&1 &
     SHELL_PID=$!
+    gdbus call --session --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus \
+        --method org.freedesktop.DBus.UpdateActivationEnvironment "{'WAYLAND_DISPLAY': '$WAYLAND_NAME', 'DISPLAY': ''}" >/dev/null
     trap cleanup EXIT
 }
 
@@ -58,6 +64,7 @@ combo() { send combo; }
 escape() { send escape; }
 typed() { send "type $1"; }
 press() { send "key $1"; }
+chord() { send "chord $1"; }
 
 # apps_only: keeps the test on the applications provider, so it never needs the
 # file index. Call it before enabling the extension.

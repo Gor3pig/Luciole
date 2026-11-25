@@ -31,6 +31,20 @@ gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell \
     --method org.freedesktop.DBus.Properties.Set org.gnome.Shell OverviewActive '<false>' >/dev/null 2>&1
 sleep 1
 
+if [ "$STATE" = prefs ] || [ "$STATE" = prefs-sources ]; then
+    # The shell starts the preferences window of the extension, as it does for a user.
+    ext_call LaunchExtensionPrefs "$UUID" >/dev/null || fail "the preferences could not be launched"
+    sleep 6
+    # Reach the page switcher with Shift+Tab, then move to the next page with the arrow key.
+    if [ "$STATE" = prefs-sources ]; then
+        press ISO_Left_Tab
+        press ISO_Left_Tab
+        press Right
+        press Return
+        sleep 2
+    fi
+fi
+
 if [ "$STATE" = open ]; then
     combo
     i=0
@@ -48,6 +62,14 @@ if [ "$STATE" = open ]; then
             sleep 0.05
         done
     fi
+fi
+if [ -n "${CAPTURE_DOWN:-}" ]; then
+    n=$CAPTURE_DOWN
+    while [ "$n" -gt 0 ]; do
+        press Down
+        n=$((n - 1))
+    done
+    sleep 1
 fi
 sleep 1 # let animations finish
 
