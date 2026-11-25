@@ -84,6 +84,7 @@ step "mutation checks" mutation
 step "package check" sh tests/zipcheck.sh
 step "shell: enable/disable cycles" sh tests/shell/cycle.sh "$CYCLES"
 step "shell: open/close, keys, lock" sh tests/shell/openclose.sh "$UI_CYCLES"
+step "shell: placement, two monitors" sh tests/shell/placement.sh
 step "shell: search" sh tests/shell/search.sh
 step "shell: files" sh tests/shell/files.sh
 step "shell: no file index" sh tests/shell/degrade.sh

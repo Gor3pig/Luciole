@@ -18,6 +18,8 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {ensureActorVisibleInScrollView} from 'resource:///org/gnome/shell/misc/animationUtils.js';
 import {PACKAGE_VERSION} from 'resource:///org/gnome/shell/misc/config.js';
 
+import {chooseMonitorIndex} from '../core/layout.js';
+
 export const SHELL_MAJOR_VERSION = parseInt(PACKAGE_VERSION.split('.')[0], 10);
 
 /**
@@ -52,9 +54,19 @@ export function addToUiGroup(actor) {
     Main.uiGroup.add_child(actor);
 }
 
-/** Geometry {x, y, width, height} of the monitor the pointer is on. */
-export function currentMonitor() {
-    return Main.layoutManager.currentMonitor ?? Main.layoutManager.primaryMonitor;
+/**
+ * Geometry {x, y, width, height} of the monitor the launcher appears on: the one of
+ * the window that has the focus, else the one the pointer is on (see chooseMonitorIndex).
+ */
+export function activeMonitor() {
+    const manager = Main.layoutManager;
+    const index = chooseMonitorIndex({
+        count: manager.monitors.length,
+        focusIndex: global.display.focus_window?.get_monitor(),
+        pointerIndex: global.display.get_current_monitor(),
+        primaryIndex: manager.primaryIndex,
+    });
+    return index < 0 ? null : manager.monitors[index];
 }
 
 export function isScreenLocked() {

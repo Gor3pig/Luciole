@@ -113,6 +113,18 @@ luciole_actors() {
         2>/dev/null | sed -n "s/^(true, '\\([0-9]*\\)')\$/\\1/p"
 }
 
+# shell_eval <javascript expression>: its value as text, through the shell's Eval (unsafe mode).
+shell_eval() {
+    gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval "$1" \
+        2>/dev/null | sed -n "s/^(true, '\\(.*\\)')\$/\\1/p" | sed 's/^"//; s/"$//'
+}
+
+# actor_geometry <style class>: "x y width height" of the first actor whose style class contains
+# it, in stage coordinates, or nothing when there is none.
+actor_geometry() {
+    shell_eval "(function find(a) { if ((a.style_class || '').includes('$1')) { const [x, y] = a.get_transformed_position(); const [w, h] = a.get_transformed_size(); return Math.round(x) + ' ' + Math.round(y) + ' ' + Math.round(w) + ' ' + Math.round(h); } for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
+}
+
 rss_kb() {
     awk '/^VmRSS:/ {print $2}' "/proc/$SHELL_PID/status"
 }

@@ -59,8 +59,9 @@ export default class LucioleExtension extends Extension {
             const close = () => log.guard('close', () => launcher.close());
             compat.connectScreenLock(disposables, close);
             compat.connectSessionModeChanged(disposables, close);
-            compat.connectMonitorsChanged(disposables, () =>
-                log.guard('relayout', () => launcher.relayout()));
+            // A monitor appeared or went away while the launcher was open: close it rather than
+            // move it under the user's eyes.
+            compat.connectMonitorsChanged(disposables, close);
 
             compat.addKeybinding(settings, SHORTCUT_KEY, () =>
                 log.guard('toggle', () =>

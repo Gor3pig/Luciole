@@ -101,7 +101,7 @@ if [ "$ENABLE" = 1 ]; then
 
     # Pointer clicks: anywhere but the panel closes the launcher (the empty window, the top
     # bar, a corner); a click on the text field does not. The test monitor is 1280x720, so the
-    # panel is the strip around x 329-951, y 101-179.
+    # panel is the strip around x 329-951, y 180-258 (a quarter of the way down).
     for spot in "640 650" "100 300" "640 8" "3 3" "1200 300"; do
         OPENED=$(count opened)
         CLOSED=$(count closed)
@@ -113,15 +113,30 @@ if [ "$ENABLE" = 1 ]; then
         wait_count 'closed' $((CLOSED + 1)) || fail "click outside the panel at $spot did not close the launcher"
         sleep 0.3
     done
+    # Inside the panel: on the text field, and on the panel's own margin next to it (the field
+    # takes the click itself, so only the margin proves the window leaves panel clicks alone).
     OPENED=$(count opened)
     CLOSED=$(count closed)
     combo
     wait_count 'opened' $((OPENED + 1)) || fail "click inside: the launcher did not open"
-    pointer 640 120
-    sleep 0.2
-    click
-    sleep 0.8
-    [ "$(count closed)" = "$CLOSED" ] || fail "a click on the text field closed the launcher"
+    sleep 0.3
+    set -- $(actor_geometry luciole-panel)
+    PANEL_X=$1
+    PANEL_Y=$2
+    PANEL_W=$3
+    set -- $(actor_geometry luciole-entry)
+    ENTRY_X=$1
+    ENTRY_Y=$2
+    MARGIN_X=$((PANEL_X + (ENTRY_X - PANEL_X) / 2))
+    [ "$MARGIN_X" -gt "$PANEL_X" ] && [ "$MARGIN_X" -lt "$ENTRY_X" ] ||
+        fail "the margin of the panel is too thin to click (panel x=$PANEL_X, field x=$ENTRY_X)"
+    for spot in "$((ENTRY_X + 40)) $((ENTRY_Y + 10))" "$MARGIN_X $((ENTRY_Y + 10))" "$((PANEL_X + PANEL_W / 2)) $((PANEL_Y + 2))"; do
+        pointer $spot
+        sleep 0.2
+        click
+        sleep 0.6
+        [ "$(count closed)" = "$CLOSED" ] || fail "a click inside the panel at $spot closed the launcher"
+    done
     escape
     wait_count 'closed' $((CLOSED + 1)) || fail "click inside: Escape did not close the launcher afterwards"
     echo "clicks: outside the panel closes, inside the panel does not"

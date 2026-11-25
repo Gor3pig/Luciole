@@ -5,6 +5,7 @@ import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 
+import {verticalLayout} from '../core/layout.js';
 import {jumpSection, nextSelection} from '../core/merge.js';
 import * as compat from '../shell/compat.js';
 import {describeWindow} from './a11y.js';
@@ -13,10 +14,6 @@ import {ResultsView} from './results-view.js';
 const OPEN_MS = 120;
 const CLOSE_MS = 90;
 const SLIDE_PX = 8;
-// Distance of the panel from the top of the monitor, as a fraction of its height.
-const TOP_FRACTION = 0.14;
-// Most of the monitor height the results may take before they scroll.
-const RESULTS_FRACTION = 0.5;
 
 /**
  * Keys that mean "I am going elsewhere": the Super key (Activities) and Alt+Tab
@@ -189,12 +186,6 @@ export class Launcher {
         this.#log.debug(`results: ${merged.items.length} first=${first ? first.result.title : '-'} query=${this.#entry.get_text()}`);
     }
 
-    /** Recomputes the geometry, e.g. after a monitor change. */
-    relayout() {
-        if (this.#isOpen)
-            this.#place();
-    }
-
     destroy() {
         this.#isOpen = false;
         this.#unwatchFocus();
@@ -285,14 +276,14 @@ export class Launcher {
     }
 
     #place() {
-        const monitor = compat.currentMonitor();
+        const monitor = compat.activeMonitor();
         if (!monitor)
             return;
+        const {top, resultsMax} = verticalLayout(monitor.height);
         this.#overlay.set_position(monitor.x, monitor.y);
         this.#overlay.set_size(monitor.width, monitor.height);
-        this.#overlay.set_style(
-            `padding-top: ${Math.round(monitor.height * TOP_FRACTION)}px;`);
-        this.#view.setMaxHeight(Math.round(monitor.height * RESULTS_FRACTION));
+        this.#overlay.set_style(`padding-top: ${top}px;`);
+        this.#view.setMaxHeight(resultsMax);
     }
 
     #ensureBuilt() {

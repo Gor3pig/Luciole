@@ -1,0 +1,29 @@
+{
+ "description": "Mutants for where the launcher appears; only a shell with two monitors can show them.",
+ "slow": true,
+ "timeout": 300,
+ "command": [
+  "sh",
+  "tests/shell/placement.sh"
+ ],
+ "mutants": [
+  {
+   "file": "src/shell/compat.js",
+   "label": "the pointer monitor is ignored",
+   "old": "        pointerIndex: global.display.get_current_monitor(),",
+   "new": "        pointerIndex: undefined,"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the window is not moved to the chosen monitor",
+   "old": "        this.#overlay.set_position(monitor.x, monitor.y);",
+   "new": "        this.#overlay.set_position(0, 0);"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the field is not placed from the layout",
+   "old": "        this.#overlay.set_style(`padding-top: ${top}px;`);",
+   "new": "        this.#overlay.set_style('padding-top: 100px;');"
+  }
+ ]
+}

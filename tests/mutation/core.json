@@ -575,6 +575,78 @@
    "label": "ranges kept whatever the matching field",
    "old": "best.text === result.title ?",
    "new": "true ?"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "pointer preferred to the focused window",
+   "old": "[focusIndex, pointerIndex, primaryIndex]",
+   "new": "[pointerIndex, focusIndex, primaryIndex]"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "primary monitor preferred to the pointer",
+   "old": "[focusIndex, pointerIndex, primaryIndex]",
+   "new": "[focusIndex, primaryIndex, pointerIndex]"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "a stale index accepted",
+   "old": "value >= 0 && value < count",
+   "new": "value >= 0"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "a negative index accepted",
+   "old": "value >= 0 && value < count",
+   "new": "value < count"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "fractional index accepted",
+   "old": "Number.isInteger(value) && value",
+   "new": "Number.isFinite(value) && value"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "no fallback to the first monitor",
+   "old": "    return 0;\n}\n\n/**\n * The vertical",
+   "new": "    return -1;\n}\n\n/**\n * The vertical"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "no monitors not reported",
+   "old": "if (!Number.isInteger(count) || count <= 0)\n        return -1;",
+   "new": "if (!Number.isInteger(count))\n        return -1;"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "field too high",
+   "old": "export const TOP_FRACTION = 0.25;",
+   "new": "export const TOP_FRACTION = 0.14;"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "results ignore the room below",
+   "old": "const room = height - top - ENTRY_RESERVE - Math.round(height * BOTTOM_FRACTION);",
+   "new": "const room = height - top - ENTRY_RESERVE;"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "results height not capped",
+   "old": "Math.min(MAX_RESULTS_HEIGHT, Math.max(MIN_RESULTS_HEIGHT, Math.round(room)))",
+   "new": "Math.max(MIN_RESULTS_HEIGHT, Math.round(room))"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "results height has no minimum",
+   "old": "Math.min(MAX_RESULTS_HEIGHT, Math.max(MIN_RESULTS_HEIGHT, Math.round(room)))",
+   "new": "Math.min(MAX_RESULTS_HEIGHT, Math.round(room))"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "absurd height not neutralised",
+   "old": "Number.isFinite(monitorHeight) && monitorHeight > 0 ? monitorHeight : 0",
+   "new": "monitorHeight"
   }
  ]
 }
