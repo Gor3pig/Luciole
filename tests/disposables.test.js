@@ -82,6 +82,40 @@ test('release of an unknown callback runs nothing and keeps the others', () => {
     assertEquals(calls, ['registered']);
 });
 
+function fakeEmitter() {
+    const handlers = new Map();
+    let next = 1;
+    return {
+        handlers,
+        connect(signal, fn) {
+            handlers.set(next, {signal, fn});
+            return next++;
+        },
+        disconnect(id) {
+            if (!handlers.delete(id))
+                throw new Error(`unknown handler ${id}`);
+        },
+    };
+}
+
+test('connect registers the handler and disconnects it on dispose', () => {
+    const emitter = fakeEmitter();
+    const d = new Disposables();
+    const id = d.connect(emitter, 'changed', () => {});
+    assertEquals(emitter.handlers.size, 1);
+    assertEquals(emitter.handlers.get(id).signal, 'changed');
+    d.dispose();
+    assertEquals(emitter.handlers.size, 0);
+});
+
+test('connect after dispose disconnects at once', () => {
+    const emitter = fakeEmitter();
+    const d = new Disposables();
+    d.dispose();
+    d.connect(emitter, 'changed', () => {});
+    assertEquals(emitter.handlers.size, 0);
+});
+
 test('add rejects anything that is not a function', () => {
     const d = new Disposables();
     const error = assertThrows(() => d.add('nope'));

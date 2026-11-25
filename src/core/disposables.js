@@ -45,6 +45,21 @@ export class Disposables {
     }
 
     /**
+     * Connects a GObject-style signal and registers its disconnection, so the
+     * handler can never outlive this registry.
+     *
+     * @param {{connect: Function, disconnect: Function}} emitter
+     * @param {string} signal
+     * @param {Function} handler
+     * @returns {number} the handler id
+     */
+    connect(emitter, signal, handler) {
+        const id = emitter.connect(signal, handler);
+        this.add(() => emitter.disconnect(id));
+        return id;
+    }
+
+    /**
      * Runs one registered callback now and forgets it, so dispose() will not
      * run it again. Does nothing if the callback is not registered.
      *
