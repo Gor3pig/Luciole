@@ -18,10 +18,23 @@ start_shell() {
 }
 
 cleanup() {
+    [ -n "${INDEX_PID:-}" ] && kill "$INDEX_PID" 2>/dev/null
     [ -n "${KEYS_PID:-}" ] && kill "$KEYS_PID" 2>/dev/null
     [ -n "${CMD_FIFO:-}" ] && rm -f "$CMD_FIFO" "$ACK_FIFO"
     kill "$SHELL_PID" 2>/dev/null
     wait "$SHELL_PID" 2>/dev/null
+}
+
+# start_index_service: publishes a stand-in file index on the test bus (see index-service.js).
+start_index_service() {
+    gjs -m "$(dirname "$0")/index-service.js" >"$LOG.index" 2>&1 &
+    INDEX_PID=$!
+    i=0
+    until grep -q 'index ready' "$LOG.index" 2>/dev/null; do
+        i=$((i + 1))
+        [ "$i" -gt 100 ] && fail "the stand-in file index did not start: $(cat "$LOG.index")"
+        sleep 0.1
+    done
 }
 
 # start_keys: starts the key helper (see keys.js) and defines send/combo/escape/typed/press.
@@ -45,6 +58,12 @@ combo() { send combo; }
 escape() { send escape; }
 typed() { send "type $1"; }
 press() { send "key $1"; }
+
+# apps_only: keeps the test on the applications provider, so it never needs the
+# file index. Call it before enabling the extension.
+apps_only() {
+    gsettings set org.gnome.shell.extensions.luciole providers-enabled "['apps']" || fail "could not restrict the providers"
+}
 
 ext_call() {
     method=$1

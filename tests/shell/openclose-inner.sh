@@ -19,6 +19,7 @@ wait_for_extension
 
 if [ "$ENABLE" = 1 ]; then
     gsettings set "$SCHEMA" debug-timings true || fail "could not set debug-timings"
+    apps_only
     ext_call EnableExtension "$UUID" >/dev/null
     wait_ext_state "$STATE_ENABLED" || fail "extension not ENABLED (state=$(ext_state))"
 fi

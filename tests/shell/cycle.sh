@@ -18,11 +18,12 @@ CYCLES=${1:-100}
 UUID=luciole@luciole.dev
 CONTROL=control@example.invalid
 # Allowed growth above the control, in kB, over the second half of the run.
-# Measured noise: the same extension grows by 11 to 17 MB (empty control) or 14 to 25 MB
-# (Luciole) over 50 cycles from one run to the next, so the limit sits above that noise.
-# It catches leaks of roughly 0.5 MB per enable/disable cycle or more; smaller ones
-# are not visible in resident memory without forcing garbage collection.
-MAX_EXTRA_KB=20480
+# Measured noise: the same extension, run again, differs by about 9 MB over 50 cycles
+# (extra growth seen for Luciole: 1, 11, 19 MB), so the limit sits above that noise.
+# It catches leaks of roughly 1 MB per enable/disable cycle or more; smaller ones are not
+# visible in resident memory without forcing garbage collection. The open/close test
+# (openclose.sh) is far more sensitive, because its memory curve is flat once warm.
+MAX_EXTRA_KB=25600
 
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT

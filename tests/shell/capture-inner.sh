@@ -15,6 +15,11 @@ wait_for_extension
 
 gsettings set org.gnome.shell.extensions.luciole debug-timings true || fail "could not set debug-timings"
 gsettings set org.gnome.desktop.interface color-scheme "$SCHEME" || fail "could not set the colour scheme"
+if [ "${CAPTURE_INDEX:-0}" = 1 ]; then
+    start_index_service
+else
+    apps_only
+fi
 ext_call EnableExtension "$UUID" >/dev/null
 wait_ext_state "$STATE_ENABLED" || fail "extension not ENABLED (state=$(ext_state))"
 sleep 1

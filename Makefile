@@ -12,7 +12,7 @@ PACK_ARGS := --force --out-dir=$(DIST) --schema=$(SCHEMA) \
 	$(foreach d,$(EXTRA),--extra-source=$(d)) \
 	$(if $(wildcard $(SRC)/po),--podir=po)
 
-.PHONY: help check lint test schemas pack shell-test shell-test-ui shell-test-search capture clean
+.PHONY: help check lint test schemas pack shell-test shell-test-ui shell-test-search shell-test-degrade shell-test-files capture clean
 
 help:
 	@echo "make check       lint + unit tests"
@@ -23,6 +23,8 @@ help:
 	@echo "make shell-test  enable/disable cycles in a headless shell (CYCLES=100)"
 	@echo "make shell-test-ui  open/close the launcher with its shortcut (CYCLES=150)"
 	@echo "make shell-test-search  search, activation, history and installs with test apps"
+	@echo "make shell-test-degrade  files enabled but the index service missing"
+	@echo "make shell-test-files  file results through a stand-in index on the test bus"
 	@echo "make capture     PNG screenshots of the launcher, light and dark, in _local/captures"
 
 check: lint test
@@ -49,6 +51,12 @@ shell-test-ui: schemas
 
 shell-test-search: schemas
 	sh tests/shell/search.sh
+
+shell-test-degrade: schemas
+	sh tests/shell/degrade.sh
+
+shell-test-files: schemas
+	sh tests/shell/files.sh
 
 capture: schemas
 	sh tests/shell/capture.sh _local/captures/launcher-light.png light open

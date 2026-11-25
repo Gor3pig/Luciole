@@ -1,0 +1,75 @@
+#!/bin/sh
+# Runs inside the private D-Bus session started by files.sh. Do not call directly.
+set -u
+
+WORK=$1
+LOG_FILE=$2
+UUID=luciole@luciole.dev
+. "$(dirname "$0")/lib.sh"
+# Budget for the time from a keystroke to the file results being shown (ms), in this VM.
+FILES_BUDGET_MS=400
+
+start_shell "$LOG_FILE"
+start_index_service
+wait_for_extension
+gsettings set org.gnome.shell.extensions.luciole debug-timings true || fail "could not set debug-timings"
+ext_call EnableExtension "$UUID" >/dev/null
+wait_ext_state "$STATE_ENABLED" || fail "extension not ENABLED (state=$(ext_state))"
+start_keys
+
+wait_log() { # wait_log <fixed text> [count] [seconds]
+    i=0
+    while [ "$i" -lt $((${3:-5} * 20)) ]; do
+        [ "$(grep -cF "$1" "$LOG")" -ge "${2:-1}" ] && return 0
+        sleep 0.05
+        i=$((i + 1))
+    done
+    return 1
+}
+clear_entry() {
+    n=$1
+    while [ "$n" -gt 0 ]; do
+        press BackSpace
+        n=$((n - 1))
+    done
+}
+
+wait_log "search ready: apps, files" || fail "both providers did not start"
+combo
+wait_log "[Luciole] opened" || fail "the launcher did not open"
+
+# Three visible rapport files (the hidden folder and node_modules are excluded) plus the
+# application whose keyword is "Rappel": 4 results, never 5 or 6.
+typed rapp
+wait_log "results: 4 first=" 1 8 || fail "expected 4 results for 'rapp'; saw: $(grep -F 'query=rapp' "$LOG" | tail -n 2 | tr '\n' '|')"
+grep -E "results: 4 first=[Rr]apport.* query=rapp" "$LOG" >/dev/null || fail "the best result is not one of the rapport files"
+if grep -E "results: [5-9] .*query=rapp" "$LOG" >/dev/null; then
+    fail "hidden or excluded files were shown"
+fi
+echo "ok: files are found, hidden and excluded folders are left out"
+clear_entry 4
+
+# Applications and files side by side, applications first.
+typed factu
+wait_log "results: 2 first=Facture Express query=factu" 1 8 || fail "expected the application and the file for 'factu'; saw: $(grep -F 'query=factu' "$LOG" | tail -n 2 | tr '\n' '|')"
+echo "ok: an application and a file for the same word are both shown"
+
+# Ctrl+Enter on a file does not crash and closes the launcher (the file manager is not started here).
+clear_entry 5
+typed rapp
+wait_log "results: 4 first=" 2 || fail "results did not come back"
+press Return >/dev/null 2>&1 || true
+
+grep 'perf query to final results:' "$LOG" | sed -n 's/.*final results: \([0-9.]*\) ms.*/\1/p' >"$LOG.q"
+[ -s "$LOG.q" ] || fail "no timing was recorded for the final results"
+WORST=$(sort -n "$LOG.q" | tail -n 1)
+echo "keystroke to complete results, files included, 80 ms debounce included (this VM): worst ${WORST} ms, budget ${FILES_BUDGET_MS} ms"
+awk -v w="$WORST" -v b="$FILES_BUDGET_MS" 'BEGIN { exit !(w + 0 <= b + 0) }' || fail "results took longer than ${FILES_BUDGET_MS} ms"
+
+ERRORS=$(grep -ciE "$EXTENSION_ERROR_PATTERN" "$LOG" || true)
+echo "log lines mentioning an error about the extension: $ERRORS"
+if [ "$ERRORS" -gt 0 ]; then
+    grep -iE "$EXTENSION_ERROR_PATTERN" "$LOG" | head -10
+    fail "errors found in the shell log"
+fi
+echo "PASS"

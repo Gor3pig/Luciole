@@ -34,7 +34,7 @@ desktop luciole-test-marker.desktop "Luciole Test Marker" "zzmarker;" "touch $WO
 desktop luciole-test-phantom.desktop "Éditeur Fantôme" "" "true"
 desktop luciole-test-zebra.desktop "Application Zèbre Rapide" "" "true"
 
-XDG_DATA_HOME="$WORK/data" XDG_CONFIG_HOME="$WORK/config" GSETTINGS_BACKEND=keyfile \
+XDG_DATA_HOME="$WORK/data" XDG_CONFIG_HOME="$WORK/config" XDG_CACHE_HOME="$WORK/cache" GSETTINGS_BACKEND=keyfile \
     GSETTINGS_SCHEMA_DIR="$ROOT/src/schemas" G_MESSAGES_DEBUG=all XDG_SESSION_TYPE=wayland \
     dbus-run-session -- sh "$ROOT/tests/shell/search-inner.sh" "$WORK" "$WORK/shell.log" \
     >"$WORK/out.txt" 2>&1 || true

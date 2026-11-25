@@ -29,7 +29,7 @@ ln -s "$ROOT/src" "$WORK/luciole-data/gnome-shell/extensions/$UUID"
 run() { # run <name> <enable 0|1> <uuid> <data dir>
     mkdir -p "$WORK/config-$1/glib-2.0/settings"
     echo "######## $1 ($CYCLES cycles)"
-    XDG_DATA_HOME="$4" XDG_CONFIG_HOME="$WORK/config-$1" GSETTINGS_BACKEND=keyfile \
+    XDG_DATA_HOME="$4" XDG_CONFIG_HOME="$WORK/config-$1" XDG_CACHE_HOME="$WORK/cache-$1" GSETTINGS_BACKEND=keyfile \
         GSETTINGS_SCHEMA_DIR="$ROOT/src/schemas" G_MESSAGES_DEBUG=all XDG_SESSION_TYPE=wayland \
         dbus-run-session -- sh "$ROOT/tests/shell/openclose-inner.sh" "$1" "$2" "$CYCLES" "$3" "$WORK/$1.log" \
         2>&1 | tee "$WORK/$1.out" | grep -vE '^cycle [0-9]+:|dbus-daemon\[|^$|libedbus|Gdk-Message|connection to the bus|ibus|atspi|portal'
