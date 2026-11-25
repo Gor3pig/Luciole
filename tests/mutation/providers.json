@@ -251,6 +251,12 @@
    "label": "failed connection retried",
    "old": "        if (!this.#connecting) {",
    "new": "        if (!this.#connecting || !this.#connection) {"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "destroy does not wait for running searches",
+   "old": "Promise.allSettled([...this.#running])",
+   "new": "Promise.allSettled([])"
   }
  ]
 }

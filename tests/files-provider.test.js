@@ -5,11 +5,17 @@
 // with the standard ontology: the real query, the real full-text matching.
 
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import Tracker from 'gi://Tracker';
 
 import {FilesProvider} from '../src/providers/files.js';
 import {recordingLog} from './fakes/provider.js';
 import {assert, assertEquals, test} from './harness.js';
+
+const nextIdle = () => new Promise(resolve => GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+    resolve();
+    return GLib.SOURCE_REMOVE;
+}));
 
 function memoryDatabase(files) {
     const connection = Tracker.SparqlConnection.new(
@@ -180,10 +186,18 @@ test('after destroy a search gives nothing and a late connection is closed', asy
         release = resolve;
     });
     const database = memoryDatabase(FILES);
+    let closed = 0;
+    const connection = {
+        query_statement: (...args) => database.query_statement(...args),
+        close_async: (cancellable, callback) => {
+            closed++;
+            database.close_async(cancellable, callback);
+        },
+    };
     const t = setupProvider({
         openConnection: async () => {
             await gate;
-            return database;
+            return connection;
         },
     });
     await t.ready;
@@ -192,6 +206,9 @@ test('after destroy a search gives nothing and a late connection is closed', asy
     release();
     assertEquals(await pending, []);
     assertEquals(await t.search('rapp'), []);
+    for (let turns = 0; turns < 3; turns++)
+        await nextIdle();
+    assertEquals(closed, 1, 'the connection that arrived after destroy must be closed, once');
 });
 
 test('after destroy no connection is opened at all', async () => {
@@ -225,4 +242,22 @@ test('the provider describes itself', async () => {
     assertEquals(t.provider.maxResults, 6);
     assertEquals(t.provider.scoreWeight, 0.9);
     t.provider.destroy();
+});
+
+test('destroying the provider while a search is running never crashes and never leaves a cursor open', async () => {
+    // Closing the index connection while one of its cursors is open crashes the whole process,
+    // so the provider must wait for its searches to end. Every moment of the search is tried.
+    const files = Array.from({length: 400}, (_, i) => ['/home/me/Documents', `rapport ${i}.txt`]);
+    for (let round = 0; round < 60; round++) {
+        const t = setupProvider({files});
+        await t.ready;
+        await t.search('rapport');
+        const pending = t.search('rapport').catch(() => []);
+        for (let turns = round % 12; turns > 0; turns--)
+            await nextIdle();
+        t.provider.destroy();
+        await pending;
+        for (let turns = 0; turns < 5; turns++)
+            await nextIdle();
+    }
 });

@@ -129,6 +129,10 @@ export class FilesProvider extends Provider {
     #log = null;
     #gettext = null;
     #lifetime = new Gio.Cancellable();
+    // Searches that have started and not ended. Closing the connection while one of them
+    // still holds a cursor (or is about to query) crashes the process or hangs it, so
+    // destroy() waits for them all.
+    #running = new Set();
 
     /**
      * @param {object} [options]
@@ -185,21 +189,35 @@ export class FilesProvider extends Provider {
         this.#connection = null;
         if (!connection)
             return;
-        connection.close_async(null, (source, result) => {
-            try {
-                source.close_finish(result);
-            } catch (error) {
-                this.#log.warn(`could not close the file index connection: ${error.message}`);
-            }
+        // A search closes its cursor before it settles, in success or failure.
+        Promise.allSettled([...this.#running]).then(() => {
+            connection.close_async(null, (source, result) => {
+                try {
+                    source.close_finish(result);
+                } catch (error) {
+                    this.#log?.warn(`could not close the file index connection: ${error.message}`);
+                }
+            });
         });
     }
 
-    async search(query, {cancellable}) {
+    async search(query, options) {
+        // Registered before anything is awaited, so destroy() cannot miss it.
+        const search = this.#search(query, options);
+        this.#running.add(search);
+        try {
+            return await search;
+        } finally {
+            this.#running.delete(search);
+        }
+    }
+
+    async #search(query, {cancellable}) {
         const terms = buildFtsTerms(query);
         if (!terms)
             return [];
         const connection = await this.#connect();
-        if (!connection || cancellable.is_cancelled())
+        if (!connection || this.#destroyed || cancellable.is_cancelled())
             return [];
 
         const rows = await runQuery(connection, terms, cancellable);

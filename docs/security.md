@@ -59,7 +59,9 @@ cleared from the preferences, and is never read by anything but Luciole.
 * **Failures stay contained.** Every provider runs behind an error barrier and a
   timeout, with its own cancellation. A provider that fails or hangs produces a
   log line and no results; it cannot block the launcher or the shell. Cursors
-  of the index connection are always closed before the connection is.
+  of the index connection are always closed before the connection is, and
+  shutting the provider down waits for the searches still running (closing a
+  connection under an open cursor aborts the whole process).
 * **Clean-up is ordered and complete.** Everything the extension creates (signals,
   timers, keybinding, actors, the keyboard grab) is registered and released when
   it is disabled, including while the launcher is open. Nothing is created when
