@@ -1,4 +1,7 @@
-UUID    := luciole@luciole.dev
+# SPDX-FileCopyrightText: 2026 Luciole contributors
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+UUID    := luciole@gor3pig.github.io
 SRC     := src
 DIST    := dist
 SCHEMA  := schemas/org.gnome.shell.extensions.luciole.gschema.xml

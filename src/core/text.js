@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 // Text normalisation shared by matching and highlighting.
 //
 // Folding keeps the string length: every UTF-16 unit maps to exactly one unit.

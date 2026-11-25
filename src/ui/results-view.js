@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import St from 'gi://St';

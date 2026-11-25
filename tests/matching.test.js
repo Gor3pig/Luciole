@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 import {createMatcher, TIER} from '../src/core/matching.js';
 import {assert, assertEquals, test} from './harness.js';
 

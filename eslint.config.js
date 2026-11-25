@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 import js from '@eslint/js';
 
 // Globals provided by GJS and GNOME Shell (there is no browser or Node here).

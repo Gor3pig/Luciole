@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 import {jumpSection, mergeResults, nextSelection} from '../src/core/merge.js';
 import {assert, assertEquals, test} from './harness.js';
 

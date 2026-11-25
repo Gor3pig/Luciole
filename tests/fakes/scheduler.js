@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 // A scheduler whose clock only moves when the test says so.
 
 async function flushMicrotasks() {

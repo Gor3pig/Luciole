@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 // The shell loads stylesheet.css or stylesheet-dark.css depending on the
 // colour scheme, never both. The two files must therefore describe exactly the
 // same selectors and properties, or one theme would silently lose styling.

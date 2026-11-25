@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 import {Provider, validateProvider} from '../src/core/provider.js';
 import {ProviderRegistry} from '../src/core/registry.js';
 import {recordingLog} from './fakes/provider.js';

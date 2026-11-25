@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Luciole contributors
+# SPDX-License-Identifier: GPL-2.0-or-later
 # Takes a PNG screenshot of the open launcher inside a private, headless GNOME
 # Shell: no real desktop is captured.
 #
@@ -21,7 +23,7 @@ case ${2:-light} in
     dark) SCHEME=prefer-dark ;;
     *) echo "unknown theme: $2 (use light or dark)" >&2; exit 2 ;;
 esac
-UUID=luciole@luciole.dev
+UUID=luciole@gor3pig.github.io
 
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT

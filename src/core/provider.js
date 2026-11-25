@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 /**
  * The contract every result source follows. The core only knows this interface:
  * a calculator, a web search or a bridge to GNOME search providers is added as

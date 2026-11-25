@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 import {Frecency} from '../src/core/frecency.js';
 import {SearchController} from '../src/core/session.js';
 import {FakeScheduler} from './fakes/scheduler.js';

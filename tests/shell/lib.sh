@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 Luciole contributors
+# SPDX-License-Identifier: GPL-2.0-or-later
 # Helpers shared by the headless shell tests. Source it, do not run it.
 # Must be sourced from inside the private D-Bus session started by the outer scripts.
 
@@ -7,7 +9,7 @@ STATE_ENABLED=1.0
 STATE_DISABLED=2.0
 # Log lines that mean the extension misbehaved. The temporary directories of the
 # tests contain "luciole", so match the extension's own markers, not the word.
-EXTENSION_ERROR_PATTERN='JS ERROR|CRITICAL.*\[Luciole\]|WARNING.*\[Luciole\]|\[Luciole\] .*(failed|error)|luciole@luciole\.dev.*(CRITICAL|rror|arning)|already disposed'
+EXTENSION_ERROR_PATTERN='JS ERROR|CRITICAL.*\[Luciole\]|WARNING.*\[Luciole\]|\[Luciole\] .*(failed|error)|luciole@gor3pig\.github\.io.*(CRITICAL|rror|arning)|already disposed'
 
 # start_shell <logfile>: starts a headless shell and stops it when the script exits.
 start_shell() {

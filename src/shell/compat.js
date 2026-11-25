@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 // The only module that talks to GNOME Shell internals and the only place where
 // differences between shell versions are handled. Everything else in the
 // extension goes through these functions.

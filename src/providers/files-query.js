@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 // The pure side of the files provider: what the user typed becomes a safe
 // full-text query, and what the index returns becomes results. Nothing here
 // touches the index, so it is all tested without it.

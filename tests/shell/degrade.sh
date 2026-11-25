@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Luciole contributors
+# SPDX-License-Identifier: GPL-2.0-or-later
 # The file provider is enabled but the file index service is missing (simulated
 # with a D-Bus service that fails to start): applications must keep working and
 # the problem must be reported exactly once.
@@ -11,7 +13,7 @@
 set -eu
 
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
-UUID=luciole@luciole.dev
+UUID=luciole@gor3pig.github.io
 
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT

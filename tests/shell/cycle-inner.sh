@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Luciole contributors
+# SPDX-License-Identifier: GPL-2.0-or-later
 # Runs inside the private D-Bus session started by cycle.sh. Do not call directly.
 set -u
 

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 // Frequency and recency of use, kept per item.
 //
 // Each item remembers its last activations. An activation weighs more the more

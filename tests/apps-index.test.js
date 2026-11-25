@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 import {Frecency} from '../src/core/frecency.js';
 import {createMatcher} from '../src/core/matching.js';
 import {scoreResult} from '../src/core/scoring.js';

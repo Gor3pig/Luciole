@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 // Runs every tests/*.test.js with plain gjs:  gjs -m tests/run.js
 
 import Gio from 'gi://Gio';

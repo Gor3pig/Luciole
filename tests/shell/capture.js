@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 // Takes one PNG screenshot of the test shell's virtual monitor.
 //
 //   gjs -m tests/shell/capture.js <output.png> [connector]

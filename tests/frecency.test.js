@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 import {Frecency, MAX_ACTIVATIONS_PER_KEY, MAX_KEYS} from '../src/core/frecency.js';
 import {assert, assertEquals, test} from './harness.js';
 

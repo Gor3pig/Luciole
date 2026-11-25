@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 // Stands in for the LocalSearch file index in the test session: an in-memory
 // database with a few made-up files, published on the bus under the name
 // LocalSearch uses, so the extension connects to it exactly as it would to the

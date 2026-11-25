@@ -1,3 +1,6 @@
+/* SPDX-FileCopyrightText: 2026 Luciole contributors
+ * SPDX-License-Identifier: GPL-2.0-or-later */
+
 /* Luciole: light variant. stylesheet-dark.css must define the same selectors
  * and properties; tests/stylesheet.test.js enforces it. All colours and sizes
  * live here, so a theme is a pair of such files. */

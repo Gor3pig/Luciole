@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Luciole contributors
+# SPDX-License-Identifier: GPL-2.0-or-later
 # Enables and disables the extension N times inside a private, headless
 # GNOME Shell, and checks its state, its log and its memory behaviour.
 #
@@ -15,7 +17,7 @@ set -eu
 
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 CYCLES=${1:-100}
-UUID=luciole@luciole.dev
+UUID=luciole@gor3pig.github.io
 CONTROL=control@example.invalid
 # Allowed growth above the control, in kB, over the second half of the run.
 # Measured noise: the same extension, run again, differs by about 9 MB over 50 cycles

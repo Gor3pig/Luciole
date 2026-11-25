@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Luciole contributors
+# SPDX-License-Identifier: GPL-2.0-or-later
 # Opens and closes the launcher N times with the real keyboard shortcut inside a
 # private, headless GNOME Shell (keys are injected through Mutter's remote
 # desktop interface), then checks timing, memory, screen lock and clean-up.
@@ -11,7 +13,7 @@ set -eu
 
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 CYCLES=${1:-150}
-UUID=luciole@luciole.dev
+UUID=luciole@gor3pig.github.io
 CONTROL=control@example.invalid
 # Allowed growth above the control, in kB, over the second half of the run (steady state).
 MAX_EXTRA_KB=3072

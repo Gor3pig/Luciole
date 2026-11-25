@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 import {Disposables} from '../src/core/disposables.js';
 import {assert, assertEquals, assertThrows, test} from './harness.js';
 

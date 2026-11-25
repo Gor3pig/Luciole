@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 /**
  * @typedef {object} Item
  * @property {string} key - "<provider id>:<result id>", unique

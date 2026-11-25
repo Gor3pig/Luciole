@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 import {
     buildFtsTerms, displayFolder, isExcluded, isExcludedType, parentUrl, pathOfUrl, rowsToResults,
 } from '../src/providers/files-query.js';

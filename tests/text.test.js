@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 import {fold, foldChar, isWordChar, mergeRanges, splitByRanges, wordStarts} from '../src/core/text.js';
 import {assert, assertEquals, test} from './harness.js';
 

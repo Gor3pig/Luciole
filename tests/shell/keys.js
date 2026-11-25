@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 // Long-lived helper that types keys into the test shell through Mutter's remote
 // desktop interface. Mutter closes a remote desktop session as soon as the
 // client that created it leaves the bus, so one process must keep it open.

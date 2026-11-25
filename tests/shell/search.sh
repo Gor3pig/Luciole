@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Luciole contributors
+# SPDX-License-Identifier: GPL-2.0-or-later
 # Searches in a private, headless GNOME Shell with test applications made for
 # the occasion, and checks results, activation, history, recent items and the
 # reaction to an application being installed while the launcher runs.
@@ -11,7 +13,7 @@
 set -eu
 
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
-UUID=luciole@luciole.dev
+UUID=luciole@gor3pig.github.io
 
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT

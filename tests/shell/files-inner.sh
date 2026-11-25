@@ -1,10 +1,12 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Luciole contributors
+# SPDX-License-Identifier: GPL-2.0-or-later
 # Runs inside the private D-Bus session started by files.sh. Do not call directly.
 set -u
 
 WORK=$1
 LOG_FILE=$2
-UUID=luciole@luciole.dev
+UUID=luciole@gor3pig.github.io
 . "$(dirname "$0")/lib.sh"
 # Budget for the time from a keystroke to the file results being shown (ms), in this VM.
 FILES_BUDGET_MS=400

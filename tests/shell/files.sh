@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Luciole contributors
+# SPDX-License-Identifier: GPL-2.0-or-later
 # File results through the whole stack: a stand-in index published on the test
 # bus under LocalSearch's name, the real provider, the real window.
 #
@@ -10,7 +12,7 @@
 set -eu
 
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
-UUID=luciole@luciole.dev
+UUID=luciole@gor3pig.github.io
 
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 import Atk from 'gi://Atk';
 
 // Roles and labels for screen readers. They only name things; nothing here

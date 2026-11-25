@@ -1,4 +1,6 @@
 #!/bin/sh
+# SPDX-FileCopyrightText: 2026 Luciole contributors
+# SPDX-License-Identifier: GPL-2.0-or-later
 # Runs inside the private D-Bus session started by capture.sh. Do not call directly.
 set -u
 
@@ -7,7 +9,7 @@ SCHEME=$2
 LOG_FILE=$3
 STATE=${4:-open}
 QUERY=${5:-}
-UUID=luciole@luciole.dev
+UUID=luciole@gor3pig.github.io
 . "$(dirname "$0")/lib.sh"
 
 start_shell "$LOG_FILE"

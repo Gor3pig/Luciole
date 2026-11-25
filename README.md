@@ -36,18 +36,18 @@ systems.
 
 ```sh
 make pack
-gnome-extensions install --force dist/luciole@luciole.dev.shell-extension.zip
+gnome-extensions install --force dist/luciole@gor3pig.github.io.shell-extension.zip
 ```
 
 Log out and in again (Wayland cannot reload extensions), then enable it:
 
 ```sh
-gnome-extensions enable luciole@luciole.dev
+gnome-extensions enable luciole@gor3pig.github.io
 ```
 
 ## Settings
 
-`gnome-extensions prefs luciole@luciole.dev` opens the preferences: the
+`gnome-extensions prefs luciole@gor3pig.github.io` opens the preferences: the
 shortcut (with a warning when another GNOME shortcut already uses it), the
 number of results per source, which sources are searched, excluded folders and
 file types, and a button to clear the usage history.

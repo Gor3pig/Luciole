@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Luciole contributors
+// SPDX-License-Identifier: GPL-2.0-or-later
+
 // Tests the files provider against a real TinySPARQL database kept in memory,
 // with the standard ontology: the real query, the real full-text matching.
 
