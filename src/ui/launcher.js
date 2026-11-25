@@ -1,13 +1,16 @@
 import Clutter from 'gi://Clutter';
+import GLib from 'gi://GLib';
 import St from 'gi://St';
 
+import {nextSelection} from '../core/merge.js';
 import * as compat from '../shell/compat.js';
+import {ResultsView} from './results-view.js';
 
 const OPEN_MS = 120;
 const CLOSE_MS = 90;
 const SLIDE_PX = 8;
 // Distance of the panel from the top of the monitor, as a fraction of its height.
-const TOP_FRACTION = 0.18;
+const TOP_FRACTION = 0.14;
 
 /**
  * The floating launcher window: a full-monitor overlay that holds the input
@@ -20,15 +23,31 @@ const TOP_FRACTION = 0.18;
 export class Launcher {
     #log;
     #gettext;
+    #onQuery;
+    #onActivate;
     #overlay = null;
     #panel = null;
     #entry = null;
+    #view = null;
     #grab = null;
     #isOpen = false;
+    #items = [];
+    #selectedKey = null;
+    #navigated = false;
+    #queryAt = 0;
 
-    constructor({log, gettext}) {
+    /**
+     * @param {object} options
+     * @param {object} options.log
+     * @param {(text: string) => string} options.gettext
+     * @param {(query: string) => void} options.onQuery - the text changed (also called with '' on open)
+     * @param {(item: object) => void} options.onActivate - the user chose a result
+     */
+    constructor({log, gettext, onQuery, onActivate}) {
         this.#log = log;
         this.#gettext = gettext;
+        this.#onQuery = onQuery;
+        this.#onActivate = onActivate;
     }
 
     get isOpen() {
@@ -48,6 +67,9 @@ export class Launcher {
 
         this.#ensureBuilt();
         this.#place();
+        this.#items = [];
+        this.#selectedKey = null;
+        this.#navigated = false;
         this.#entry.set_text('');
         this.#overlay.remove_all_transitions();
         this.#panel.remove_all_transitions();
@@ -63,6 +85,7 @@ export class Launcher {
         this.#isOpen = true;
         this.#entry.grab_key_focus();
         this.#log.debug('opened');
+        this.#onQuery('');
 
         if (compat.useMotion()) {
             this.#overlay.opacity = 0;
@@ -88,6 +111,7 @@ export class Launcher {
             return;
         this.#isOpen = false;
         this.#releaseGrab();
+        this.#view.clear();
         this.#log.debug('closed');
 
         const overlay = this.#overlay;
@@ -104,6 +128,27 @@ export class Launcher {
         } else {
             overlay.hide();
         }
+    }
+
+    /**
+     * Shows what the search found. The selection follows the best result until
+     * the user moves it, then stays on the same item as results come in.
+     *
+     * @param {ReturnType<import('../core/merge.js').mergeResults>} merged
+     */
+    showResults(merged) {
+        if (!this.#view || !this.#isOpen)
+            return;
+        this.#items = merged.items;
+        this.#selectedKey = nextSelection(this.#selectedKey, this.#items, this.#navigated);
+        this.#view.update(merged, this.#selectedKey);
+        if (this.#queryAt) {
+            const ms = (GLib.get_monotonic_time() - this.#queryAt) / 1000;
+            this.#log.debug(`perf query to results: ${ms.toFixed(2)} ms`);
+            this.#queryAt = 0;
+        }
+        const first = merged.topHit ?? merged.items[0];
+        this.#log.debug(`results: ${merged.items.length} first=${first ? first.result.title : '-'} query=${this.#entry.get_text()}`);
     }
 
     /** Recomputes the geometry, e.g. after a monitor change. */
@@ -123,6 +168,29 @@ export class Launcher {
         this.#overlay = null;
         this.#panel = null;
         this.#entry = null;
+        this.#view = null;
+        this.#items = [];
+    }
+
+    #moveSelection(delta) {
+        if (this.#items.length === 0)
+            return;
+        const current = this.#items.findIndex(item => item.key === this.#selectedKey);
+        const next = Math.min(this.#items.length - 1, Math.max(0, current + delta));
+        this.#selectedKey = this.#items[next].key;
+        this.#navigated = true;
+        this.#view.select(this.#selectedKey);
+    }
+
+    #activate(item) {
+        this.#log.guard('activating a result', () => this.#onActivate(item));
+        this.close();
+    }
+
+    #activateSelected() {
+        const item = this.#items.find(candidate => candidate.key === this.#selectedKey);
+        if (item)
+            this.#activate(item);
     }
 
     #releaseGrab() {
@@ -163,12 +231,18 @@ export class Launcher {
         }));
         entry.accessible_name = this.#gettext('Search');
 
+        const view = new ResultsView({
+            gettext: this.#gettext,
+            onActivate: item => this.#activate(item),
+        });
+
         const panel = new St.BoxLayout({
             style_class: 'luciole-panel',
             orientation: Clutter.Orientation.VERTICAL,
             reactive: true,
         });
         panel.add_child(entry);
+        panel.add_child(view.actor);
 
         // A vertical box stacks its child from the top; x_align centres it.
         // (St.Bin ignores the alignment here, so it is not used.)
@@ -180,6 +254,29 @@ export class Launcher {
             visible: false,
         });
         overlay.add_child(panel);
+
+        const text = entry.clutter_text;
+        text.connect('text-changed', () => {
+            this.#queryAt = GLib.get_monotonic_time();
+            this.#navigated = false;
+            this.#onQuery(entry.get_text());
+        });
+        text.connect('activate', () => {
+            this.#activateSelected();
+            return Clutter.EVENT_STOP;
+        });
+        text.connect('key-press-event', (_actor, event) => {
+            switch (event.get_key_symbol()) {
+            case Clutter.KEY_Down:
+                this.#moveSelection(1);
+                return Clutter.EVENT_STOP;
+            case Clutter.KEY_Up:
+                this.#moveSelection(-1);
+                return Clutter.EVENT_STOP;
+            default:
+                return Clutter.EVENT_PROPAGATE;
+            }
+        });
 
         overlay.connect('key-press-event', (_actor, event) => {
             if (event.get_key_symbol() !== Clutter.KEY_Escape)
@@ -204,5 +301,6 @@ export class Launcher {
         this.#overlay = overlay;
         this.#panel = panel;
         this.#entry = entry;
+        this.#view = view;
     }
 }
