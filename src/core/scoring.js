@@ -28,8 +28,8 @@ function normalizeFields(result) {
 /**
  * Scores one result against the query.
  *
- * The best-matching of the result's `matchFields` counts (first field is the
- * title, shown to the user; the others are keywords and the like, weighted).
+ * The best-matching of the result's `matchFields` counts (the title, shown to the
+ * user, and keywords and the like, weighted).
  * A result that comes with its own `providerScore` (a file found by full-text
  * search) mixes it with the name match. Frecency lifts good matches only: a
  * result used a lot but barely matching never beats a good match.
@@ -41,13 +41,13 @@ export function scoreResult(result, matcher, frecency, now) {
         return null;
 
     let best = null;
-    normalizeFields(result).forEach((field, index) => {
+    normalizeFields(result).forEach(field => {
         const found = matcher.matchFolded(field.folded ?? fold(field.text));
         if (!found)
             return;
         const score = found.score * field.weight;
         if (!best || score > best.score)
-            best = {score, ranges: found.ranges, index};
+            best = {score, ranges: found.ranges, text: field.text};
     });
 
     let text;
@@ -70,7 +70,9 @@ export function scoreResult(result, matcher, frecency, now) {
         text,
         bonus,
         final: text + bonus,
-        ranges: best && best.index === 0 ? best.ranges : [],
+        // Ranges are positions in the field that matched: they only make sense for
+        // the title, so they are kept only when that field IS the title.
+        ranges: best && best.text === result.title ? best.ranges : [],
     };
 }
 

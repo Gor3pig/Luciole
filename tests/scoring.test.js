@@ -100,3 +100,10 @@ test('for an empty query only frecency ranks a result', () => {
     const scored = scoreForEmptyQuery(r, frecencyWith('apps:ff', 3), NOW);
     assert(scored.final > 0 && scored.text === 0, 'frecency only');
 });
+
+test('highlight ranges are only given when the matching field is the title itself', () => {
+    const odd = {id: '1', title: 'Navigateur', matchFields: [{text: 'Firefox'}, {text: 'Navigateur', weight: 0.1}]};
+    assertEquals(scoreResult(odd, matcher('fire'), null, NOW).ranges, [], 'matched on another text than the title');
+    const same = {id: '2', title: 'Firefox', matchFields: [{text: 'Firefox'}, {text: 'web'}]};
+    assertEquals(scoreResult(same, matcher('fire'), null, NOW).ranges, [[0, 4]]);
+});
