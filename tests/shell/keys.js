@@ -4,8 +4,13 @@
 //
 //   gjs -m tests/shell/keys.js <command fifo> <acknowledgement fifo>
 //
-// Commands, one per line, answered with "ok": combo (Ctrl+Alt+Space),
-// escape, quit. It writes "ready" once the session is started.
+// Commands, one per line, answered with "ok":
+//   combo            Ctrl+Alt+Space
+//   escape           the Escape key
+//   key <name>       Down, Up, Return, BackSpace, Escape
+//   type <text>      types the characters one by one
+//   quit             stops the helper
+// It writes "ready" once the session is started.
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
@@ -18,6 +23,7 @@ const KEY_CONTROL_L = 65507;
 const KEY_ALT_L = 65513;
 const KEY_SPACE = 32;
 const KEY_ESCAPE = 65307;
+const NAMED_KEYS = {Down: 65364, Up: 65362, Return: 65293, BackSpace: 65288, Escape: KEY_ESCAPE};
 
 const bus = Gio.bus_get_sync(Gio.BusType.SESSION, null);
 
@@ -52,6 +58,18 @@ const commands = {
     escape() {
         tap(KEY_ESCAPE);
     },
+    key(name) {
+        if (!(name in NAMED_KEYS))
+            throw new Error(`unknown key ${name}`);
+        tap(NAMED_KEYS[name]);
+    },
+    type(text) {
+        for (const character of text) {
+            const code = character.codePointAt(0);
+            // Latin-1 characters have the same keysym as their code point; others use the Unicode range.
+            tap(code < 0x100 ? code : 0x01000000 + code);
+        }
+    },
 };
 
 function readLine(path) {
@@ -77,7 +95,9 @@ for (;;) {
     if (command === 'quit' || command === null)
         break;
     try {
-        commands[command]();
+        const space = command.indexOf(' ');
+        const name = space < 0 ? command : command.slice(0, space);
+        commands[name](space < 0 ? '' : command.slice(space + 1));
         writeLine(ackFifo, 'ok');
     } catch (error) {
         writeLine(ackFifo, `error: ${error.message}`);

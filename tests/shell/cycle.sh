@@ -64,6 +64,8 @@ if [ -z "$CG" ] || [ -z "$LG" ]; then
     echo "FAIL: memory growth could not be measured (need at least 40 cycles)"
     exit 1
 fi
+# A control whose memory dropped (a garbage collection) is no baseline to subtract.
+[ "$CG" -lt 0 ] && CG=0
 EXTRA=$((LG - CG))
 echo
 echo "memory growth over the second half of the run: control ${CG} kB, Luciole ${LG} kB, extra ${EXTRA} kB (limit ${MAX_EXTRA_KB} kB)"

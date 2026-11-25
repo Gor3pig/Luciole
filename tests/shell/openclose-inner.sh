@@ -23,23 +23,7 @@ if [ "$ENABLE" = 1 ]; then
     wait_ext_state "$STATE_ENABLED" || fail "extension not ENABLED (state=$(ext_state))"
 fi
 
-# One long-lived helper holds the remote desktop session (see keys.js).
-CMD_FIFO=$(mktemp -u)
-ACK_FIFO=$(mktemp -u)
-mkfifo "$CMD_FIFO" "$ACK_FIFO"
-gjs -m "$(dirname "$0")/keys.js" "$CMD_FIFO" "$ACK_FIFO" &
-KEYS_PID=$!
-trap 'kill "$KEYS_PID" 2>/dev/null; rm -f "$CMD_FIFO" "$ACK_FIFO"; kill "$SHELL_PID" 2>/dev/null; wait "$SHELL_PID" 2>/dev/null' EXIT
-read -r ACK <"$ACK_FIFO"
-[ "$ACK" = ready ] || fail "the key helper did not start: $ACK"
-
-send() { # send <combo|escape>
-    printf '%s\n' "$1" >"$CMD_FIFO"
-    read -r ACK <"$ACK_FIFO"
-    [ "$ACK" = ok ] || fail "key helper: $ACK"
-}
-combo() { send combo; }
-escape() { send escape; }
+start_keys
 count() { grep -c "\[Luciole\] $1" "$LOG" || true; }
 wait_count() { # wait_count <message> <at least n>: polls for up to 5 s
     i=0

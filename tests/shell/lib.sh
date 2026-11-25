@@ -14,8 +14,37 @@ start_shell() {
     LOG=$1
     gnome-shell --headless --wayland --no-x11 --virtual-monitor 1280x720 >"$LOG" 2>&1 &
     SHELL_PID=$!
-    trap 'kill "$SHELL_PID" 2>/dev/null; wait "$SHELL_PID" 2>/dev/null' EXIT
+    trap cleanup EXIT
 }
+
+cleanup() {
+    [ -n "${KEYS_PID:-}" ] && kill "$KEYS_PID" 2>/dev/null
+    [ -n "${CMD_FIFO:-}" ] && rm -f "$CMD_FIFO" "$ACK_FIFO"
+    kill "$SHELL_PID" 2>/dev/null
+    wait "$SHELL_PID" 2>/dev/null
+}
+
+# start_keys: starts the key helper (see keys.js) and defines send/combo/escape/typed/press.
+# It holds a remote desktop session, so it must stay alive for the whole test.
+start_keys() {
+    CMD_FIFO=$(mktemp -u)
+    ACK_FIFO=$(mktemp -u)
+    mkfifo "$CMD_FIFO" "$ACK_FIFO"
+    gjs -m "$(dirname "$0")/keys.js" "$CMD_FIFO" "$ACK_FIFO" &
+    KEYS_PID=$!
+    read -r ACK <"$ACK_FIFO"
+    [ "$ACK" = ready ] || fail "the key helper did not start: $ACK"
+}
+
+send() { # send <command line for keys.js>
+    printf '%s\n' "$1" >"$CMD_FIFO"
+    read -r ACK <"$ACK_FIFO"
+    [ "$ACK" = ok ] || fail "key helper: $ACK"
+}
+combo() { send combo; }
+escape() { send escape; }
+typed() { send "type $1"; }
+press() { send "key $1"; }
 
 ext_call() {
     method=$1
