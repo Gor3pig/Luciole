@@ -1,0 +1,9 @@
+{
+  "uuid": "luciole@luciole.dev",
+  "name": "Luciole",
+  "description": "A Spotlight-style launcher: press a shortcut, type, and open applications and files instantly.",
+  "shell-version": ["50", "51"],
+  "gettext-domain": "luciole",
+  "settings-schema": "org.gnome.shell.extensions.luciole",
+  "version-name": "0.1.0"
+}
