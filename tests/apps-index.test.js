@@ -4,7 +4,7 @@
 import {Frecency} from '../src/core/frecency.js';
 import {createMatcher} from '../src/core/matching.js';
 import {scoreResult} from '../src/core/scoring.js';
-import {buildAppResults, pickByIds} from '../src/providers/apps-index.js';
+import {APP_ACTION_PREFIX, appActionList, buildAppResults, pickByIds} from '../src/providers/apps-index.js';
 import {assert, assertEquals, test} from './harness.js';
 
 const NOW = 1_700_000_000_000;
@@ -133,4 +133,18 @@ test('ranking a few hundred apps takes a few milliseconds', () => {
     const perQueryMs = (Date.now() - start) / 20;
     // The budget is 16 ms for a whole keystroke; a generous bound still catches an accident.
     assert(perQueryMs < 8, `scoring 300 apps took ${perQueryMs} ms`);
+});
+
+test('the actions an application declares become menu actions, nothing is added', () => {
+    assertEquals(appActionList([{name: 'new-window', label: 'Nouvelle fenêtre'}, {name: 'private', label: 'Fenêtre privée'}]), [
+        {id: `${APP_ACTION_PREFIX}new-window`, label: 'Nouvelle fenêtre'},
+        {id: `${APP_ACTION_PREFIX}private`, label: 'Fenêtre privée'},
+    ]);
+    assertEquals(appActionList([]), []);
+});
+
+test('declared actions that are malformed are left out', () => {
+    assertEquals(appActionList([null, 5, {}, {name: '', label: 'x'}, {name: 'a'}, {name: 'b', label: ''}, {name: 3, label: 'x'}]), []);
+    assertEquals(appActionList(undefined), []);
+    assertEquals(appActionList('x'), []);
 });

@@ -6,12 +6,13 @@ import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 
+import {ActionMenu} from '../core/action-menu.js';
 import {categoryForDigit, digitOfKey} from '../core/categories.js';
 import {backdropClass, motionEnabled, verticalLayout} from '../core/layout.js';
 import {jumpSection, nextSelection} from '../core/merge.js';
 import {HistoryCursor} from '../core/query-history.js';
 import * as compat from '../shell/compat.js';
-import {describeWindow} from './a11y.js';
+import {describeList, describeWindow, setSelected} from './a11y.js';
 import {ResultsView} from './results-view.js';
 
 const OPEN_MS = 120;
@@ -19,6 +20,8 @@ const CLOSE_MS = 90;
 const SLIDE_PX = 8;
 // Longest text the search field takes (typed or pasted); a query is a few words.
 const MAX_QUERY_LENGTH = 256;
+// How long "copied" stays on screen before the window closes.
+const CONFIRMATION_MS = 600;
 
 /**
  * Keys that mean "I am going elsewhere": the Super key (Activities) and Alt+Tab
@@ -52,6 +55,15 @@ export class Launcher {
     #getAnimations;
     #getQueries;
     #getCategories;
+    #getActions;
+    #getSubActions;
+    #onRunAction;
+    #menu = new ActionMenu();
+    #menuToken = 0;
+    #menuItem = null;
+    #menuBox = null;
+    #menuRows = null;
+    #confirmTimer = 0;
     #onFilter;
     #categories = [];
     #filter = null;
@@ -88,8 +100,12 @@ export class Launcher {
      * @param {() => string[]} options.getQueries - the remembered searches, newest first
      * @param {() => Array<{id: string, name: string}>} options.getCategories - the sources a search can be restricted to
      * @param {(id: string | null) => void} options.onFilter - the search is restricted to a source (null: all)
+     * @param {(item: object) => Promise<object[]>} options.getActions - the actions of a result, for its menu
+     * @param {(item: object, action: object) => Promise<object[]>} options.getSubActions - what a submenu action leads to
+     * @param {(item: object, action: object) => Promise<{ok: boolean, confirmation: string | null}>} options.onRunAction - runs an action
      */
-    constructor({log, gettext, onQuery, onActivate, onSecondary, getBackdrop, getAnimations, getQueries = () => [], getCategories = () => [], onFilter = () => {}}) {
+    constructor({log, gettext, onQuery, onActivate, onSecondary, getBackdrop, getAnimations, getQueries = () => [], getCategories = () => [], onFilter = () => {},
+        getActions = async () => [], getSubActions = async () => [], onRunAction = async () => ({ok: false, confirmation: null})}) {
         this.#log = log;
         this.#gettext = gettext;
         this.#onQuery = onQuery;
@@ -100,6 +116,9 @@ export class Launcher {
         this.#getQueries = getQueries;
         this.#getCategories = getCategories;
         this.#onFilter = onFilter;
+        this.#getActions = getActions;
+        this.#getSubActions = getSubActions;
+        this.#onRunAction = onRunAction;
     }
 
     // Read at every use, so a change in the preferences applies at once.
@@ -133,6 +152,8 @@ export class Launcher {
         this.#history.reset();
         this.#entry.set_text('');
         this.#showHint();
+        this.#resetMenu();
+        this.#hideMenu();
         // Every opening starts on "All", like the empty field.
         this.#filter = null;
         this.#log.guard('resetting the category', () => this.#onFilter(null));
@@ -187,6 +208,7 @@ export class Launcher {
         if (!this.#isOpen)
             return;
         this.#isOpen = false;
+        this.#resetMenu();
         this.#unwatchFocus();
         this.#releaseGrab();
         this.#view.clear();
@@ -239,6 +261,7 @@ export class Launcher {
 
     destroy() {
         this.#isOpen = false;
+        this.#resetMenu();
         this.#unwatchFocus();
         this.#releaseGrab();
         if (this.#overlay) {
@@ -388,6 +411,167 @@ export class Launcher {
         this.#emptyHint.visible = show;
     }
 
+    // ---- The menu of actions of the selected result (Ctrl+K) ----
+
+    async #openMenu() {
+        const item = this.#items.find(candidate => candidate.key === this.#selectedKey);
+        if (!item || !this.#isOpen)
+            return;
+        const token = ++this.#menuToken;
+        const actions = await this.#log.guardAsync('listing the actions', () => this.#getActions(item), []);
+        // The window may have closed, or the user done something else, while the actions were listed.
+        if (token !== this.#menuToken || !this.#isOpen)
+            return;
+        this.#menuItem = item;
+        this.#menu.open(item.result.title, actions);
+        this.#showMenu();
+    }
+
+    // Keys while a menu is shown. True when the key was used (typing is left to the field, which
+    // then leaves the menu).
+    #menuKey(symbol, control) {
+        if (this.#confirmTimer)
+            return true;
+        switch (symbol) {
+        case Clutter.KEY_Down:
+            this.#menu.move(1);
+            this.#showMenu();
+            return true;
+        case Clutter.KEY_Up:
+            this.#menu.move(-1);
+            this.#showMenu();
+            return true;
+        case Clutter.KEY_Return:
+        case Clutter.KEY_KP_Enter:
+            // Enter reaches the field as its "activate" signal (see the handler there), which runs
+            // the highlighted action; Ctrl+Enter would act on the hidden list, so it is swallowed.
+            return control;
+        case Clutter.KEY_Escape:
+            this.#menuBack();
+            return true;
+        case Clutter.KEY_Tab:
+        case Clutter.KEY_ISO_Left_Tab:
+            return true;
+        default:
+            // Other shortcuts would act on the list hidden behind the menu.
+            return control;
+        }
+    }
+
+    #menuBack() {
+        this.#menuToken++;
+        if (this.#menu.back())
+            this.#showMenu();
+        else
+            this.#hideMenu();
+    }
+
+    async #runMenuAction() {
+        const action = this.#menu.selected;
+        const item = this.#menuItem;
+        if (!action || !item)
+            return;
+        const token = ++this.#menuToken;
+        const stale = () => token !== this.#menuToken || !this.#isOpen || !this.#menu.isOpen;
+        if (action.submenu) {
+            const choices = await this.#log.guardAsync('listing the choices', () => this.#getSubActions(item, action), []);
+            if (stale())
+                return;
+            if (this.#menu.push(action.label, choices))
+                this.#showMenu();
+            return;
+        }
+        const outcome = await this.#log.guardAsync('running an action', () => this.#onRunAction(item, action), {ok: false, confirmation: null});
+        if (stale())
+            return;
+        // A failed action (it is logged) leaves the window open, so the user can try another.
+        if (!outcome.ok)
+            return;
+        if (outcome.confirmation)
+            this.#showConfirmation(outcome.confirmation);
+        else
+            this.close();
+    }
+
+    #showConfirmation(text) {
+        this.#menuRows.destroy_all_children();
+        const row = new St.BoxLayout({style_class: 'luciole-menu-confirmation'});
+        row.add_child(new St.Icon({icon_name: 'object-select-symbolic', style_class: 'luciole-menu-check'}));
+        row.add_child(new St.Label({text, y_align: Clutter.ActorAlign.CENTER}));
+        this.#menuRows.add_child(row);
+        this.#confirmTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, CONFIRMATION_MS, () => {
+            this.#confirmTimer = 0;
+            this.close();
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    // Draws the menu at its current level, in place of the results.
+    #showMenu() {
+        const menu = this.#menu;
+        this.#menuRows.destroy_all_children();
+        const item = this.#menuItem;
+        const _ = this.#gettext;
+        const heading = menu.depth > 1
+            ? _('Open “%s” with').format(item?.result.title ?? '')
+            : _('Actions for');
+        this.#menuRows.add_child(new St.Label({style_class: 'luciole-menu-heading', text: heading}));
+        if (menu.depth === 1) {
+            this.#menuRows.add_child(new St.Label({style_class: 'luciole-menu-title', text: menu.title}));
+            if (item?.result.subtitle)
+                this.#menuRows.add_child(new St.Label({style_class: 'luciole-menu-subtitle', text: item.result.subtitle}));
+        }
+        menu.actions.forEach((action, index) => {
+            const row = new St.Button({style_class: 'luciole-menu-row', can_focus: false, reactive: true, track_hover: true, x_expand: true});
+            const content = new St.BoxLayout({x_expand: true});
+            content.add_child(new St.Label({text: action.label, x_expand: true, y_align: Clutter.ActorAlign.CENTER}));
+            const hint = action.submenu ? '›' : action.hint;
+            if (hint)
+                content.add_child(new St.Label({style_class: 'luciole-menu-hint', text: hint, y_align: Clutter.ActorAlign.CENTER}));
+            row.set_child(content);
+            row.accessible_name = action.label;
+            const selected = index === menu.index;
+            if (selected)
+                row.add_style_pseudo_class('selected');
+            setSelected(row, selected);
+            row.connect('clicked', () => {
+                menu.select(index);
+                this.#showMenu();
+                this.#log.guardAsync('running an action', () => this.#runMenuAction());
+            });
+            this.#menuRows.add_child(row);
+        });
+        this.#chipBox.hide();
+        this.#emptyHint.hide();
+        this.#view.actor.hide();
+        this.#menuBox.show();
+    }
+
+    #hideMenu() {
+        this.#menuBox.hide();
+        this.#view.actor.show();
+        this.#chipBox.visible = this.#categories.length > 0;
+    }
+
+    // Closes the menu and shows the results again.
+    #closeMenu() {
+        if (!this.#menu.isOpen && !this.#confirmTimer)
+            return;
+        this.#resetMenu();
+        this.#hideMenu();
+    }
+
+    // Forgets the menu, wherever it was: pending answers become stale, the timer stops.
+    #resetMenu() {
+        this.#menuToken++;
+        this.#menu.close();
+        this.#menuItem = null;
+        if (this.#confirmTimer) {
+            GLib.source_remove(this.#confirmTimer);
+            this.#confirmTimer = 0;
+        }
+    }
+
     // The remembered searches, read at each use (the setting may have changed).
     #queries() {
         const list = this.#log.guard('reading the remembered searches', () => this.#getQueries(), []);
@@ -506,6 +690,13 @@ export class Launcher {
         panel.add_child(chipBox);
         panel.add_child(emptyHint);
         panel.add_child(view.actor);
+        const menuBox = new St.BoxLayout({style_class: 'luciole-menu', orientation: Clutter.Orientation.VERTICAL, visible: false});
+        const menuRows = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL});
+        describeList(menuRows, _('Actions'));
+        menuBox.add_child(menuRows);
+        panel.add_child(menuBox);
+        this.#menuBox = menuBox;
+        this.#menuRows = menuRows;
         this.#chipBox = chipBox;
         this.#emptyHint = emptyHint;
 
@@ -524,6 +715,8 @@ export class Launcher {
         const text = entry.clutter_text;
         text.max_length = MAX_QUERY_LENGTH;
         text.connect('text-changed', () => {
+            // What is typed changes the search: the menu of the old result goes away.
+            this.#closeMenu();
             // Typing, or Escape, leaves the remembered searches; bringing one back does not.
             if (!this.#recalling) {
                 this.#history.reset();
@@ -535,7 +728,12 @@ export class Launcher {
             this.#log.guard('searching', () => this.#onQuery(entry.get_text()));
         });
         text.connect('activate', () => {
-            this.#activateSelected();
+            if (this.#menu.isOpen) {
+                if (!this.#confirmTimer)
+                    this.#log.guardAsync('running an action', () => this.#runMenuAction());
+            } else {
+                this.#activateSelected();
+            }
             return Clutter.EVENT_STOP;
         });
         text.connect('key-press-event', (_actor, event) => {
@@ -545,6 +743,18 @@ export class Launcher {
             }
             const symbol = event.get_key_symbol();
             const control = (event.get_state() & Clutter.ModifierType.CONTROL_MASK) !== 0;
+            if (control && (symbol === Clutter.KEY_k || symbol === Clutter.KEY_K)) {
+                if (this.#menu.isOpen)
+                    this.#closeMenu();
+                else
+                    this.#log.guardAsync('opening the actions menu', () => this.#openMenu());
+                return Clutter.EVENT_STOP;
+            }
+            if (this.#menu.isOpen) {
+                const handled = this.#menuKey(symbol, control);
+                if (handled)
+                    return Clutter.EVENT_STOP;
+            }
             if (control && (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_KP_Enter)) {
                 this.#activateSecondary();
                 return Clutter.EVENT_STOP;

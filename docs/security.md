@@ -18,7 +18,8 @@ source is handled. It also lists what is *not* covered yet.
 | Network | None. Nothing is sent anywhere: no telemetry, no web search, no update check. |
 | Reads | The installed applications (through GIO), the file index of the desktop search service (read-only queries), its own settings (GSettings) and its own history files. |
 | Writes | Its settings, and two history files in the user's data directory (`luciole/frecency.json` and `luciole/queries.json`), created readable by the user only. |
-| Runs | Applications the user chooses, through GIO. Files and folders the user chooses, through the default handler for their address. Nothing else is ever executed. |
+| Runs | Applications the user chooses, through GIO, and the actions such an application declares itself in its desktop file. Files and folders the user chooses, through the default handler for their address, or through an application the user picked in "Open With" among those that can open the file. Nothing else is ever executed. |
+| Clipboard | Written to when the user chooses "Copy Path" or "Copy Name" (the path or name of a local file). Never read. |
 | Other processes | None started by the extension itself. |
 
 The history file records which applications and files were opened, with
@@ -68,6 +69,12 @@ duplicates).
 * **Only existing local files are opened.** An address must be `file:///` and a path (no host, no
   other scheme, no query), and the file or folder must still exist, or nothing is launched and the
   failure is logged. The search field takes at most 256 characters.
+* **The menu of actions is checked like any other data.** What a source offers as actions is
+  cleaned (texts like result names, at most 24 actions, no duplicate id, copied text capped) before
+  it is shown. An action is only ever run by the source that offered it, which refuses any
+  identifier it did not offer: an application action must be one the application declares, an
+  "Open With" application one of those listed for that file, and the file must still exist and be
+  local. Nothing typed by the user is part of an action.
 * **No dynamic code.** No `eval`, no `Function`, no shell command built from
   text. Applications and files are opened with GIO using the entry or address
   that came from the index, not from the typed text.

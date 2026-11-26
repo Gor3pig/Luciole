@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 11:23+0100\n"
+"POT-Creation-Date: 2026-11-26 12:39+0100\n"
 "PO-Revision-Date: 2026-11-25 20:00+0100\n"
 "Last-Translator: Luciole contributors\n"
 "Language-Team: fr <>\n"
@@ -15,6 +15,14 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+
+#: src/core/session.js
+msgid "Open"
+msgstr "Ouvrir"
+
+#: src/core/session.js
+msgid "Enter"
+msgstr "Entrée"
 
 #: src/prefs.js src/providers/apps.js
 msgid "Applications"
@@ -202,9 +210,37 @@ msgstr "Retirer"
 msgid "Choose a Folder to Exclude"
 msgstr "Choisir un dossier à exclure"
 
-#: src/providers/files.js
+#: src/providers/files.js src/providers/files-query.js
 msgid "Show in Folder"
 msgstr "Afficher dans le dossier"
+
+#: src/providers/files-query.js
+msgid "Ctrl+Enter"
+msgstr "Ctrl+Entrée"
+
+#: src/providers/files-query.js
+msgid "Copy Path"
+msgstr "Copier le chemin"
+
+#: src/providers/files-query.js
+msgid "Path copied"
+msgstr "Chemin copié"
+
+#: src/providers/files-query.js
+msgid "Copy Name"
+msgstr "Copier le nom"
+
+#: src/providers/files-query.js
+msgid "Name copied"
+msgstr "Nom copié"
+
+#: src/providers/files-query.js
+msgid "Open With…"
+msgstr "Ouvrir avec…"
+
+#: src/providers/files-query.js
+msgid "Default"
+msgstr "Par défaut"
 
 #: src/ui/launcher.js
 msgid "All"
@@ -241,12 +277,25 @@ msgstr "Tapez pour chercher dans cette catégorie"
 
 #: src/ui/launcher.js
 #, javascript-format
+msgid "Open “%s” with"
+msgstr "Ouvrir « %s » avec"
+
+#: src/ui/launcher.js
+msgid "Actions for"
+msgstr "Actions pour"
+
+#: src/ui/launcher.js
+#, javascript-format
 msgid "Previous search %d of %d"
 msgstr "Recherche précédente %d sur %d"
 
 #: src/ui/launcher.js
 msgid "Search"
 msgstr "Rechercher"
+
+#: src/ui/launcher.js
+msgid "Actions"
+msgstr "Actions"
 
 #: src/ui/launcher.js
 msgid "Luciole search"

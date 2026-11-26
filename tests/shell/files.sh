@@ -27,7 +27,16 @@ cat >"$WORK/data/applications/luciole-test-facture.desktop" <<DESKTOP
 Type=Application
 Name=Facture Express
 Exec=true
+Actions=new-test;
+
+[Desktop Action new-test]
+Name=Nouvelle fenetre de test
+Exec=true
 DESKTOP
+# A file that really exists, in the stand-in index, to ask which applications open it.
+mkdir -p "$WORK/docs"
+printf 'a test file\n' >"$WORK/docs/rapport-test.txt"
+export INDEX_REAL_FILE="$WORK/docs/rapport-test.txt"
 # If our stand-in were late, the bus must not start the real indexer instead.
 cat >"$WORK/services/dbus-1/services/org.freedesktop.LocalSearch3.service" <<SERVICE
 [D-BUS Service]

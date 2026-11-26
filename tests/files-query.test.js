@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 import {
-    buildFtsTerms, displayFolder, isExcluded, isExcludedType, isLocalFileUri, parentUrl, pathOfUrl, rowsToResults,
+    baseName, buildFtsTerms, displayFolder, fileActionList, isExcluded, isExcludedType, isLocalFileUri, openWithActions, parentUrl, pathOfUrl, rowsToResults,
 } from '../src/providers/files-query.js';
 import {assert, assertEquals, test} from './harness.js';
 
@@ -137,4 +137,53 @@ test('only a plain local path is a local file address', () => {
         assert(!isLocalFileUri(bad), `${JSON.stringify(bad)} should be refused`);
     for (const odd of [undefined, null, 5, {}, ['file:///a']])
         assert(!isLocalFileUri(odd), `${JSON.stringify(odd)} should be refused`);
+});
+
+const echo = text => text;
+
+test('the name of a file is the last part of its address, decoded', () => {
+    assertEquals(baseName('file:///home/me/Documents/Facture%20mars.pdf'), 'Facture mars.pdf');
+    assertEquals(baseName('file:///home/me/Documents/'), 'Documents', 'a folder address ending with a slash');
+    assertEquals(baseName('file:///x.txt'), 'x.txt');
+});
+
+test('a local file has the file actions, in this order, each with what it needs', () => {
+    const actions = fileActionList('file:///home/me/Documents/Facture%20mars.pdf', echo);
+    assertEquals(actions.map(action => action.id), ['open-folder', 'copy-path', 'copy-name', 'open-with']);
+    assertEquals(actions[1].copy, '/home/me/Documents/Facture mars.pdf');
+    assertEquals(actions[2].copy, 'Facture mars.pdf');
+    assertEquals(actions[1].confirmation, 'Path copied');
+    assertEquals(actions[2].confirmation, 'Name copied');
+    assert(actions[3].submenu === true, 'Open With leads to a submenu');
+    assert(!('copy' in actions[0]) && !('copy' in actions[3]), 'only the two copy actions copy');
+});
+
+test('the labels are translated', () => {
+    const actions = fileActionList('file:///a/b.txt', text => `[${text}]`);
+    assertEquals(actions[0].label, '[Show in Folder]');
+    assertEquals(actions[1].confirmation, '[Path copied]');
+});
+
+test('what is not a local file has no file actions', () => {
+    for (const url of ['https://example.org/x', 'file://server/share/x', 'file:///a?b=1', 'smb://host/x', '', undefined, null, 5])
+        assertEquals(fileActionList(url, echo), [], String(url));
+});
+
+test('the applications that open a file are listed with the default one first', () => {
+    const actions = openWithActions([
+        {id: 'a.desktop', name: 'App A'},
+        {id: 'b.desktop', name: 'App B', isDefault: true},
+        {id: 'c.desktop', name: 'App C'},
+    ], echo);
+    assertEquals(actions.map(action => action.id), ['open-with:b.desktop', 'open-with:a.desktop', 'open-with:c.desktop']);
+    assertEquals(actions[0].hint, 'Default');
+    assert(!('hint' in actions[1]), 'only the default one is marked');
+});
+
+test('unusable applications are left out, and only a dozen are listed', () => {
+    assertEquals(openWithActions([null, {id: '', name: 'x'}, {id: 'a'}, {id: 'b', name: ''}, {name: 'x'}, 5], echo), []);
+    const many = Array.from({length: 30}, (_, n) => ({id: `app${n}.desktop`, name: `App ${n}`}));
+    assertEquals(openWithActions(many, echo).length, 12);
+    assertEquals(openWithActions(undefined, echo), []);
+    assertEquals(openWithActions('apps', echo), []);
 });

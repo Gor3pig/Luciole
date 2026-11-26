@@ -5,7 +5,7 @@ import Shell from 'gi://Shell';
 
 import {Disposables} from '../core/disposables.js';
 import {Provider} from '../core/provider.js';
-import {buildAppResults, pickByIds} from './apps-index.js';
+import {APP_ACTION_PREFIX, appActionList, buildAppResults, pickByIds} from './apps-index.js';
 
 function describe(info) {
     // Keywords and generic names exist on desktop app infos only.
@@ -91,6 +91,30 @@ export class AppsProvider extends Provider {
         if (!app)
             throw new Error(`application ${result.id} is no longer installed`);
         app.activate();
+    }
+
+    // The actions the application declares itself, as [{name, label}].
+    #declaredActions(app) {
+        const info = app?.get_app_info?.();
+        if (typeof info?.list_actions !== 'function')
+            return [];
+        return info.list_actions().map(name => ({name, label: info.get_action_name(name)}));
+    }
+
+    /** The menu actions of an application, besides Open: the ones it declares. */
+    async actions(result) {
+        return appActionList(this.#declaredActions(this.#system?.lookup_app(result.id)));
+    }
+
+    async activateAction(result, action) {
+        const app = this.#system?.lookup_app(result.id);
+        if (!app)
+            throw new Error(`application ${result.id} is no longer installed`);
+        const name = action.id.startsWith(APP_ACTION_PREFIX) ? action.id.slice(APP_ACTION_PREFIX.length) : null;
+        // Only an action the application really declares is launched.
+        if (name === null || !this.#declaredActions(app).some(declared => declared.name === name))
+            throw new Error(`unknown action ${action.id}`);
+        app.launch_action(name, global.get_current_time(), -1);
     }
 
     #refresh() {

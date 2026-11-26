@@ -178,6 +178,228 @@ gsettings reset org.gnome.desktop.input-sources sources
 chord Control_L+0
 sleep 0.3
 
+# The menu of actions (Ctrl+K) of the selected result.
+# menu_state: "hidden", or "<number of actions> <index highlighted> <labels>".
+menu_state() {
+    shell_eval "(function find(a) { if (a.style_class === 'luciole-menu') { if (!a.visible) return 'hidden'; const rows = a.get_children()[0].get_children().filter(c => c.style_class === 'luciole-menu-row'); return rows.length + ' ' + rows.findIndex(r => r.has_style_pseudo_class('selected')) + ' ' + rows.map(r => r.accessible_name).join(';'); } for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
+}
+results_visible() {
+    shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-results-view')) return String(a.visible); for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
+}
+confirmation_shown() {
+    shell_eval "(function find(a) { if (a.style_class === 'luciole-menu-confirmation') return 'yes'; for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage) || 'no'"
+}
+clipboard_text() {
+    shell_eval "(function() { globalThis.clipValue = '?'; imports.gi.St.Clipboard.get_default().get_text(imports.gi.St.ClipboardType.CLIPBOARD, (c, t) => { globalThis.clipValue = t; }); return 'asked'; })()" >/dev/null
+    sleep 0.4
+    shell_eval "String(globalThis.clipValue)"
+}
+launcher_closed_count() { grep -cF "[Luciole] closed" "$LOG"; }
+reopen_launcher() {
+    OPENED_NOW=$(grep -cF "[Luciole] opened" "$LOG")
+    combo
+    wait_log "[Luciole] opened" $((OPENED_NOW + 1)) || fail "the launcher did not reopen"
+    sleep 0.4
+}
+
+clear_entry 8
+typed rapport
+wait_last 'results: 1 first=rapport' || fail "the real file was not found (last: $(last_results))"
+CLOSED_BEFORE=$(launcher_closed_count)
+chord Control_L+k
+sleep 0.5
+set -- $(menu_state)
+[ "$1" = 5 ] && [ "$2" = 0 ] || fail "menu: expected 5 actions with the first highlighted, got '$(menu_state)'"
+[ "$(results_visible)" = false ] || fail "menu: the results are still shown behind the menu"
+echo "ok: Ctrl+K shows the 5 actions of a file in place of the results"
+press Down
+sleep 0.3
+set -- $(menu_state)
+[ "$2" = 1 ] || fail "menu: the down arrow did not move the highlight ('$(menu_state)')"
+press Up
+press Up
+sleep 0.3
+set -- $(menu_state)
+[ "$2" = 4 ] || fail "menu: the up arrow did not wrap to the last action ('$(menu_state)')"
+echo "ok: the arrows move the highlight and wrap around"
+escape
+sleep 0.3
+[ "$(menu_state)" = hidden ] || fail "menu: Escape did not close the menu"
+[ "$(results_visible)" = true ] || fail "menu: the results did not come back"
+[ "$(launcher_closed_count)" = "$CLOSED_BEFORE" ] || fail "menu: Escape closed the whole window"
+echo "ok: Escape goes back to the results and keeps the window open"
+chord Control_L+k
+sleep 0.3
+chord Control_L+k
+sleep 0.3
+[ "$(menu_state)" = hidden ] || fail "menu: Ctrl+K again did not close the menu"
+chord Control_L+k
+sleep 0.3
+typed x
+sleep 0.4
+[ "$(menu_state)" = hidden ] || fail "menu: typing did not leave the menu"
+clear_entry 1
+sleep 0.4
+echo "ok: Ctrl+K again, or typing, leaves the menu"
+
+# Copy the path: a confirmation, the clipboard holds the path, then the window closes.
+wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
+chord Control_L+k
+sleep 0.4
+press Down
+press Down
+sleep 0.2
+press Return
+sleep 0.1
+[ "$(confirmation_shown)" = yes ] || fail "menu: no confirmation after Copy Path"
+[ "$(clipboard_text)" = "$WORK/docs/rapport-test.txt" ] || fail "menu: the clipboard holds '$(clipboard_text)', expected the path"
+wait_log "[Luciole] closed" $((CLOSED_BEFORE + 1)) || fail "menu: the window did not close after the confirmation"
+echo "ok: Copy Path puts the path on the clipboard, confirms, then closes"
+sleep 0.4
+reopen_launcher
+typed rapport
+wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
+chord Control_L+k
+sleep 0.4
+press Down
+press Down
+press Down
+sleep 0.2
+press Return
+sleep 0.3
+[ "$(clipboard_text)" = "rapport-test.txt" ] || fail "menu: the clipboard holds '$(clipboard_text)', expected the file name"
+wait_log "[Luciole] closed" $((CLOSED_BEFORE + 2)) || fail "menu: the window did not close after Copy Name"
+echo "ok: Copy Name puts the name on the clipboard"
+sleep 0.4
+
+# Open With: a second level listing the applications, Escape goes back one level at a time.
+reopen_launcher
+typed rapport
+wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
+CLOSED_NOW=$(launcher_closed_count)
+chord Control_L+k
+sleep 0.4
+press Up
+sleep 0.2
+press Return
+sleep 1
+set -- $(menu_state)
+[ "$1" -ge 1 ] && [ "$1" != 5 ] || fail "menu: Open With did not list applications ('$(menu_state)')"
+echo "ok: Open With lists the applications that open the file ($1 here)"
+escape
+sleep 0.3
+set -- $(menu_state)
+[ "$1" = 5 ] && [ "$2" = 4 ] || fail "menu: Escape from the submenu did not come back to the actions with Open With highlighted ('$(menu_state)')"
+escape
+sleep 0.3
+[ "$(menu_state)" = hidden ] || fail "menu: a second Escape did not close the menu"
+[ "$(launcher_closed_count)" = "$CLOSED_NOW" ] || fail "menu: Escape closed the whole window"
+echo "ok: Escape goes back from the submenu, then closes the menu"
+
+# An action that fails (the file of the index is not there) leaves the menu and the window open.
+clear_entry 7
+typed quok
+wait_last 'results: 3 first=.*query=quok' || fail "results did not come back (last: $(last_results))"
+chord Control_L+k
+sleep 0.4
+press Down
+sleep 0.2
+press Return
+wait_log "the file is no longer there" 1 || fail "menu: the failure of Show in Folder was not logged"
+sleep 0.5
+[ "$(menu_state)" != hidden ] || fail "menu: a failed action closed the menu"
+[ "$(launcher_closed_count)" = "$CLOSED_NOW" ] || fail "menu: a failed action closed the window"
+echo "ok: a failed action is logged and leaves the menu open"
+escape
+sleep 0.3
+
+# An application: its own declared action runs (the test one just runs "true").
+clear_entry 4
+typed factu
+wait_last 'results: 2 first=Facture Express query=factu' || fail "the application was not found (last: $(last_results))"
+chord Control_L+k
+sleep 0.4
+set -- $(menu_state)
+[ "$1" = 2 ] || fail "menu: expected Open and the application's own action, got '$(menu_state)'"
+press Down
+sleep 0.2
+press Return
+wait_log "action app-action:new-test on apps:luciole-test-facture.desktop done" 1 || fail "menu: the application's own action did not run"
+wait_log "[Luciole] closed" $((CLOSED_NOW + 1)) || fail "menu: the window did not close after the application's action"
+echo "ok: an application's own action runs and the window closes"
+sleep 0.4
+
+# A click on an action runs it; closing the window with the menu shown leaves no menu behind.
+# menu_row_center <index>: where to click to hit that action.
+menu_row_center() {
+    shell_eval "(function find(a) { if (a.style_class === 'luciole-menu') { const rows = a.get_children()[0].get_children().filter(c => c.style_class === 'luciole-menu-row'); const c = rows[$1]; const [x, y] = c.get_transformed_position(); const [w, h] = c.get_transformed_size(); return Math.round(x + w / 2) + ' ' + Math.round(y + h / 2); } for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
+}
+reopen_launcher
+typed rapport
+wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
+CLOSED_NOW=$(launcher_closed_count)
+chord Control_L+k
+sleep 0.5
+set -- $(menu_row_center 3)
+pointer "$1" "$2"
+sleep 0.3
+click
+sleep 0.2
+[ "$(clipboard_text)" = "rapport-test.txt" ] || fail "menu: a click on Copy Name did not copy the name (clipboard: '$(clipboard_text)')"
+wait_log "[Luciole] closed" $((CLOSED_NOW + 1)) || fail "menu: the window did not close after the click"
+echo "ok: a click on an action runs it"
+sleep 0.4
+reopen_launcher
+typed rapport
+wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
+chord Control_L+k
+sleep 0.5
+[ "$(menu_state)" != hidden ] || fail "menu: the menu did not open"
+combo
+sleep 0.6
+reopen_launcher
+[ "$(menu_state)" = hidden ] || fail "menu: the menu was still there after closing the window with the shortcut and reopening"
+[ "$(results_visible)" = true ] || fail "menu: the results were not shown after reopening"
+echo "ok: closing the window with the menu shown leaves no menu behind"
+clear_entry 8
+escape
+wait_log "[Luciole] closed" $((CLOSED_NOW + 3)) || fail "the launcher did not close"
+sleep 0.4
+
+# Races: the menu asked for and the window closed, reopened, typed into at once.
+reopen_launcher
+typed factu
+wait_last 'results: 2 first=Facture Express query=factu' || fail "results did not come back (last: $(last_results))"
+n=0
+while [ "$n" -lt 20 ]; do
+    chord Control_L+k
+    escape
+    escape
+    combo
+    chord Control_L+k
+    typed a
+    escape
+    escape
+    escape
+    combo
+    n=$((n + 1))
+done
+sleep 1
+kill -0 "$SHELL_PID" 2>/dev/null || fail "menu: the shell died during the race"
+[ "$(menu_state)" = hidden ] || [ "$(menu_state)" = "" ] || true
+# (The failure provoked on purpose above is logged as an error: it is the only one expected.)
+if grep -E 'JS ERROR|CRITICAL' "$LOG" | grep -vF 'the file is no longer there' | grep -q .; then
+    grep -E 'JS ERROR|CRITICAL' "$LOG" | grep -vF 'the file is no longer there' | head -5
+    fail "menu: errors in the log after the race"
+fi
+echo "ok: asking for the menu while closing, reopening and typing leaves no error behind"
+OPENED_NOW=$(grep -cF "[Luciole] opened" "$LOG")
+CLOSED_NOW=$(grep -cF "[Luciole] closed" "$LOG")
+if [ $((OPENED_NOW - CLOSED_NOW)) = 0 ]; then
+    reopen_launcher
+fi
+clear_entry 8
+
 # Opening a file is covered by the unit tests, with an injected opener: the files here do not exist.
 clear_entry 5
 typed quok
@@ -189,10 +411,11 @@ WORST=$(sort -n "$LOG.q" | tail -n 1)
 echo "keystroke to complete results, files included, 50 ms debounce included (this VM): worst ${WORST} ms, budget ${FILES_BUDGET_MS} ms"
 awk -v w="$WORST" -v b="$FILES_BUDGET_MS" 'BEGIN { exit !(w + 0 <= b + 0) }' || fail "results took longer than ${FILES_BUDGET_MS} ms"
 
-ERRORS=$(grep -ciE "$EXTENSION_ERROR_PATTERN" "$LOG" || true)
+# (The failure of Show in Folder provoked on purpose in the menu test is the one error expected.)
+ERRORS=$(grep -iE "$EXTENSION_ERROR_PATTERN" "$LOG" | grep -vF 'the file is no longer there' | wc -l)
 echo "log lines mentioning an error about the extension: $ERRORS"
 if [ "$ERRORS" -gt 0 ]; then
-    grep -iE "$EXTENSION_ERROR_PATTERN" "$LOG" | head -10
+    grep -iE "$EXTENSION_ERROR_PATTERN" "$LOG" | grep -vF 'the file is no longer there' | head -10
     fail "errors found in the shell log"
 fi
 echo "PASS"

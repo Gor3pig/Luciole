@@ -219,8 +219,8 @@
   {
    "file": "src/providers/files.js",
    "label": "unknown action opens the folder",
-   "old": "        if (action.id === 'open-folder')\n",
-   "new": "        if (true)\n"
+   "old": "        if (action.id === 'open-folder') {\n",
+   "new": "        if (true) {\n"
   },
   {
    "file": "src/providers/files.js",

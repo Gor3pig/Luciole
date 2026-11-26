@@ -121,3 +121,8 @@ export function connectKeyFocus(handler) {
 export function ensureVisible(scrollView, actor) {
     ensureActorVisibleInScrollView(scrollView, actor);
 }
+
+/** Puts a text on the clipboard. Luciole only ever writes to it; it never reads it. */
+export function copyText(text) {
+    St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, text);
+}

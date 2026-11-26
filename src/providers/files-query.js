@@ -143,3 +143,51 @@ export function rowsToResults(rows, {home, excludedFolders = [], excludedTypes =
     }
     return results;
 }
+
+export const OPEN_WITH_PREFIX = 'open-with:';
+const MAX_OPEN_WITH = 12;
+
+/** The last part of a path or an address, decoded: "file:///a/b%20c.odt" -> "b c.odt". */
+export function baseName(url) {
+    const path = pathOfUrl(url).replace(/\/+$/, '');
+    return path.slice(path.lastIndexOf('/') + 1);
+}
+
+/**
+ * The actions offered for a file, besides "Open" (which every result has). Only a local file has
+ * any: nothing else can be copied as a path or handed to an application.
+ *
+ * @param {string} url
+ * @param {(text: string) => string} gettext
+ */
+export function fileActionList(url, gettext) {
+    if (!isLocalFileUri(url))
+        return [];
+    const _ = gettext;
+    return [
+        {id: 'open-folder', label: _('Show in Folder'), hint: _('Ctrl+Enter')},
+        {id: 'copy-path', label: _('Copy Path'), copy: pathOfUrl(url), confirmation: _('Path copied')},
+        {id: 'copy-name', label: _('Copy Name'), copy: baseName(url), confirmation: _('Name copied')},
+        {id: 'open-with', label: _('Open With…'), submenu: true},
+    ];
+}
+
+/**
+ * The applications that can open a file, as menu actions: the default one first, then the others
+ * in the order given, at most MAX_OPEN_WITH.
+ *
+ * @param {Array<{id: string, name: string, isDefault?: boolean}>} apps
+ * @param {(text: string) => string} gettext
+ */
+export function openWithActions(apps, gettext) {
+    if (!Array.isArray(apps))
+        return [];
+    const usable = apps.filter(app => app && typeof app.id === 'string' && app.id !== '' && typeof app.name === 'string' && app.name !== '');
+    const ordered = [...usable.filter(app => app.isDefault === true), ...usable.filter(app => app.isDefault !== true)];
+    return ordered.slice(0, MAX_OPEN_WITH).map(app => {
+        const action = {id: `${OPEN_WITH_PREFIX}${app.id}`, label: app.name};
+        if (app.isDefault === true)
+            action.hint = gettext('Default');
+        return action;
+    });
+}

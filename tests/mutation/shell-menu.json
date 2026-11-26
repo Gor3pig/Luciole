@@ -1,0 +1,131 @@
+{
+ "description": "Mutants for the menu of actions in the live launcher. Not listed because equivalent or out of reach: the staleness check of an answer (the gap between asking and the answer is too short to close the window inside it, in a test), and forgetting the menu when closing (opening forgets it too).",
+ "slow": true,
+ "timeout": 400,
+ "command": [
+  "sh",
+  "tests/shell/files.sh"
+ ],
+ "mutants": [
+  {
+   "file": "src/ui/launcher.js",
+   "label": "Ctrl+K does not open the menu",
+   "old": "                else\n                    this.#log.guardAsync('opening the actions menu', () => this.#openMenu());",
+   "new": "                else\n                    void 0;"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "Ctrl+K does not close an open menu",
+   "old": "                if (this.#menu.isOpen)\n                    this.#closeMenu();\n                else\n                    this.#log.guardAsync('opening",
+   "new": "                if (false)\n                    this.#closeMenu();\n                else\n                    this.#log.guardAsync('opening"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the down arrow does not move in the menu",
+   "old": "        case Clutter.KEY_Down:\n            this.#menu.move(1);\n            this.#showMenu();\n            return true;",
+   "new": "        case Clutter.KEY_Down:\n            return true;"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the up arrow goes the wrong way",
+   "old": "            this.#menu.move(-1);\n            this.#showMenu();",
+   "new": "            this.#menu.move(1);\n            this.#showMenu();"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "Escape does not leave the menu",
+   "old": "        case Clutter.KEY_Escape:\n            this.#menuBack();\n            return true;",
+   "new": "        case Clutter.KEY_Escape:\n            return false;"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "Enter runs the opened result, not the menu action",
+   "old": "            if (this.#menu.isOpen) {\n                if (!this.#confirmTimer)\n                    this.#log.guardAsync('running an action', () => this.#runMenuAction());\n            } else {\n                this.#activateSelected();\n            }",
+   "new": "            this.#activateSelected();"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "a failed action closes the window",
+   "old": "        if (!outcome.ok)\n            return;\n        if (outcome.confirmation)",
+   "new": "        if (outcome.confirmation)"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "a copy closes at once, without confirmation",
+   "old": "        if (outcome.confirmation)\n            this.#showConfirmation(outcome.confirmation);\n        else\n            this.close();",
+   "new": "        this.close();"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "a submenu is not entered",
+   "old": "            if (this.#menu.push(action.label, choices))\n                this.#showMenu();\n            return;",
+   "new": "            return;"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "typing does not leave the menu",
+   "old": "            // What is typed changes the search: the menu of the old result goes away.\n            this.#closeMenu();",
+   "new": "            // What is typed changes the search: the menu of the old result goes away."
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the results do not come back after the menu",
+   "old": "        this.#menuBox.hide();\n        this.#view.actor.show();",
+   "new": "        this.#menuBox.hide();"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the results stay shown behind the menu",
+   "old": "        this.#view.actor.hide();\n        this.#menuBox.show();",
+   "new": "        this.#menuBox.show();"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "going back from a submenu closes the whole menu",
+   "old": "        if (this.#menu.back())\n            this.#showMenu();\n        else\n            this.#hideMenu();",
+   "new": "        this.#menu.close();\n        this.#hideMenu();"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "a click on an action does not run it",
+   "old": "                this.#log.guardAsync('running an action', () => this.#runMenuAction());\n            });\n            this.#menuRows.add_child(row);",
+   "new": "            });\n            this.#menuRows.add_child(row);"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the window is not closed after the confirmation",
+   "old": "            this.#confirmTimer = 0;\n            this.close();\n            return GLib.SOURCE_REMOVE;",
+   "new": "            this.#confirmTimer = 0;\n            return GLib.SOURCE_REMOVE;"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the menu is still shown when the window reopens",
+   "old": "        this.#resetMenu();\n        this.#hideMenu();\n        // Every opening",
+   "new": "        this.#resetMenu();\n        // Every opening"
+  },
+  {
+   "file": "src/extension.js",
+   "label": "the actions are never listed",
+   "old": "getActions: item => backend.controller?.actionsFor(item) ?? Promise.resolve([]),",
+   "new": "getActions: () => Promise.resolve([]),"
+  },
+  {
+   "file": "src/extension.js",
+   "label": "no action can run",
+   "old": "onRunAction: (item, action) => backend.controller?.runAction(item, action) ?? Promise.resolve({ok: false, confirmation: null}),",
+   "new": "onRunAction: () => Promise.resolve({ok: false, confirmation: null}),"
+  },
+  {
+   "file": "src/extension.js",
+   "label": "the clipboard is not written",
+   "old": "copyText: text => compat.copyText(text),",
+   "new": "copyText: () => {},"
+  },
+  {
+   "file": "src/shell/compat.js",
+   "label": "the text goes to the primary selection, not the clipboard",
+   "old": "St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, text);",
+   "new": "St.Clipboard.get_default().set_text(St.ClipboardType.PRIMARY, text);"
+  }
+ ]
+}

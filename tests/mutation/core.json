@@ -1007,6 +1007,246 @@
    "label": "a filtered search still has a top hit",
    "old": "topHit: !this.#emptyQuery && effectiveFilter(this.#filter, this.#getProviders()) === null}",
    "new": "topHit: !this.#emptyQuery}"
+  },
+  {
+   "file": "src/core/action-menu.js",
+   "label": "an action with a very long id is kept",
+   "old": "raw.id === '' || raw.id.length > 200 || seen.has(raw.id))",
+   "new": "raw.id === '' || seen.has(raw.id))"
+  },
+  {
+   "file": "src/core/action-menu.js",
+   "label": "two actions with the same id are both kept",
+   "old": "raw.id.length > 200 || seen.has(raw.id))",
+   "new": "raw.id.length > 200)"
+  },
+  {
+   "file": "src/core/action-menu.js",
+   "label": "an action without a label is kept",
+   "old": "        if (label === '')\n            continue;\n",
+   "new": "\n"
+  },
+  {
+   "file": "src/core/action-menu.js",
+   "label": "any truthy submenu counts",
+   "old": "if (raw.submenu === true)",
+   "new": "if (raw.submenu)"
+  },
+  {
+   "file": "src/core/action-menu.js",
+   "label": "a huge copy text is kept",
+   "old": "raw.copy !== '' && raw.copy.length <= MAX_COPY_CHARS)",
+   "new": "raw.copy !== '')"
+  },
+  {
+   "file": "src/core/action-menu.js",
+   "label": "an empty copy text is kept",
+   "old": "typeof raw.copy === 'string' && raw.copy !== '' &&",
+   "new": "typeof raw.copy === 'string' &&"
+  },
+  {
+   "file": "src/core/action-menu.js",
+   "label": "the number of actions is not capped",
+   "old": "        if (clean.length >= MAX_ACTIONS)\n            break;\n",
+   "new": "\n"
+  },
+  {
+   "file": "src/core/action-menu.js",
+   "label": "the hint is dropped",
+   "old": "        if (hint !== '')\n            action.hint = hint;",
+   "new": "        void hint;"
+  },
+  {
+   "file": "src/core/action-menu.js",
+   "label": "the confirmation is dropped",
+   "old": "        if (confirmation !== '')\n            action.confirmation = confirmation;",
+   "new": "        void confirmation;"
+  },
+  {
+   "file": "src/core/action-menu.js",
+   "label": "the highlight stops at the ends instead of wrapping",
+   "old": "level.index = (((level.index + delta) % count) + count) % count;",
+   "new": "level.index = Math.max(0, Math.min(count - 1, level.index + delta));"
+  },
+  {
+   "file": "src/core/action-menu.js",
+   "label": "a submenu with nothing in it is entered",
+   "old": "if (!this.isOpen || !Array.isArray(actions) || actions.length === 0)",
+   "new": "if (!this.isOpen || !Array.isArray(actions))"
+  },
+  {
+   "file": "src/core/action-menu.js",
+   "label": "a menu with nothing in it opens",
+   "old": "if (Array.isArray(actions) && actions.length > 0)",
+   "new": "if (Array.isArray(actions))"
+  },
+  {
+   "file": "src/core/action-menu.js",
+   "label": "selecting a position that does not exist is accepted",
+   "old": "index >= 0 && index < level.actions.length)",
+   "new": "index >= 0)"
+  },
+  {
+   "file": "src/core/action-menu.js",
+   "label": "going back does not leave a level",
+   "old": "        this.#levels.pop();\n        return this.isOpen;",
+   "new": "        return this.isOpen;"
+  },
+  {
+   "file": "src/core/action-menu.js",
+   "label": "actions hands out the real list",
+   "old": "        return [...(this.#levels[this.#levels.length - 1]?.actions ?? [])];",
+   "new": "        return this.#levels[this.#levels.length - 1]?.actions ?? [];"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "a file that is not local has file actions",
+   "old": "    if (!isLocalFileUri(url))\n        return [];\n    const _ = gettext;",
+   "new": "    const _ = gettext;"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "Copy Path copies the name",
+   "old": "{id: 'copy-path', label: _('Copy Path'), copy: pathOfUrl(url),",
+   "new": "{id: 'copy-path', label: _('Copy Path'), copy: baseName(url),"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "Copy Name copies the path",
+   "old": "{id: 'copy-name', label: _('Copy Name'), copy: baseName(url),",
+   "new": "{id: 'copy-name', label: _('Copy Name'), copy: pathOfUrl(url),"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "Open With is not a submenu",
+   "old": "{id: 'open-with', label: _('Open With\u2026'), submenu: true}",
+   "new": "{id: 'open-with', label: _('Open With\u2026')}"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "the default application is not first",
+   "old": "const ordered = [...usable.filter(app => app.isDefault === true), ...usable.filter(app => app.isDefault !== true)];",
+   "new": "const ordered = usable;"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "every application is listed",
+   "old": "return ordered.slice(0, MAX_OPEN_WITH).map",
+   "new": "return ordered.map"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "the default application is not marked",
+   "old": "        if (app.isDefault === true)\n            action.hint = gettext('Default');",
+   "new": "        void gettext;"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "Open With does not check that the file is there",
+   "old": "            if (!await this.#exists(url, this.#lifetime))\n                throw new Error('the file is no longer there');\n            const app",
+   "new": "            const app"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "Open With launches any application asked for",
+   "old": "            const app = (await this.#appsFor(url, this.#lifetime)).find(candidate => `${OPEN_WITH_PREFIX}${candidate.id}` === action.id);\n            if (!app)\n                throw new Error('that application cannot open this file');",
+   "new": "            const app = (await this.#appsFor(url, this.#lifetime))[0];"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "Open With accepts an address that is not a local file",
+   "old": "            const url = result.data.url;\n            if (!isLocalFileUri(url))\n                throw new Error('refusing to open an address that is not a local file');\n            if (!await this.#exists(url, this.#lifetime))",
+   "new": "            const url = result.data.url;\n            if (!await this.#exists(url, this.#lifetime))"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "an unknown action is ignored",
+   "old": "        } else {\n            throw new Error(`unknown action ${action.id}`);\n        }",
+   "new": "        }"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "the applications of a file that is not local are listed",
+   "old": "        if (action.id !== 'open-with' || !isLocalFileUri(url))\n            return [];",
+   "new": "        if (action.id !== 'open-with')\n            return [];"
+  },
+  {
+   "file": "src/providers/apps-index.js",
+   "label": "a declared action without a label is listed",
+   "old": "typeof action.label === 'string' && action.label !== '')",
+   "new": "typeof action.label === 'string')"
+  },
+  {
+   "file": "src/providers/apps-index.js",
+   "label": "a declared action without a name is listed",
+   "old": "typeof action.name === 'string' && action.name !== '' &&",
+   "new": "typeof action.name === 'string' &&"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "the menu does not start with Open",
+   "old": "        return [open, ...rest];",
+   "new": "        return rest;"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "a second Open is kept",
+   "old": "cleanActions(offered).filter(action => action.id !== 'open');",
+   "new": "cleanActions(offered);"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "what a source offers is not checked",
+   "old": "        const rest = cleanActions(offered).filter(action => action.id !== 'open');",
+   "new": "        const rest = (Array.isArray(offered) ? offered : []).filter(action => action.id !== 'open');"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "a submenu inside a submenu is listed",
+   "old": "return cleanActions(offered).filter(candidate => !candidate.submenu);",
+   "new": "return cleanActions(offered);"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "a submenu is listed for any action",
+   "old": "if (!provider?.subActions || !action?.submenu)",
+   "new": "if (!provider?.subActions)"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "a copy is not done",
+   "old": "                this.#copyText(action.copy);\n                return true;",
+   "new": "                return true;"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "a failed copy is reported as a success",
+   "old": "            return {ok: copied, confirmation: copied ? action.confirmation ?? null : null};",
+   "new": "            return {ok: true, confirmation: action.confirmation ?? null};"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "a copy has no confirmation",
+   "old": "            return {ok: copied, confirmation: copied ? action.confirmation ?? null : null};",
+   "new": "            return {ok: copied, confirmation: null};"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "a failed action is remembered",
+   "old": "        if (ok) {\n            this.#log.debug(`action ${action.id} on ${item.key} done`);\n            this.#rememberQuery(query);\n        }",
+   "new": "        this.#rememberQuery(query);"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "an action without an id is run",
+   "old": "if (!action || typeof action.id !== 'string')",
+   "new": "if (!action)"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "Open does not open",
+   "old": "        if (action.id === 'open')\n            return {ok: await this.activate(item), confirmation: null};",
+   "new": "        if (action.id === 'open')\n            return {ok: true, confirmation: null};"
   }
  ]
 }

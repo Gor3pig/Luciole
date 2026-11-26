@@ -66,3 +66,19 @@ export function pickByIds(results, ids) {
     const byId = new Map(results.map(result => [result.id, result]));
     return ids.map(id => byId.get(id)).filter(result => result !== undefined);
 }
+
+export const APP_ACTION_PREFIX = 'app-action:';
+
+/**
+ * The actions an application declares itself (its desktop file's [Desktop Action] groups), as menu
+ * actions. Nothing is invented: no declared action, no entry.
+ *
+ * @param {Array<{name: string, label: string}>} declared
+ */
+export function appActionList(declared) {
+    if (!Array.isArray(declared))
+        return [];
+    return declared
+        .filter(action => action && typeof action.name === 'string' && action.name !== '' && typeof action.label === 'string' && action.label !== '')
+        .map(action => ({id: `${APP_ACTION_PREFIX}${action.name}`, label: action.label}));
+}

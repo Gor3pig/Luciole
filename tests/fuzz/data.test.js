@@ -3,6 +3,7 @@
 
 import {Frecency, MAX_ACTIVATIONS_PER_KEY, MAX_KEYS} from '../../src/core/frecency.js';
 import {jumpSection, mergeResults, nextSelection} from '../../src/core/merge.js';
+import {ActionMenu, cleanActions, MAX_ACTIONS, MAX_COPY_CHARS} from '../../src/core/action-menu.js';
 import {HistoryCursor, MAX_QUERIES, MAX_QUERY_CHARS, QueryHistory} from '../../src/core/query-history.js';
 import {
     buildFtsTerms, displayFolder, isExcluded, isExcludedType, pathOfUrl, rowsToResults,
@@ -187,6 +188,57 @@ test('fuzz: whatever the arrows do, the cursor stays inside the searches', () =>
             assert(where === null || (where.position >= 1 && where.position <= where.total && where.total === entries.length),
                 `position ${JSON.stringify(where)} outside ${entries.length} entries`);
             assert(where === null || cursor.active, 'a position with an inactive cursor');
+        }
+    });
+});
+
+test('fuzz: whatever a source hands over as actions, only well-formed, bounded, clean ones come out', () => {
+    forAll('cleanActions', random => {
+        const raw = random.chance(0.1)
+            ? randomJson(random)
+            : Array.from({length: random.int(0, 40)}, () => (random.chance(0.8)
+                ? {
+                    id: random.chance(0.9) ? random.string(ALPHABETS.ascii, random.int(0, 8)) : randomJson(random),
+                    label: random.chance(0.9) ? random.string(ALPHABETS.everything, random.int(0, 30)) : randomJson(random),
+                    hint: random.chance(0.3) ? random.string(ALPHABETS.everything, 8) : undefined,
+                    copy: random.chance(0.3) ? random.string(ALPHABETS.everything, random.chance(0.05) ? MAX_COPY_CHARS + 5 : 20) : randomJson(random),
+                    submenu: random.chance(0.3) ? random.pick([true, false, 1, 'yes', null]) : undefined,
+                    confirmation: random.chance(0.3) ? random.string(ALPHABETS.everything, 12) : undefined,
+                }
+                : randomJson(random)));
+        const actions = cleanActions(raw);
+        assert(actions.length <= MAX_ACTIONS, 'too many actions');
+        const ids = new Set();
+        for (const action of actions) {
+            assert(typeof action.id === 'string' && action.id !== '' && !ids.has(action.id), `bad id ${JSON.stringify(action.id)}`);
+            ids.add(action.id);
+            assert(typeof action.label === 'string' && action.label !== '' && !/\p{Cc}/u.test(action.label), `bad label ${JSON.stringify(action.label)}`);
+            assert(!('submenu' in action) || action.submenu === true, 'a submenu that is not exactly true');
+            assert(!('copy' in action) || (typeof action.copy === 'string' && action.copy !== '' && action.copy.length <= MAX_COPY_CHARS), 'bad copy text');
+        }
+    });
+});
+
+test('fuzz: whatever is done to the menu, the highlight stays on an action of the level shown', () => {
+    forAll('ActionMenu', random => {
+        const menu = new ActionMenu();
+        const actions = n => Array.from({length: n}, (_, i) => ({id: `a${i}`, label: `A${i}`}));
+        for (let step = random.int(1, 40); step > 0; step--) {
+            switch (random.int(0, 6)) {
+            case 0: menu.open('t', random.chance(0.2) ? [] : actions(random.int(1, 5))); break;
+            case 1: menu.push('s', random.chance(0.2) ? [] : actions(random.int(1, 5))); break;
+            case 2: menu.back(); break;
+            case 3: menu.move(random.int(-9, 9)); break;
+            case 4: menu.select(random.int(-2, 8)); break;
+            default: if (random.chance(0.1)) menu.close();
+            }
+            assert(menu.depth <= 2 || menu.depth >= 0, 'depth');
+            if (menu.isOpen) {
+                assert(menu.index >= 0 && menu.index < menu.actions.length, `index ${menu.index} outside ${menu.actions.length} actions`);
+                assert(menu.selected === menu.actions[menu.index] || JSON.stringify(menu.selected) === JSON.stringify(menu.actions[menu.index]), 'selected is not the indexed action');
+            } else {
+                assert(menu.selected === null && menu.index === -1, 'a closed menu has no highlight');
+            }
         }
     });
 });

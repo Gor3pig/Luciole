@@ -3,6 +3,7 @@
 
 import Gio from 'gi://Gio';
 
+import {cleanActions} from './action-menu.js';
 import {categoriesOf, effectiveFilter} from './categories.js';
 import {createMatcher} from './matching.js';
 import {mergeResults} from './merge.js';
@@ -75,6 +76,8 @@ export class SearchController {
     #queryHistory;
     #rememberQueries;
     #onQueryHistoryChange;
+    #gettext;
+    #copyText;
     #mergeOptions;
 
     #cancellable = null;
@@ -95,9 +98,11 @@ export class SearchController {
      * @param {import('./query-history.js').QueryHistory} [options.queryHistory] - where useful searches are remembered
      * @param {() => boolean} [options.rememberQueries] - asked at each use: whether searches may be remembered now
      * @param {() => void} [options.onQueryHistoryChange]
+     * @param {(text: string) => string} [options.gettext] - for the texts the controller adds itself
+     * @param {(text: string) => void} [options.copyText] - puts a text on the clipboard
      * @param {object} [options.mergeOptions]
      */
-    constructor({getProviders, frecency, scheduler, log, onUpdate, onFrecencyChange = () => {}, queryHistory = null, rememberQueries = () => false, onQueryHistoryChange = () => {}, mergeOptions = {}}) {
+    constructor({getProviders, frecency, scheduler, log, onUpdate, onFrecencyChange = () => {}, queryHistory = null, rememberQueries = () => false, onQueryHistoryChange = () => {}, gettext = text => text, copyText = () => {}, mergeOptions = {}}) {
         this.#getProviders = getProviders;
         this.#frecency = frecency;
         this.#scheduler = scheduler;
@@ -107,6 +112,8 @@ export class SearchController {
         this.#queryHistory = queryHistory;
         this.#rememberQueries = rememberQueries;
         this.#onQueryHistoryChange = onQueryHistoryChange;
+        this.#gettext = gettext;
+        this.#copyText = copyText;
         this.#mergeOptions = mergeOptions;
     }
 
@@ -187,6 +194,68 @@ export class SearchController {
             return;
         this.#queryHistory.record(query);
         this.#onQueryHistoryChange();
+    }
+
+    /**
+     * The actions of a result, for its menu: always "Open" first, then what its source offers.
+     * What a source hands over is checked (see cleanActions); a source that fails offers only Open.
+     *
+     * @returns {Promise<Array<object>>}
+     */
+    async actionsFor(item) {
+        const provider = this.#getProviders().find(p => p.id === item.providerId);
+        const _ = this.#gettext;
+        const open = {id: 'open', label: _('Open'), hint: _('Enter')};
+        if (!provider?.actions)
+            return [open];
+        const offered = await this.#log.guardAsync(`listing the actions of ${item.key}`,
+            () => provider.actions(item.result), []);
+        const rest = cleanActions(offered).filter(action => action.id !== 'open');
+        return [open, ...rest];
+    }
+
+    /** What a submenu action ("Open With") leads to. An empty list when there is nothing. */
+    async subActionsFor(item, action) {
+        const provider = this.#getProviders().find(p => p.id === item.providerId);
+        if (!provider?.subActions || !action?.submenu)
+            return [];
+        const offered = await this.#log.guardAsync(`listing ${action.id} for ${item.key}`,
+            () => provider.subActions(item.result, action), []);
+        return cleanActions(offered).filter(candidate => !candidate.submenu);
+    }
+
+    /**
+     * Runs one action of a result's menu. Resolves to {ok, confirmation}: whether it worked, and the
+     * text to show for a copy. Copying only writes to the clipboard.
+     *
+     * @returns {Promise<{ok: boolean, confirmation: string | null}>}
+     */
+    async runAction(item, action) {
+        const none = {ok: false, confirmation: null};
+        if (!action || typeof action.id !== 'string')
+            return none;
+        if (typeof action.copy === 'string') {
+            const copied = this.#log.guard(`copying for ${item.key}`, () => {
+                this.#copyText(action.copy);
+                return true;
+            }, false);
+            return {ok: copied, confirmation: copied ? action.confirmation ?? null : null};
+        }
+        if (action.id === 'open')
+            return {ok: await this.activate(item), confirmation: null};
+        const provider = this.#getProviders().find(p => p.id === item.providerId);
+        if (!provider?.activateAction)
+            return none;
+        const query = this.#query;
+        const ok = await this.#log.guardAsync(`action ${action.id} on ${item.key}`, async () => {
+            await provider.activateAction(item.result, action);
+            return true;
+        }, false);
+        if (ok) {
+            this.#log.debug(`action ${action.id} on ${item.key} done`);
+            this.#rememberQuery(query);
+        }
+        return {ok, confirmation: null};
     }
 
     /**

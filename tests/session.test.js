@@ -633,3 +633,117 @@ test('opening a result still works for a source other than the chosen one', asyn
     assert(await t.controller.activate({key: 'apps:1', providerId: 'apps', result: result('1', 'Firefox')}), 'activated');
     assertEquals(t.apps.activated, ['1']);
 });
+
+// The menu of a result.
+function menuSetup(extra = {}) {
+    const scheduler = new FakeScheduler();
+    const apps = fakeProvider(scheduler, {id: 'apps', results: [result('1', 'Firefox', {frecencyKey: 'apps:1'})]});
+    Object.assign(apps, extra);
+    const copied = [];
+    const queryHistory = new QueryHistory();
+    const log = recordingLog();
+    const controller = new SearchController({
+        getProviders: () => [apps], frecency: new Frecency(), scheduler, log, onUpdate() {},
+        gettext: text => `[${text}]`, copyText: text => copied.push(text),
+        queryHistory, rememberQueries: () => true,
+    });
+    const item = {key: 'apps:1', providerId: 'apps', result: result('1', 'Firefox', {frecencyKey: 'apps:1'})};
+    return {apps, copied, queryHistory, log, controller, item};
+}
+
+test('the menu of a result starts with Open, then what its source offers', async () => {
+    const t = menuSetup({actions: async () => [{id: 'new-window', label: 'New Window'}]});
+    assertEquals((await t.controller.actionsFor(t.item)).map(action => action.id), ['open', 'new-window']);
+    assertEquals((await t.controller.actionsFor(t.item))[0].label, '[Open]', 'its text is translated');
+});
+
+test('a source with no actions, or one that fails, offers only Open', async () => {
+    const none = menuSetup();
+    assertEquals((await none.controller.actionsFor(none.item)).map(action => action.id), ['open']);
+    const broken = menuSetup({actions: async () => {
+        throw new Error('desktop file unreadable');
+    }});
+    assertEquals((await broken.controller.actionsFor(broken.item)).map(action => action.id), ['open']);
+    assert(broken.log.lines.some(l => l.includes('desktop file unreadable')), 'logged');
+});
+
+test('what a source offers is checked: malformed actions are dropped, and a second Open is not kept', async () => {
+    const t = menuSetup({actions: async () => [{id: 'open', label: 'Open again'}, null, {id: 'x'}, {id: 'ok', label: 'Fine'}]});
+    assertEquals((await t.controller.actionsFor(t.item)).map(action => action.id), ['open', 'ok']);
+    assertEquals((await t.controller.actionsFor(t.item))[0].label, '[Open]', 'the controller\'s own Open stays first');
+});
+
+test('the actions of a result of an unknown source are just Open', async () => {
+    const t = menuSetup();
+    assertEquals((await t.controller.actionsFor({key: 'x:1', providerId: 'gone', result: result('1', 'X')})).map(action => action.id), ['open']);
+});
+
+test('a submenu lists what its source says, without submenus inside it', async () => {
+    const t = menuSetup({subActions: async () => [{id: 'a', label: 'A'}, {id: 'b', label: 'B', submenu: true}]});
+    const choices = await t.controller.subActionsFor(t.item, {id: 'open-with', submenu: true});
+    assertEquals(choices.map(choice => choice.id), ['a']);
+    assertEquals(await t.controller.subActionsFor(t.item, {id: 'open-with'}), [], 'only an action that leads to a submenu');
+    assertEquals(await t.controller.subActionsFor(t.item, null), []);
+});
+
+test('a copy action only writes to the clipboard, and gives its confirmation', async () => {
+    const t = menuSetup();
+    await t.controller.search('fire');
+    const outcome = await t.controller.runAction(t.item, {id: 'copy-path', copy: '/home/me/a.txt', confirmation: 'Path copied'});
+    assertEquals(outcome, {ok: true, confirmation: 'Path copied'});
+    assertEquals(t.copied, ['/home/me/a.txt']);
+    assertEquals(t.apps.activated, [], 'nothing was opened');
+    assertEquals(t.queryHistory.entries, [], 'a copy is not opening a result');
+});
+
+test('a copy that fails is reported as failed, without a confirmation', async () => {
+    const scheduler = new FakeScheduler();
+    const apps = fakeProvider(scheduler, {id: 'apps'});
+    const log = recordingLog();
+    const controller = new SearchController({
+        getProviders: () => [apps], frecency: new Frecency(), scheduler, log, onUpdate() {},
+        copyText: () => {
+            throw new Error('no clipboard');
+        },
+    });
+    const outcome = await controller.runAction({key: 'apps:1', providerId: 'apps', result: result('1', 'X')}, {id: 'copy-name', copy: 'x', confirmation: 'Copied'});
+    assertEquals(outcome, {ok: false, confirmation: null});
+    assert(log.lines.some(l => l.includes('no clipboard')), 'logged');
+});
+
+test('the Open action opens the result like Enter does', async () => {
+    const t = menuSetup();
+    await t.controller.search('fire');
+    assertEquals((await t.controller.runAction(t.item, {id: 'open'})).ok, true);
+    assertEquals(t.apps.activated, ['1']);
+    assertEquals(t.queryHistory.entries, ['fire']);
+});
+
+test('another action is run by its source, and the search that led to it is remembered', async () => {
+    const t = menuSetup();
+    await t.controller.search('fire');
+    const outcome = await t.controller.runAction(t.item, {id: 'new-window'});
+    assertEquals(outcome, {ok: true, confirmation: null});
+    assertEquals(t.apps.actions, ['new-window:1']);
+    assertEquals(t.queryHistory.entries, ['fire']);
+});
+
+test('an action that fails is logged, reported as failed, and not remembered', async () => {
+    const t = menuSetup();
+    t.apps.activateAction = async () => {
+        throw new Error('cannot start');
+    };
+    await t.controller.search('fire');
+    assertEquals((await t.controller.runAction(t.item, {id: 'new-window'})).ok, false);
+    assertEquals(t.queryHistory.entries, []);
+    assert(t.log.lines.some(l => l.includes('cannot start')), 'logged');
+});
+
+test('nothing runs for a missing action, an action without an id, or a source that is gone', async () => {
+    const t = menuSetup();
+    for (const odd of [null, undefined, {}, {id: 5}, 'open'])
+        assertEquals((await t.controller.runAction(t.item, odd)).ok, false, JSON.stringify(odd));
+    assertEquals((await t.controller.runAction({key: 'x:1', providerId: 'gone', result: result('1', 'X')}, {id: 'new-window'})).ok, false);
+    assertEquals(t.apps.actions, []);
+    assertEquals(t.apps.activated, []);
+});

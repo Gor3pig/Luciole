@@ -40,7 +40,7 @@ const FILES = [
     ['/home/me/Documents', 'say "hi" now.txt'],
 ];
 
-function setupProvider({files = FILES, excludedFolders = [], excludedTypes = [], openConnection, missing = []} = {}) {
+function setupProvider({files = FILES, excludedFolders = [], excludedTypes = [], openConnection, missing = [], apps = []} = {}) {
     const log = recordingLog();
     const database = openConnection ? null : memoryDatabase(files);
     const opened = [];
@@ -54,6 +54,7 @@ function setupProvider({files = FILES, excludedFolders = [], excludedTypes = [],
             launched.push(uri);
         },
         exists: async uri => !missing.includes(uri),
+        appsFor: async () => apps.map(app => ({...app, launch: uri => launched.push(`${app.id} ${uri}`)})),
     });
     const settings = {
         get_strv: key => (key === 'excluded-folders' ? excludedFolders : excludedTypes),
@@ -230,7 +231,7 @@ test('activating a result opens its file; the secondary action opens its folder'
     assertEquals(action.id, 'open-folder');
     await t.provider.activateAction(first, action);
     assertEquals(t.launched[1], 'file:///home/me/Documents');
-    await t.provider.activateAction(first, {id: 'unknown'});
+    assert((await failureOf(t.provider.activateAction(first, {id: 'unknown'})))?.includes('unknown action'), 'an unknown action must be refused');
     assertEquals(t.launched.length, 2);
     t.provider.destroy();
 });
@@ -289,6 +290,54 @@ test('an address that is not a local file is never opened', async () => {
         assert((await failureOf(t.provider.activateAction({data: {parentUrl: url}}, {id: 'open-folder'}))) !== null,
             `${url} was accepted as a folder`);
     }
+    assertEquals(t.launched, []);
+    t.provider.destroy();
+});
+
+const FILE = {data: {url: 'file:///home/me/Documents/Facture%20mars.pdf', parentUrl: 'file:///home/me/Documents'}};
+
+test('a file offers its menu actions, and a result that is not a local file offers none', async () => {
+    const t = setupProvider();
+    await t.ready;
+    assertEquals((await t.provider.actions(FILE)).map(action => action.id), ['open-folder', 'copy-path', 'copy-name', 'open-with']);
+    assertEquals(await t.provider.actions({data: {url: 'https://example.org/x'}}), []);
+    assertEquals(await t.provider.actions({}), []);
+    t.provider.destroy();
+});
+
+test('Open With lists the applications of the file, the default first', async () => {
+    const t = setupProvider({apps: [{id: 'a.desktop', name: 'A'}, {id: 'b.desktop', name: 'B', isDefault: true}]});
+    await t.ready;
+    const choices = await t.provider.subActions(FILE, {id: 'open-with'});
+    assertEquals(choices.map(choice => choice.id), ['open-with:b.desktop', 'open-with:a.desktop']);
+    assertEquals(await t.provider.subActions(FILE, {id: 'copy-path'}), [], 'no submenu for another action');
+    assertEquals(await t.provider.subActions({data: {url: 'smb://host/x'}}, {id: 'open-with'}), [], 'nothing for a file that is not local');
+    t.provider.destroy();
+});
+
+test('Open With launches the chosen application with the file', async () => {
+    const t = setupProvider({apps: [{id: 'a.desktop', name: 'A'}, {id: 'b.desktop', name: 'B'}]});
+    await t.ready;
+    await t.provider.activateAction(FILE, {id: 'open-with:b.desktop'});
+    assertEquals(t.launched, ['b.desktop file:///home/me/Documents/Facture%20mars.pdf']);
+    t.provider.destroy();
+});
+
+test('Open With refuses an application that cannot open this file, a missing file, and anything not local', async () => {
+    const t = setupProvider({apps: [{id: 'a.desktop', name: 'A'}], missing: ['file:///home/me/gone.txt']});
+    await t.ready;
+    assert((await failureOf(t.provider.activateAction(FILE, {id: 'open-with:other.desktop'})))?.includes('cannot open'), 'an unknown application was accepted');
+    assert((await failureOf(t.provider.activateAction({data: {url: 'file:///home/me/gone.txt'}}, {id: 'open-with:a.desktop'})))?.includes('no longer there'), 'a missing file was accepted');
+    for (const url of ['https://example.org/x', 'file://server/share/x', 'smb://host/x'])
+        assert((await failureOf(t.provider.activateAction({data: {url}}, {id: 'open-with:a.desktop'}))) !== null, `${url} was accepted`);
+    assertEquals(t.launched, []);
+    t.provider.destroy();
+});
+
+test('an action the provider does not know is refused and launches nothing', async () => {
+    const t = setupProvider();
+    await t.ready;
+    assert((await failureOf(t.provider.activateAction(FILE, {id: 'format-disk'})))?.includes('unknown action'), 'accepted');
     assertEquals(t.launched, []);
     t.provider.destroy();
 });
