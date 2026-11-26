@@ -81,6 +81,7 @@ step "eslint" npx eslint .
 step "unit tests" gjs -m tests/run.js
 step "random-data tests" fuzz
 step "mutation checks" mutation
+step "translations" sh tests/po-check.sh
 step "package check" sh tests/zipcheck.sh
 step "shell: enable/disable cycles" sh tests/shell/cycle.sh "$CYCLES"
 step "shell: open/close, keys, lock" sh tests/shell/openclose.sh "$UI_CYCLES"
