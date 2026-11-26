@@ -1,0 +1,29 @@
+{
+ "description": "Mutants for races between opening, closing, reopening and disabling the launcher. Not listed because equivalent: the guards around a closing animation (a replaced animation never calls the old completion handler) and the grab released on destroy (the shell releases a grab when its actor is destroyed).",
+ "slow": true,
+ "timeout": 300,
+ "command": [
+  "sh",
+  "tests/shell/race.sh"
+ ],
+ "mutants": [
+  {
+   "file": "src/ui/launcher.js",
+   "label": "closing does not release the keyboard grab",
+   "old": "        this.#unwatchFocus();\n        this.#releaseGrab();\n        this.#view.clear();",
+   "new": "        this.#unwatchFocus();\n        this.#view.clear();"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "opening does not show the window again",
+   "old": "        this.#overlay.show();\n\n        try {",
+   "new": "\n        try {"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "a faded-out window is never hidden",
+   "old": "                    if (!this.#isOpen && this.#overlay === overlay)\n                        overlay.hide();",
+   "new": "                    if (!this.#isOpen && this.#overlay === overlay)\n                        overlay.opacity = 0;"
+  }
+ ]
+}

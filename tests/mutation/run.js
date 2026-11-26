@@ -153,8 +153,11 @@ for (const spec of specs) {
         }
         const file = ROOT.resolve_relative_path(mutant.file);
         const original = readText(file);
-        const occurrences = original.split(mutant.old).length - 1;
-        if (occurrences !== 1) {
+        // A mutant may carry `also`: more replacements in the same file, for a protection that is
+        // doubled elsewhere (removing one alone changes nothing, so both go together).
+        const edits = [{old: mutant.old, new: mutant.new}, ...(mutant.also ?? [])];
+        const occurrences = Math.min(...edits.map(edit => original.split(edit.old).length - 1));
+        if (occurrences !== 1 || edits.some(edit => original.split(edit.old).length - 1 !== 1)) {
             stale.push(`${mutant.file}: ${mutant.label} (${occurrences} matches)`);
             print(`STALE     ${mutant.file}: ${mutant.label}`);
             continue;
@@ -165,7 +168,7 @@ for (const spec of specs) {
         writeText(Gio.File.new_for_path(backupPath(mutant.file)), original);
         let status;
         try {
-            writeText(file, original.replace(mutant.old, () => mutant.new));
+            writeText(file, edits.reduce((text, edit) => text.replace(edit.old, () => edit.new), original));
             status = await runCommand(spec.command, ROOT.get_path(), spec.timeout ?? TIMEOUT_SECONDS);
         } finally {
             writeText(file, original);
