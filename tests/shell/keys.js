@@ -12,6 +12,8 @@
 //   escape           the Escape key
 //   key <name>       Down, Up, Return, BackSpace, Escape
 //   chord <a+b+c>    holds the modifiers, taps the last key (Control_L+Next)
+//   code <a+b+n>     like chord, but the last key is a physical key, by its evdev code (Control_L+3 is the
+//                    key that types 3 on a US keyboard and an accented letter on a French one)
 //   type <text>      types the characters one by one
 //   pointer <x> <y>  puts the pointer at x, y (first in the top-left corner, then moves by x, y)
 //   click            presses and releases the left button where the pointer is
@@ -32,7 +34,7 @@ const BTN_LEFT = 0x110;
 const KEY_ESCAPE = 65307;
 const NAMED_KEYS = {
     Down: 65364, Up: 65362, Return: 65293, BackSpace: 65288, Escape: KEY_ESCAPE, Tab: 65289,
-    ISO_Left_Tab: 65056, Next: 65366, Prior: 65365, Right: 65363, Left: 65361, Control_L: KEY_CONTROL_L, Alt_L: KEY_ALT_L, Shift_L: 65505, Super_L: 65515,
+    ISO_Left_Tab: 65056, 0: 48, 1: 49, 2: 50, 3: 51, 4: 52, Next: 65366, Prior: 65365, Right: 65363, Left: 65361, Control_L: KEY_CONTROL_L, Alt_L: KEY_ALT_L, Shift_L: 65505, Super_L: 65515,
 };
 
 const bus = Gio.bus_get_sync(Gio.BusType.SESSION, null);
@@ -101,6 +103,22 @@ const commands = {
         for (const name of names)
             key(NAMED_KEYS[name], true);
         tap(NAMED_KEYS[last]);
+        for (const name of names.reverse())
+            key(NAMED_KEYS[name], false);
+    },
+    code(spec) {
+        const names = spec.split('+');
+        const evdev = Number(names.pop());
+        if (!Number.isInteger(evdev))
+            throw new Error(`bad key code in ${spec}`);
+        for (const name of names) {
+            if (!(name in NAMED_KEYS))
+                throw new Error(`unknown key ${name}`);
+        }
+        for (const name of names)
+            key(NAMED_KEYS[name], true);
+        for (const pressed of [true, false])
+            call(sessionPath, sessionIface, 'NotifyKeyboardKeycode', new GLib.Variant('(ub)', [evdev, pressed]), null);
         for (const name of names.reverse())
             key(NAMED_KEYS[name], false);
     },

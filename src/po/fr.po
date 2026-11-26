@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 10:13+0100\n"
+"POT-Creation-Date: 2026-11-26 11:23+0100\n"
 "PO-Revision-Date: 2026-11-25 20:00+0100\n"
 "Last-Translator: Luciole contributors\n"
 "Language-Team: fr <>\n"
@@ -88,7 +88,9 @@ msgstr "Historique"
 msgid ""
 "Luciole remembers which results you open and the searches that led to them, "
 "only on this computer."
-msgstr "Luciole retient les résultats que vous ouvrez et les recherches qui y ont mené, uniquement sur cet ordinateur."
+msgstr ""
+"Luciole retient les résultats que vous ouvrez et les recherches qui y ont "
+"mené, uniquement sur cet ordinateur."
 
 #: src/prefs.js
 msgid "Remember Searches"
@@ -97,7 +99,9 @@ msgstr "Retenir les recherches"
 #: src/prefs.js
 msgid ""
 "Lets the up arrow bring back a previous search. Turning this off erases them"
-msgstr "Permet de rappeler une recherche avec la flèche haut. Désactiver efface les recherches retenues"
+msgstr ""
+"Permet de rappeler une recherche avec la flèche haut. Désactiver efface les "
+"recherches retenues"
 
 #: src/prefs.js
 msgid "Clear History"
@@ -203,13 +207,42 @@ msgid "Show in Folder"
 msgstr "Afficher dans le dossier"
 
 #: src/ui/launcher.js
-#, javascript-format
-msgid "Previous search %d of %d"
-msgstr "Recherche précédente %d sur %d"
+msgid "All"
+msgstr "Tout"
+
+#: src/ui/launcher.js
+msgid "Search applications"
+msgstr "Rechercher des applications"
+
+#: src/ui/launcher.js
+msgid "Search files"
+msgstr "Rechercher des fichiers"
 
 #: src/ui/launcher.js
 msgid "Search applications and files"
 msgstr "Rechercher des applications et des fichiers"
+
+#: src/ui/launcher.js
+#, javascript-format
+msgid "Search %s"
+msgstr "Rechercher dans %s"
+
+#: src/ui/launcher.js
+msgid "Type to search your applications"
+msgstr "Tapez pour chercher dans vos applications"
+
+#: src/ui/launcher.js
+msgid "Type to search your files"
+msgstr "Tapez pour chercher dans vos fichiers"
+
+#: src/ui/launcher.js
+msgid "Type to search in this category"
+msgstr "Tapez pour chercher dans cette catégorie"
+
+#: src/ui/launcher.js
+#, javascript-format
+msgid "Previous search %d of %d"
+msgstr "Recherche précédente %d sur %d"
 
 #: src/ui/launcher.js
 msgid "Search"

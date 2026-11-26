@@ -1,5 +1,5 @@
 {
- "description": "Mutants for the core logic: each one breaks the code on purpose and the unit tests must fail. Not listed because equivalent: the session's own refusal of an empty search (QueryHistory.record refuses it too).",
+ "description": "Mutants for the core logic: each one breaks the code on purpose and the unit tests must fail. Not listed because equivalent: the session's own refusal of an empty search (QueryHistory.record refuses it too). Also not listed because equivalent: the controller keeping a filter that is not an identifier (effectiveFilter treats it as everything anyway).",
  "command": [
   "gjs",
   "-m",
@@ -923,6 +923,90 @@
    "label": "the secondary action does not remember the search",
    "old": "        if (done)\n            this.#rememberQuery(query);\n        return done;\n    }\n\n    /** Cancels",
    "new": "        return done;\n    }\n\n    /** Cancels"
+  },
+  {
+   "file": "src/core/categories.js",
+   "label": "a single source is offered as a category",
+   "old": "return list.length >= 2 ? list : [];",
+   "new": "return list.length >= 1 ? list : [];"
+  },
+  {
+   "file": "src/core/categories.js",
+   "label": "a source listed twice gives two categories",
+   "old": "if (typeof provider?.id !== 'string' || provider.id === '' || seen.has(provider.id))",
+   "new": "if (typeof provider?.id !== 'string' || provider.id === '')"
+  },
+  {
+   "file": "src/core/categories.js",
+   "label": "a source without a name has no label",
+   "old": "name: typeof provider.name === 'string' && provider.name !== '' ? provider.name : provider.id}",
+   "new": "name: provider.name}"
+  },
+  {
+   "file": "src/core/categories.js",
+   "label": "zero does not mean everything",
+   "old": "    if (digit === 0)\n        return null;\n",
+   "new": "\n"
+  },
+  {
+   "file": "src/core/categories.js",
+   "label": "the first digit picks the second category",
+   "old": "return categories[digit - 1]?.id;",
+   "new": "return categories[digit]?.id;"
+  },
+  {
+   "file": "src/core/categories.js",
+   "label": "a digit above nine is accepted",
+   "old": "digit < 0 || digit > 9",
+   "new": "digit < 0 || digit > 99"
+  },
+  {
+   "file": "src/core/categories.js",
+   "label": "a source that is gone is still filtered on",
+   "old": "return providers.some(provider => provider?.id === id) ? id : null;",
+   "new": "return id;"
+  },
+  {
+   "file": "src/core/categories.js",
+   "label": "the digit row is read by symbol, not position",
+   "old": "    if (Number.isInteger(keycode) && keycode >= FIRST_DIGIT_KEYCODE && keycode <= FIRST_DIGIT_KEYCODE + 9)\n        return (keycode - FIRST_DIGIT_KEYCODE + 1) % 10;\n",
+   "new": "\n"
+  },
+  {
+   "file": "src/core/categories.js",
+   "label": "the last key of the row is not zero",
+   "old": "return (keycode - FIRST_DIGIT_KEYCODE + 1) % 10;",
+   "new": "return keycode - FIRST_DIGIT_KEYCODE + 1;"
+  },
+  {
+   "file": "src/core/categories.js",
+   "label": "the keypad is not read",
+   "old": "    if (Number.isInteger(keyval) && keyval >= KEYPAD_ZERO && keyval <= KEYPAD_ZERO + 9)\n        return keyval - KEYPAD_ZERO;\n",
+   "new": "\n"
+  },
+  {
+   "file": "src/core/categories.js",
+   "label": "a digit symbol is not read",
+   "old": "    if (Number.isInteger(keyval) && keyval >= ASCII_ZERO && keyval <= ASCII_ZERO + 9)\n        return keyval - ASCII_ZERO;\n",
+   "new": "\n"
+  },
+  {
+   "file": "src/core/categories.js",
+   "label": "the digit row stops one key short",
+   "old": "keycode <= FIRST_DIGIT_KEYCODE + 9)",
+   "new": "keycode <= FIRST_DIGIT_KEYCODE + 8)"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "every source is searched whatever the filter",
+   "old": "return only === null ? providers : providers.filter(provider => provider.id === only);",
+   "new": "return providers;"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "a filtered search still has a top hit",
+   "old": "topHit: !this.#emptyQuery && effectiveFilter(this.#filter, this.#getProviders()) === null}",
+   "new": "topHit: !this.#emptyQuery}"
   }
  ]
 }

@@ -1,10 +1,12 @@
 // SPDX-FileCopyrightText: 2026 Luciole contributors
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+import Atk from 'gi://Atk';
 import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 
+import {categoryForDigit, digitOfKey} from '../core/categories.js';
 import {backdropClass, motionEnabled, verticalLayout} from '../core/layout.js';
 import {jumpSection, nextSelection} from '../core/merge.js';
 import {HistoryCursor} from '../core/query-history.js';
@@ -49,6 +51,13 @@ export class Launcher {
     #getBackdrop;
     #getAnimations;
     #getQueries;
+    #getCategories;
+    #onFilter;
+    #categories = [];
+    #filter = null;
+    #chipBox = null;
+    #chips = new Map();
+    #emptyHint = null;
     #history = new HistoryCursor();
     #recalling = false;
     #hint = null;
@@ -77,8 +86,10 @@ export class Launcher {
      * @param {() => string} options.getBackdrop - the dimming setting: 'none', 'light' or 'standard'
      * @param {() => boolean} options.getAnimations - the animations setting
      * @param {() => string[]} options.getQueries - the remembered searches, newest first
+     * @param {() => Array<{id: string, name: string}>} options.getCategories - the sources a search can be restricted to
+     * @param {(id: string | null) => void} options.onFilter - the search is restricted to a source (null: all)
      */
-    constructor({log, gettext, onQuery, onActivate, onSecondary, getBackdrop, getAnimations, getQueries = () => []}) {
+    constructor({log, gettext, onQuery, onActivate, onSecondary, getBackdrop, getAnimations, getQueries = () => [], getCategories = () => [], onFilter = () => {}}) {
         this.#log = log;
         this.#gettext = gettext;
         this.#onQuery = onQuery;
@@ -87,6 +98,8 @@ export class Launcher {
         this.#getBackdrop = getBackdrop;
         this.#getAnimations = getAnimations;
         this.#getQueries = getQueries;
+        this.#getCategories = getCategories;
+        this.#onFilter = onFilter;
     }
 
     // Read at every use, so a change in the preferences applies at once.
@@ -120,6 +133,10 @@ export class Launcher {
         this.#history.reset();
         this.#entry.set_text('');
         this.#showHint();
+        // Every opening starts on "All", like the empty field.
+        this.#filter = null;
+        this.#log.guard('resetting the category', () => this.#onFilter(null));
+        this.#buildChips();
         this.#overlay.remove_all_transitions();
         this.#panel.remove_all_transitions();
         this.#view.resetHeight();
@@ -141,6 +158,9 @@ export class Launcher {
         // and it could not even be closed with Escape: it closes instead.
         this.#stopFocusWatch = compat.connectKeyFocus(() => this.#checkFocus());
         this.#log.debug('opened');
+        // The clock of the "query to results" timings starts now, not at the last typed key.
+        this.#queryAt = GLib.get_monotonic_time();
+        this.#doneAt = this.#queryAt;
         this.#log.guard('searching the recent items', () => this.#onQuery(''));
         this.#settled = true;
 
@@ -212,6 +232,7 @@ export class Launcher {
             const ms = (GLib.get_monotonic_time() - this.#doneAt) / 1000;
             this.#log.debug(`perf query to final results: ${ms.toFixed(2)} ms`);
         }
+        this.#updateEmptyHint(state.done);
         const first = merged.topHit ?? merged.items[0];
         this.#log.debug(`results: ${merged.items.length} first=${first ? first.result.title : '-'} query=${this.#entry.get_text()}`);
     }
@@ -274,6 +295,97 @@ export class Launcher {
         const item = this.#items.find(candidate => candidate.key === this.#selectedKey);
         if (item)
             this.#activate(item);
+    }
+
+    // The chips under the field: "All" and one per source; none when there is nothing to choose.
+    #buildChips() {
+        const list = this.#log.guard('reading the categories', () => this.#getCategories(), []);
+        this.#categories = Array.isArray(list) ? list : [];
+        this.#emptyHint.hide();
+        this.#chipBox.destroy_all_children();
+        this.#chips.clear();
+        if (this.#categories.length === 0) {
+            this.#chipBox.hide();
+        } else {
+            const _ = this.#gettext;
+            for (const category of [{id: null, name: _('All')}, ...this.#categories]) {
+                const chip = new St.Button({
+                    style_class: 'luciole-chip',
+                    label: category.name,
+                    // Reached with Ctrl+digit or the pointer: Tab keeps jumping between sections.
+                    can_focus: false,
+                    reactive: true,
+                    track_hover: true,
+                });
+                chip.accessible_role = Atk.Role.TOGGLE_BUTTON;
+                chip.accessible_name = category.name;
+                chip.connect('clicked', () => this.#setFilter(category.id));
+                this.#chipBox.add_child(chip);
+                this.#chips.set(category.id, chip);
+            }
+            this.#chipBox.show();
+        }
+        this.#markChips();
+        this.#updateFilterTexts();
+    }
+
+    #markChips() {
+        for (const [id, chip] of this.#chips) {
+            const selected = id === this.#filter;
+            chip.set_checked(selected);
+            if (selected)
+                chip.add_accessible_state(Atk.StateType.CHECKED);
+            else
+                chip.remove_accessible_state(Atk.StateType.CHECKED);
+        }
+    }
+
+    // Ctrl+0 (all), Ctrl+1, Ctrl+2... (the sources in order). True when the key was one of them.
+    #categoryShortcut(event) {
+        const digit = digitOfKey({keyval: event.get_key_symbol(), keycode: event.get_key_code()});
+        if (digit === null)
+            return false;
+        const id = categoryForDigit(digit, this.#categories);
+        if (id === undefined)
+            return false;
+        this.#setFilter(id);
+        return true;
+    }
+
+    #setFilter(id) {
+        if (id === this.#filter || !this.#isOpen)
+            return;
+        this.#filter = id;
+        this.#log.guard('restricting the search', () => this.#onFilter(id));
+        this.#markChips();
+        this.#updateFilterTexts();
+        this.#emptyHint.hide();
+        // The text stays; what is found for it changes.
+        this.#queryAt = GLib.get_monotonic_time();
+        this.#doneAt = this.#queryAt;
+        this.#navigated = false;
+        this.#log.guard('searching', () => this.#onQuery(this.#entry.get_text()));
+    }
+
+    // What the field and the empty list say once a source is chosen.
+    #updateFilterTexts() {
+        const _ = this.#gettext;
+        const name = this.#categories.find(category => category.id === this.#filter)?.name ?? '';
+        const searching = {apps: _('Search applications'), files: _('Search files')};
+        this.#entry.hint_text = this.#filter === null
+            ? _('Search applications and files')
+            : searching[this.#filter] ?? _('Search %s').format(name);
+    }
+
+    // Shown only when a source is chosen, the field is empty and that source has nothing to list
+    // before something is typed (files have no "recent" list).
+    #updateEmptyHint(done) {
+        const _ = this.#gettext;
+        const waiting = {apps: _('Type to search your applications'), files: _('Type to search your files')};
+        const show = done && this.#filter !== null && this.#entry.get_text() === '' && this.#items.length === 0;
+        if (show)
+            this.#emptyHint.set_text(waiting[this.#filter] ?? _('Type to search in this category'));
+        this.#emptyHint.visible = show;
     }
 
     // The remembered searches, read at each use (the setting may have changed).
@@ -388,8 +500,14 @@ export class Launcher {
             orientation: Clutter.Orientation.VERTICAL,
             reactive: true,
         });
+        const chipBox = new St.BoxLayout({style_class: 'luciole-chips', visible: false});
+        const emptyHint = new St.Label({style_class: 'luciole-empty-hint', visible: false});
         panel.add_child(entry);
+        panel.add_child(chipBox);
+        panel.add_child(emptyHint);
         panel.add_child(view.actor);
+        this.#chipBox = chipBox;
+        this.#emptyHint = emptyHint;
 
         // A vertical box stacks its child from the top; x_align centres it.
         // (St.Bin ignores the alignment here, so it is not used.)
@@ -431,6 +549,8 @@ export class Launcher {
                 this.#activateSecondary();
                 return Clutter.EVENT_STOP;
             }
+            if (control && this.#categoryShortcut(event))
+                return Clutter.EVENT_STOP;
             switch (symbol) {
             case Clutter.KEY_Down:
                 // While going through the remembered searches, the arrows keep going through them.

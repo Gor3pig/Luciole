@@ -1,0 +1,83 @@
+{
+ "description": "Mutants for the categories in the live launcher: chips, shortcuts, click, reopening. Not listed because equivalent: a chip that can take the keyboard focus (Tab is handled by the field, and a click does not move the focus).",
+ "slow": true,
+ "timeout": 400,
+ "command": [
+  "sh",
+  "tests/shell/files.sh"
+ ],
+ "mutants": [
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the shortcuts are ignored",
+   "old": "            if (control && this.#categoryShortcut(event))\n                return Clutter.EVENT_STOP;",
+   "new": "            if (false)\n                return Clutter.EVENT_STOP;"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the search is not restricted",
+   "old": "        this.#log.guard('restricting the search', () => this.#onFilter(id));\n",
+   "new": "\n"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the chosen chip is not shown",
+   "old": "        this.#log.guard('restricting the search', () => this.#onFilter(id));\n        this.#markChips();",
+   "new": "        this.#log.guard('restricting the search', () => this.#onFilter(id));"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the search is not run again after a choice",
+   "old": "        this.#log.guard('searching', () => this.#onQuery(this.#entry.get_text()));\n    }\n\n    // What the field",
+   "new": "    }\n\n    // What the field"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "a click on a chip does nothing",
+   "old": "                chip.connect('clicked', () => this.#setFilter(category.id));\n",
+   "new": ""
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "reopening keeps the category",
+   "old": "        this.#filter = null;\n        this.#log.guard('resetting the category', () => this.#onFilter(null));\n        this.#buildChips();",
+   "new": "        this.#buildChips();"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the empty-field hint never shows",
+   "old": "        const show = done && this.#filter !== null && this.#entry.get_text() === '' && this.#items.length === 0;",
+   "new": "        const show = false;"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the empty-field hint stays with text typed",
+   "old": "this.#filter !== null && this.#entry.get_text() === '' && this.#items.length === 0;",
+   "new": "this.#filter !== null && this.#items.length === 0;"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the digit row is read by symbol only",
+   "old": "digitOfKey({keyval: event.get_key_symbol(), keycode: event.get_key_code()})",
+   "new": "digitOfKey({keyval: event.get_key_symbol(), keycode: 0})"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "there are no chips",
+   "old": "        if (this.#categories.length === 0) {\n            this.#chipBox.hide();",
+   "new": "        if (true) {\n            this.#chipBox.hide();"
+  },
+  {
+   "file": "src/extension.js",
+   "label": "the sources are not offered",
+   "old": "getCategories: () => backend.controller?.categories() ?? [],",
+   "new": "getCategories: () => [],"
+  },
+  {
+   "file": "src/extension.js",
+   "label": "the choice never reaches the search",
+   "old": "onFilter: id => backend.controller?.setFilter(id),",
+   "new": "onFilter: () => {},"
+  }
+ ]
+}

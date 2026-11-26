@@ -12,6 +12,7 @@
 # index with made-up files (see index-service.js); never by the real one.
 # CAPTURE_BACKDROP=none|light|standard sets the dimming behind the window.
 # INDEX_EXTRA=<n> adds n files; CAPTURE_DOWN=<n> presses the Down arrow n times.
+# CAPTURE_CHORD=<keys> sends a key chord once the window is open and the query typed (Control_L+2).
 # CAPTURE_UP=<n> starts with made-up remembered searches and presses the Up arrow n times.
 #
 # Safety: the shell runs on its own D-Bus session with its own settings file in
@@ -39,7 +40,7 @@ printf '[D-BUS Service]\nName=org.freedesktop.LocalSearch3\nExec=/usr/bin/false\
 glib-compile-schemas "$ROOT/src/schemas"
 ln -s "$ROOT/src" "$WORK/data/gnome-shell/extensions/$UUID"
 
-XDG_DATA_HOME="$WORK/data" XDG_CONFIG_HOME="$WORK/config" XDG_CACHE_HOME="$WORK/cache" XDG_DATA_DIRS="$WORK/services:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" CAPTURE_INDEX="${CAPTURE_INDEX:-0}" CAPTURE_DOWN="${CAPTURE_DOWN:-}" CAPTURE_UP="${CAPTURE_UP:-}" INDEX_EXTRA="${INDEX_EXTRA:-0}" GSETTINGS_BACKEND=keyfile \
+XDG_DATA_HOME="$WORK/data" XDG_CONFIG_HOME="$WORK/config" XDG_CACHE_HOME="$WORK/cache" XDG_DATA_DIRS="$WORK/services:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" CAPTURE_INDEX="${CAPTURE_INDEX:-0}" CAPTURE_DOWN="${CAPTURE_DOWN:-}" CAPTURE_UP="${CAPTURE_UP:-}" CAPTURE_CHORD="${CAPTURE_CHORD:-}" INDEX_EXTRA="${INDEX_EXTRA:-0}" GSETTINGS_BACKEND=keyfile \
     GSETTINGS_SCHEMA_DIR="$ROOT/src/schemas" G_MESSAGES_DEBUG=all XDG_SESSION_TYPE=wayland \
     dbus-run-session -- sh "$ROOT/tests/shell/capture-inner.sh" "$OUTPUT" "$SCHEME" "$WORK/shell.log" "${3:-open}" "${4:-}" \
     >"$WORK/out.txt" 2>&1 || true

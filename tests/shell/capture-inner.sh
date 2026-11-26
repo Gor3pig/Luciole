@@ -66,6 +66,10 @@ if [ "$STATE" = open ]; then
         done
     fi
 fi
+if [ -n "${CAPTURE_CHORD:-}" ]; then
+    chord "$CAPTURE_CHORD"
+    sleep 1
+fi
 if [ -n "${CAPTURE_UP:-}" ]; then
     n=$CAPTURE_UP
     while [ "$n" -gt 0 ]; do

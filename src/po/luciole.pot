@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 10:13+0100\n"
+"POT-Creation-Date: 2026-11-26 11:23+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -193,12 +193,41 @@ msgid "Show in Folder"
 msgstr ""
 
 #: src/ui/launcher.js
-#, javascript-format
-msgid "Previous search %d of %d"
+msgid "All"
+msgstr ""
+
+#: src/ui/launcher.js
+msgid "Search applications"
+msgstr ""
+
+#: src/ui/launcher.js
+msgid "Search files"
 msgstr ""
 
 #: src/ui/launcher.js
 msgid "Search applications and files"
+msgstr ""
+
+#: src/ui/launcher.js
+#, javascript-format
+msgid "Search %s"
+msgstr ""
+
+#: src/ui/launcher.js
+msgid "Type to search your applications"
+msgstr ""
+
+#: src/ui/launcher.js
+msgid "Type to search your files"
+msgstr ""
+
+#: src/ui/launcher.js
+msgid "Type to search in this category"
+msgstr ""
+
+#: src/ui/launcher.js
+#, javascript-format
+msgid "Previous search %d of %d"
 msgstr ""
 
 #: src/ui/launcher.js

@@ -558,3 +558,78 @@ test('without a history object the controller still works', async () => {
     await c.search('fire');
     assert(await c.activate({key: 'apps:1', providerId: 'apps', result: result('1', 'Firefox')}), 'activated');
 });
+
+// Restricting the search to one source.
+function filterSetup() {
+    const scheduler = new FakeScheduler();
+    const apps = fakeProvider(scheduler, {id: 'apps', priority: 1, results: [result('1', 'Firefox')], recents: [result('1', 'Firefox')]});
+    const files = fakeProvider(scheduler, {id: 'files', priority: 2, results: [result('2', 'Fiche.odt')]});
+    const updates = [];
+    const controller = new SearchController({
+        getProviders: () => [apps, files], frecency: new Frecency(), scheduler, log: recordingLog(),
+        onUpdate: (merged, state) => updates.push({sections: merged.sections.map(s => s.providerId), top: merged.topHit?.providerId ?? null, done: state.done}),
+    });
+    return {apps, files, controller, updates};
+}
+
+test('with a source chosen, only that source is searched and shown', async () => {
+    const t = filterSetup();
+    t.controller.setFilter('files');
+    await t.controller.search('fi');
+    assertEquals(t.apps.searches, [], 'the other source is not even asked');
+    assertEquals(t.files.searches, ['fi']);
+    assertEquals(t.updates[t.updates.length - 1].sections, ['files']);
+});
+
+test('with a source chosen there is no top hit, the results are that source\'s section', async () => {
+    const t = filterSetup();
+    await t.controller.search('fi');
+    assert(t.updates[t.updates.length - 1].top !== null, 'a top hit without a filter');
+    t.controller.setFilter('apps');
+    await t.controller.search('fi');
+    assertEquals(t.updates[t.updates.length - 1].top, null);
+});
+
+test('choosing everything again searches every source', async () => {
+    const t = filterSetup();
+    t.controller.setFilter('files');
+    t.controller.setFilter(null);
+    await t.controller.search('fi');
+    assertEquals(t.apps.searches, ['fi']);
+    assertEquals(t.files.searches, ['fi']);
+});
+
+test('a source that is gone counts as everything', async () => {
+    const t = filterSetup();
+    t.controller.setFilter('removed');
+    await t.controller.search('fi');
+    assertEquals(t.apps.searches, ['fi']);
+    assertEquals(t.files.searches, ['fi']);
+    assert(t.updates[t.updates.length - 1].top !== null, 'the top hit is back');
+});
+
+test('a filter that is not an identifier is ignored', async () => {
+    const t = filterSetup();
+    for (const odd of [undefined, 5, {}, ['files']])
+        t.controller.setFilter(odd);
+    await t.controller.search('fi');
+    assertEquals(t.files.searches, ['fi']);
+    assertEquals(t.apps.searches, ['fi']);
+});
+
+test('the categories are the sources, and none when there is only one', () => {
+    const scheduler = new FakeScheduler();
+    const apps = fakeProvider(scheduler, {id: 'apps'});
+    const files = fakeProvider(scheduler, {id: 'files'});
+    const two = new SearchController({getProviders: () => [apps, files], frecency: new Frecency(), scheduler, log: recordingLog(), onUpdate() {}});
+    assertEquals(two.categories().map(c => c.id), ['apps', 'files']);
+    const one = new SearchController({getProviders: () => [apps], frecency: new Frecency(), scheduler, log: recordingLog(), onUpdate() {}});
+    assertEquals(one.categories(), []);
+});
+
+test('opening a result still works for a source other than the chosen one', async () => {
+    const t = filterSetup();
+    t.controller.setFilter('files');
+    assert(await t.controller.activate({key: 'apps:1', providerId: 'apps', result: result('1', 'Firefox')}), 'activated');
+    assertEquals(t.apps.activated, ['1']);
+});

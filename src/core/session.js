@@ -3,6 +3,7 @@
 
 import Gio from 'gi://Gio';
 
+import {categoriesOf, effectiveFilter} from './categories.js';
 import {createMatcher} from './matching.js';
 import {mergeResults} from './merge.js';
 import {scoreForEmptyQuery, scoreResult} from './scoring.js';
@@ -81,6 +82,7 @@ export class SearchController {
     #scored = new Map();
     #emptyQuery = true;
     #query = '';
+    #filter = null;
 
     /**
      * @param {object} options
@@ -108,6 +110,26 @@ export class SearchController {
         this.#mergeOptions = mergeOptions;
     }
 
+    /** One category per source, for the window to offer; none when there is nothing to choose between. */
+    categories() {
+        return categoriesOf(this.#getProviders());
+    }
+
+    /**
+     * Restricts the searches to one source (its id), or to all of them (null). The caller runs
+     * the search again. A source that is gone counts as all.
+     */
+    setFilter(id) {
+        this.#filter = typeof id === 'string' ? id : null;
+    }
+
+    // The sources a search goes to: the chosen one, or all of them.
+    #searched() {
+        const providers = this.#getProviders();
+        const only = effectiveFilter(this.#filter, providers);
+        return only === null ? providers : providers.filter(provider => provider.id === only);
+    }
+
     /**
      * Starts a search and cancels the previous one. The returned promise
      * resolves once every provider has finished or been given up on.
@@ -127,7 +149,7 @@ export class SearchController {
         this.#emptyQuery = matcher.isEmpty;
         const alive = () => !cancellable.is_cancelled();
 
-        const runs = this.#getProviders().map(provider =>
+        const runs = this.#searched().map(provider =>
             this.#run(provider, query, matcher, alive, cancellable));
         return Promise.all(runs).then(() => {
             if (!alive())
@@ -276,11 +298,11 @@ export class SearchController {
     }
 
     #publish(done) {
-        const entries = this.#getProviders().map(provider => ({
+        const entries = this.#searched().map(provider => ({
             provider,
             scored: [...(this.#scored.get(provider.id)?.values() ?? [])],
         }));
-        const merged = mergeResults(entries, {...this.#mergeOptions, topHit: !this.#emptyQuery});
+        const merged = mergeResults(entries, {...this.#mergeOptions, topHit: !this.#emptyQuery && effectiveFilter(this.#filter, this.#getProviders()) === null});
         this.#log.guard('updating the results', () => this.#onUpdate(merged, {done}));
     }
 
