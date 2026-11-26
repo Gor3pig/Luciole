@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 import {fold, mergeRanges, sanitizeLabel, splitByRanges, wordStarts} from '../../src/core/text.js';
+import {FILE_TYPES, parseTypeQuery} from '../../src/core/type-filter.js';
 import {assert, assertEquals, test} from '../harness.js';
 import {ALPHABETS, forAll} from './random.js';
 
@@ -74,5 +75,22 @@ test('fuzz: a sanitized label is safe, short, tidy and stable', () => {
             assert(!clean.includes(String.fromCodePoint(code)), `U+${code.toString(16)} survived`);
         assert(!/ {2}/.test(clean) && clean === clean.trim(), 'untidy spaces');
         assertEquals(sanitizeLabel(clean), clean, 'not stable when applied twice');
+    });
+});
+
+test('fuzz: whatever follows "/", the type filter gives a known type, known suggestions or nothing', () => {
+    const ids = new Set(FILE_TYPES.map(type => type.id));
+    forAll('parseTypeQuery', random => {
+        const text = `${random.pick(['/', ' /', '', '//'])}${random.string(random.pick([ALPHABETS.ascii, ALPHABETS.everything]), random.int(0, 20))}`;
+        const parsed = parseTypeQuery(text);
+        if (parsed === null)
+            return;
+        if (parsed.suggestions) {
+            assert(parsed.suggestions.length > 0 && parsed.suggestions.every(id => ids.has(id)), `bad suggestions ${JSON.stringify(parsed)}`);
+        } else {
+            assert(ids.has(parsed.type), `unknown type ${parsed.type}`);
+            assert(typeof parsed.text === 'string' && parsed.text === parsed.text.trim(), `untidy text ${JSON.stringify(parsed.text)}`);
+            assert(text.includes(parsed.text), 'the words come from what was typed');
+        }
     });
 });

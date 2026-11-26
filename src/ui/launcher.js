@@ -11,6 +11,7 @@ import {categoryForDigit, digitOfKey} from '../core/categories.js';
 import {backdropClass, motionEnabled, verticalLayout} from '../core/layout.js';
 import {jumpSection, nextSelection} from '../core/merge.js';
 import {HistoryCursor} from '../core/query-history.js';
+import {parseTypeQuery, typeLabels, typePrefix} from '../core/type-filter.js';
 import * as compat from '../shell/compat.js';
 import {describeList, describeWindow, setSelected} from './a11y.js';
 import {ResultsView} from './results-view.js';
@@ -61,6 +62,10 @@ export class Launcher {
     #previewer;
     #getPreviewUri;
     #suspended = false;
+    // The type of file the search is restricted to, shown as a label in the field ("/pdf"), or null.
+    #typeChip = null;
+    #chipPending = false;
+    #typeLabel = null;
     // The field's text before the last change, and whether the window is putting it back itself.
     #lastText = '';
     #restoring = false;
@@ -163,6 +168,7 @@ export class Launcher {
         this.#selectedKey = null;
         this.#navigated = false;
         this.#history.reset();
+        this.#setTypeChip(null);
         this.#entry.set_text('');
         this.#showHint();
         this.#resetMenu();
@@ -269,7 +275,7 @@ export class Launcher {
         }
         this.#updateEmptyHint(state.done);
         const first = merged.topHit ?? merged.items[0];
-        this.#log.debug(`results: ${merged.items.length} first=${first ? first.result.title : '-'} query=${this.#entry.get_text()}`);
+        this.#log.debug(`results: ${merged.items.length} first=${first ? first.result.title : '-'} query=${this.#currentQuery()}`);
     }
 
     destroy() {
@@ -323,6 +329,12 @@ export class Launcher {
     }
 
     #activate(item) {
+        // A type of file to choose ("/pdf "): it goes into the field, the window stays.
+        if (typeof item.result.completesTo === 'string') {
+            this.#entry.set_text(item.result.completesTo);
+            this.#entry.clutter_text.set_cursor_position(-1);
+            return;
+        }
         const confirmation = this.#confirmationOf(item);
         if (confirmation) {
             this.#log.guardAsync('activating a result', () => this.#activateConfirmed(item, confirmation));
@@ -428,7 +440,7 @@ export class Launcher {
         this.#queryAt = GLib.get_monotonic_time();
         this.#doneAt = this.#queryAt;
         this.#navigated = false;
-        this.#log.guard('searching', () => this.#onQuery(this.#entry.get_text()));
+        this.#searchAgain();
     }
 
     // What the field and the empty list say once a source is chosen.
@@ -450,6 +462,41 @@ export class Launcher {
         if (show)
             this.#emptyHint.set_text(waiting[this.#filter] ?? _('Type to search in this category'));
         this.#emptyHint.visible = show;
+    }
+
+    // ---- The type of file a search is restricted to ("/pdf facture") ----
+
+    // Runs the search again for what the field holds, the clock of the timings starting now.
+    #searchAgain() {
+        this.#queryAt = GLib.get_monotonic_time();
+        this.#doneAt = this.#queryAt;
+        this.#log.guard('searching', () => this.#onQuery(this.#currentQuery()));
+    }
+
+    // What the search is: the words, after the type when there is one.
+    #currentQuery() {
+        const words = this.#entry.get_text();
+        return this.#typeChip === null ? words : `${typePrefix(this.#typeChip)}${words}`;
+    }
+
+    #setTypeChip(typeId) {
+        this.#typeChip = typeId;
+        if (!this.#typeLabel)
+            return;
+        if (typeId === null) {
+            this.#typeLabel.hide();
+        } else {
+            this.#typeLabel.set_text(typeLabels(this.#gettext)[typeId] ?? typePrefix(typeId).trim());
+            this.#typeLabel.show();
+        }
+        // Files only, while a type of file is chosen: the category says so too.
+        const files = this.#categories.some(category => category.id === 'files');
+        if (files && this.#isOpen) {
+            this.#filter = typeId === null ? null : 'files';
+            this.#log.guard('restricting the search', () => this.#onFilter(this.#filter));
+            this.#markChips();
+            this.#updateFilterTexts();
+        }
     }
 
     // ---- The preview of a file (GNOME's previewer) ----
@@ -797,10 +844,16 @@ export class Launcher {
             can_focus: true,
             x_expand: true,
         });
-        entry.set_primary_icon(new St.Icon({
+        // The search icon, and the type of file the search is restricted to ("PDF"), when there is one.
+        const prefix = new St.BoxLayout({y_align: Clutter.ActorAlign.CENTER});
+        prefix.add_child(new St.Icon({
             style_class: 'luciole-entry-icon',
             icon_name: 'edit-find-symbolic',
         }));
+        const typeLabel = new St.Label({style_class: 'luciole-type-chip', y_align: Clutter.ActorAlign.CENTER, visible: false});
+        prefix.add_child(typeLabel);
+        entry.set_primary_icon(prefix);
+        this.#typeLabel = typeLabel;
         entry.accessible_name = _('Search');
         // Shown while a remembered search is on screen (see #recall).
         const hint = new St.Label({style_class: 'luciole-history-hint', y_align: Clutter.ActorAlign.CENTER, visible: false});
@@ -874,6 +927,28 @@ export class Launcher {
             }
             if (this.#restoring)
                 return;
+            // "/pdf " typed (or brought back from the history): the type becomes the label, and the
+            // field keeps only the words. Done once this change is over, like the space above.
+            if (this.#typeChip === null && !this.#chipPending && parseTypeQuery(now)?.type) {
+                this.#chipPending = true;
+                GLib.idle_add(GLib.PRIORITY_HIGH_IDLE, () => {
+                    this.#chipPending = false;
+                    // Read again: more may have been typed since.
+                    const typed = this.#typeChip === null ? parseTypeQuery(entry.get_text()) : null;
+                    if (typed?.type) {
+                        this.#restoring = true;
+                        try {
+                            this.#setTypeChip(typed.type);
+                            entry.set_text(typed.text);
+                            this.#lastText = typed.text;
+                        } finally {
+                            this.#restoring = false;
+                        }
+                        this.#searchAgain();
+                    }
+                    return GLib.SOURCE_REMOVE;
+                });
+            }
             // What is typed changes the search: the menu of the old result goes away.
             this.#closeMenu();
             // Typing, or Escape, leaves the remembered searches; bringing one back does not.
@@ -884,7 +959,7 @@ export class Launcher {
             this.#queryAt = GLib.get_monotonic_time();
             this.#doneAt = this.#queryAt;
             this.#navigated = false;
-            this.#log.guard('searching', () => this.#onQuery(entry.get_text()));
+            this.#log.guard('searching', () => this.#onQuery(this.#currentQuery()));
         });
         text.connect('activate', () => {
             if (this.#confirmTimer)
@@ -949,7 +1024,11 @@ export class Launcher {
                     this.#moveSelection(-1);
                 return Clutter.EVENT_STOP;
             case Clutter.KEY_Tab:
-                this.#jumpSection(1);
+                // On a type of file, Tab completes the field, like Enter.
+                if (this.#selectedItem()?.result?.completesTo)
+                    this.#activate(this.#selectedItem());
+                else
+                    this.#jumpSection(1);
                 return Clutter.EVENT_STOP;
             case Clutter.KEY_ISO_Left_Tab:
                 this.#jumpSection(-1);
@@ -959,6 +1038,18 @@ export class Launcher {
             }
         });
 
+        // Backspace goes to the input method before the field sees it as a key: it is caught on its
+        // way down instead. At the very start of the field it takes the type of file away.
+        overlay.connect('captured-event', (_actor, event) => {
+            if (event.type() !== Clutter.EventType.KEY_PRESS || event.get_key_symbol() !== Clutter.KEY_BackSpace)
+                return Clutter.EVENT_PROPAGATE;
+            const atStart = entry.get_text() === '' || text.get_cursor_position() === 0;
+            if (this.#typeChip === null || !atStart || text.get_selection())
+                return Clutter.EVENT_PROPAGATE;
+            this.#setTypeChip(null);
+            this.#searchAgain();
+            return Clutter.EVENT_STOP;
+        });
         overlay.connect('key-press-event', (_actor, event) => {
             if (event.get_key_symbol() !== Clutter.KEY_Escape)
                 return Clutter.EVENT_PROPAGATE;

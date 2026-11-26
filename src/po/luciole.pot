@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 18:37+0100\n"
+"POT-Creation-Date: 2026-11-26 19:53+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -25,6 +25,10 @@ msgstr ""
 msgid "Enter"
 msgstr ""
 
+#: src/core/session.js
+msgid "File Types"
+msgstr ""
+
 #: src/core/system-items.js
 msgid "System action"
 msgstr ""
@@ -35,6 +39,38 @@ msgstr ""
 
 #: src/core/system-items.js
 msgid "Settings"
+msgstr ""
+
+#: src/core/type-filter.js
+msgid "Images"
+msgstr ""
+
+#: src/core/type-filter.js
+msgid "Documents"
+msgstr ""
+
+#: src/core/type-filter.js
+msgid "PDF"
+msgstr ""
+
+#: src/core/type-filter.js
+msgid "Text"
+msgstr ""
+
+#: src/core/type-filter.js
+msgid "Folders"
+msgstr ""
+
+#: src/core/type-filter.js
+msgid "Music"
+msgstr ""
+
+#: src/core/type-filter.js
+msgid "Videos"
+msgstr ""
+
+#: src/core/type-filter.js
+msgid "Archives"
 msgstr ""
 
 #: src/prefs.js src/providers/apps.js

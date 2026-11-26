@@ -6,6 +6,7 @@ import GLib from 'gi://GLib';
 import Tracker from 'gi://Tracker';
 
 import {Provider} from '../core/provider.js';
+import {fileIsOfType} from '../core/type-filter.js';
 import {buildFtsTerms, fileActionList, isLocalFileUri, OPEN_WITH_PREFIX, openWithActions, rowsToResults} from './files-query.js';
 
 const LOCALSEARCH_BUS_NAME = 'org.freedesktop.LocalSearch3';
@@ -23,6 +24,21 @@ WHERE {
 }
 ORDER BY DESC(?rank)
 LIMIT 40`;
+
+// The same, for a search restricted to one type of file ("/pdf ..."): with the MIME type the index
+// knows (when it knows one), and more rows, since many are left out by the type.
+const TYPED_QUERY = `
+SELECT ?url ?name ?modified (fts:rank(?f) AS ?rank) ?mime
+WHERE {
+    ?f a nfo:FileDataObject ;
+       nie:url ?url ;
+       nfo:fileName ?name ;
+       nfo:fileLastModified ?modified ;
+       fts:match ~terms .
+    OPTIONAL { ?content nie:isStoredAs ?f ; nie:mimeType ?mime }
+}
+ORDER BY DESC(?rank)
+LIMIT 300`;
 
 /** Connects to the user's LocalSearch index, without blocking the main loop. */
 function openLocalSearch(cancellable) {
@@ -101,11 +117,11 @@ function openUri(uri, cancellable) {
  *
  * @returns {Promise<Array<{url: string, name: string, modified: string, rank: number}>>}
  */
-function runQuery(connection, terms, cancellable) {
+function runQuery(connection, terms, cancellable, {typed = false} = {}) {
     return new Promise((resolve, reject) => {
         let statement;
         try {
-            statement = connection.query_statement(QUERY, null);
+            statement = connection.query_statement(typed ? TYPED_QUERY : QUERY, null);
             statement.bind_string('terms', terms);
         } catch (error) {
             reject(error);
@@ -142,6 +158,7 @@ function runQuery(connection, terms, cancellable) {
                         name: cursor.get_string(1)[0],
                         modified: cursor.get_string(2)[0],
                         rank: cursor.get_double(3),
+                        ...(typed ? {mime: cursor.is_bound(4) ? cursor.get_string(4)[0] : null} : {}),
                     });
                     readNext();
                 } catch (error) {
@@ -151,6 +168,24 @@ function runQuery(connection, terms, cancellable) {
             readNext();
         });
     });
+}
+
+/**
+ * The rows of one type of file, each file once (a file the index describes twice comes back twice
+ * from the MIME type join), at most as many as an untyped search reads.
+ */
+export function keepType(rows, typeId) {
+    const seen = new Set();
+    const kept = [];
+    for (const row of rows) {
+        if (seen.has(row.url) || !fileIsOfType(typeId, {mime: row.mime, name: row.name}))
+            continue;
+        seen.add(row.url);
+        kept.push(row);
+        if (kept.length >= 40)
+            break;
+    }
+    return kept;
 }
 
 function iconForName(name) {
@@ -263,7 +298,7 @@ export class FilesProvider extends Provider {
         }
     }
 
-    async #search(query, {cancellable}) {
+    async #search(query, {cancellable, typeFilter = null}) {
         const terms = buildFtsTerms(query);
         if (!terms)
             return [];
@@ -271,7 +306,9 @@ export class FilesProvider extends Provider {
         if (!connection || this.#destroyed || cancellable.is_cancelled())
             return [];
 
-        const rows = await runQuery(connection, terms, cancellable);
+        let rows = await runQuery(connection, terms, cancellable, {typed: typeFilter !== null});
+        if (typeFilter !== null)
+            rows = keepType(rows, typeFilter);
         return rowsToResults(rows, {
             home: GLib.get_home_dir(),
             excludedFolders: this.#settings.get_strv('excluded-folders'),

@@ -8,7 +8,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Tracker from 'gi://Tracker';
 
-import {FilesProvider} from '../src/providers/files.js';
+import {FilesProvider, keepType} from '../src/providers/files.js';
 import {recordingLog} from './fakes/provider.js';
 import {assert, assertEquals, test} from './harness.js';
 
@@ -358,5 +358,45 @@ test('found files say they can be previewed', async () => {
     await t.ready;
     const [first] = await t.search('facture');
     assertEquals(first.previewable, true);
+    t.provider.destroy();
+});
+
+test('a typed search keeps the files of that type, each once, at most forty', () => {
+    const rows = [
+        {url: 'file:///a.pdf', name: 'a.pdf', mime: null},
+        {url: 'file:///b.png', name: 'b.png', mime: 'image/png'},
+        {url: 'file:///a.pdf', name: 'a.pdf', mime: 'application/pdf'},
+        {url: 'file:///c', name: 'c', mime: 'application/pdf'},
+        {url: 'file:///d.pdf', name: 'd.pdf', mime: 'text/plain'},
+    ];
+    assertEquals(keepType(rows, 'pdf').map(row => row.url), ['file:///a.pdf', 'file:///c']);
+    const many = Array.from({length: 100}, (_, n) => ({url: `file:///${n}.pdf`, name: `${n}.pdf`}));
+    assertEquals(keepType(many, 'pdf').length, 40);
+    assertEquals(keepType(rows, 'nope'), []);
+});
+
+test('a search restricted to a type returns only files of that type, from the index itself', async () => {
+    const t = setupProvider();
+    await t.ready;
+    const typed = typeFilter => t.provider.search('rapport', {cancellable: new Gio.Cancellable(), limit: 6, emit() {}, typeFilter});
+    assertEquals((await typed('text')).map(result => result.title), ['rapport-brouillon.txt']);
+    assertEquals((await typed('documents')).map(result => result.title), ['Rapport annuel.odt']);
+    assertEquals(await typed('images'), []);
+    assert((await t.search('rapport')).length > 2, 'without a type, the files of every type');
+    t.provider.destroy();
+});
+
+test('a search restricted to a type comes best first too', async () => {
+    const t = setupProvider({files: [
+        ['/home/me/Notes', 'notes du service et rapport de la reunion annuelle.txt'],
+        ['/home/me/Notes', 'compte rendu rapport.txt'],
+        ['/home/me/Notes', 'rapport.txt'],
+    ]});
+    await t.ready;
+    const results = await t.provider.search('rapport', {cancellable: new Gio.Cancellable(), limit: 6, emit() {}, typeFilter: 'text'});
+    const scores = results.map(r => r.providerScore);
+    assertEquals(scores.length, 3);
+    assertEquals(scores, [...scores].sort((a, b) => b - a));
+    assert(scores[0] > scores[2], 'the scores differ, so the order means something');
     t.provider.destroy();
 });

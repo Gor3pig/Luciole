@@ -6,9 +6,16 @@ import Gio from 'gi://Gio';
 import {cleanActions} from './action-menu.js';
 import {categoriesOf, effectiveFilter} from './categories.js';
 import {createMatcher} from './matching.js';
+import {FILE_TYPES, parseTypeQuery, typeLabels, typePrefix} from './type-filter.js';
 import {mergeResults} from './merge.js';
 import {scoreForEmptyQuery, scoreResult} from './scoring.js';
 import {sanitizeLabel} from './text.js';
+
+const TYPE_ICONS = {
+    images: 'image-x-generic-symbolic', documents: 'x-office-document-symbolic', pdf: 'x-office-document-symbolic',
+    text: 'text-x-generic-symbolic', folders: 'folder-symbolic', music: 'audio-x-generic-symbolic',
+    videos: 'video-x-generic-symbolic', archives: 'package-x-generic-symbolic',
+};
 
 const TIMED_OUT = Symbol('timed out');
 
@@ -86,6 +93,8 @@ export class SearchController {
     #emptyQuery = true;
     #query = '';
     #filter = null;
+    // The type of file the current search is restricted to ("/pdf ..."), or null.
+    #typeFilter = null;
 
     /**
      * @param {object} options
@@ -130,9 +139,11 @@ export class SearchController {
         this.#filter = typeof id === 'string' ? id : null;
     }
 
-    // The sources a search goes to: the chosen one, or all of them.
+    // The sources a search goes to: the files for a type of file, else the chosen one, or all of them.
     #searched() {
         const providers = this.#getProviders();
+        if (this.#typeFilter !== null)
+            return providers.filter(provider => provider.id === 'files');
         const only = effectiveFilter(this.#filter, providers);
         return only === null ? providers : providers.filter(provider => provider.id === only);
     }
@@ -150,13 +161,24 @@ export class SearchController {
         this.#cancellable = cancellable;
         this.#scored = new Map();
 
-        const query = rawQuery.trim();
-        this.#query = query;
+        this.#query = rawQuery.trim();
+        // "/" and the beginning of a type: the types to choose from, nothing searched.
+        const typed = parseTypeQuery(rawQuery);
+        if (typed?.suggestions) {
+            this.#typeFilter = null;
+            this.#publishTypes(typed.suggestions);
+            return Promise.resolve();
+        }
+        // "/pdf facture": "facture" among the PDF files only.
+        this.#typeFilter = typed?.type ?? null;
+        const query = typed ? typed.text : this.#query;
         const matcher = createMatcher(query);
         this.#emptyQuery = matcher.isEmpty;
         const alive = () => !cancellable.is_cancelled();
 
-        const runs = this.#searched().map(provider =>
+        // A type with no word yet finds nothing: listing every PDF is not a search.
+        const providers = this.#typeFilter !== null && matcher.isEmpty ? [] : this.#searched();
+        const runs = providers.map(provider =>
             this.#run(provider, query, matcher, alive, cancellable));
         return Promise.all(runs).then(() => {
             if (!alive())
@@ -309,6 +331,7 @@ export class SearchController {
             const options = {
                 cancellable: own,
                 limit: provider.maxResults,
+                ...(this.#typeFilter !== null ? {typeFilter: this.#typeFilter} : {}),
                 emit: batch => {
                     if (alive())
                         this.#accept(provider, batch, matcher);
@@ -383,8 +406,29 @@ export class SearchController {
             provider,
             scored: [...(this.#scored.get(provider.id)?.values() ?? [])],
         }));
-        const merged = mergeResults(entries, {...this.#mergeOptions, topHit: !this.#emptyQuery && effectiveFilter(this.#filter, this.#getProviders()) === null});
+        const merged = mergeResults(entries, {...this.#mergeOptions, topHit: !this.#emptyQuery && this.#typeFilter === null && effectiveFilter(this.#filter, this.#getProviders()) === null});
         this.#log.guard('updating the results', () => this.#onUpdate(merged, {done}));
+    }
+
+    // The types of file to choose from, as results that complete the field ("/pdf ").
+    // (Their icons are GNOME's usual ones for those kinds of files.)
+    #publishTypes(ids) {
+        const _ = this.#gettext;
+        const labels = typeLabels(_);
+        const scored = FILE_TYPES.filter(type => ids.includes(type.id)).map((type, index) => ({
+            result: {
+                id: type.id,
+                title: labels[type.id] ?? type.id,
+                subtitle: typePrefix(type.id).trim(),
+                icon: TYPE_ICONS[type.id] ?? 'text-x-generic-symbolic',
+                completesTo: typePrefix(type.id),
+            },
+            // In the order of the list.
+            final: 1 - index / 100,
+            ranges: [],
+        }));
+        const merged = mergeResults([{provider: {id: 'types', name: _('File Types'), priority: 0, topHitEligible: false}, scored}], {...this.#mergeOptions, topHit: false});
+        this.#log.guard('updating the results', () => this.#onUpdate(merged, {done: true}));
     }
 
     #cancelPendingFrame() {

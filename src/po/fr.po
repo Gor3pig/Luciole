@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 18:37+0100\n"
+"POT-Creation-Date: 2026-11-26 19:53+0100\n"
 "PO-Revision-Date: 2026-11-25 20:00+0100\n"
 "Last-Translator: Luciole contributors\n"
 "Language-Team: fr <>\n"
@@ -24,6 +24,10 @@ msgstr "Ouvrir"
 msgid "Enter"
 msgstr "Entrée"
 
+#: src/core/session.js
+msgid "File Types"
+msgstr "Types de fichiers"
+
 #: src/core/system-items.js
 msgid "System action"
 msgstr "Action du système"
@@ -35,6 +39,38 @@ msgstr "demande confirmation"
 #: src/core/system-items.js
 msgid "Settings"
 msgstr "Paramètres"
+
+#: src/core/type-filter.js
+msgid "Images"
+msgstr "Images"
+
+#: src/core/type-filter.js
+msgid "Documents"
+msgstr "Documents"
+
+#: src/core/type-filter.js
+msgid "PDF"
+msgstr "PDF"
+
+#: src/core/type-filter.js
+msgid "Text"
+msgstr "Texte"
+
+#: src/core/type-filter.js
+msgid "Folders"
+msgstr "Dossiers"
+
+#: src/core/type-filter.js
+msgid "Music"
+msgstr "Musique"
+
+#: src/core/type-filter.js
+msgid "Videos"
+msgstr "Vidéos"
+
+#: src/core/type-filter.js
+msgid "Archives"
+msgstr "Archives"
 
 #: src/prefs.js src/providers/apps.js
 msgid "Applications"

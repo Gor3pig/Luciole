@@ -776,3 +776,70 @@ test('the file to preview comes from the source, and only a local file address i
     assert(failing.log.lines.some(line => line.includes('disk gone')), 'logged');
     assertEquals(await make(async () => 'file:///a').controller.previewUriFor({key: 'x', providerId: 'gone', result: result('1', 'x')}), null);
 });
+
+// "/pdf facture": a search restricted to one type of file.
+function typeSetup() {
+    const scheduler = new FakeScheduler();
+    const apps = fakeProvider(scheduler, {id: 'apps', results: [result('a', 'Facture App')]});
+    const files = fakeProvider(scheduler, {id: 'files', results: [result('f', 'Facture.pdf')]});
+    const options = [];
+    const search = files.search;
+    files.search = (query, opts) => {
+        options.push(opts.typeFilter);
+        return search(query, opts);
+    };
+    const updates = [];
+    const controller = new SearchController({
+        getProviders: () => [apps, files], frecency: new Frecency(), scheduler, log: recordingLog(), gettext: text => `[${text}]`,
+        onUpdate: (merged, state) => updates.push({merged, done: state.done}),
+    });
+    return {apps, files, options, updates, controller};
+}
+
+test('"/" lists the types to choose, and searches nothing', async () => {
+    const t = typeSetup();
+    await t.controller.search('/');
+    const last = t.updates[t.updates.length - 1];
+    assertEquals(last.merged.items.length, 8);
+    assertEquals(last.merged.items[0].result.title, '[Images]');
+    assertEquals(last.merged.items[0].result.completesTo, '/images ');
+    assertEquals(last.merged.topHit, null);
+    assert(last.done, 'final');
+    assertEquals(t.apps.searches, []);
+    assertEquals(t.files.searches, []);
+});
+
+test('"/pdf facture" searches the words among the files only, telling them the type', async () => {
+    const t = typeSetup();
+    await t.controller.search('/pdf facture');
+    assertEquals(t.apps.searches, [], 'not the applications');
+    assertEquals(t.files.searches, ['facture'], 'only the words reach the files');
+    assertEquals(t.options, ['pdf']);
+    assertEquals(t.updates[t.updates.length - 1].merged.topHit, null, 'no top hit');
+});
+
+test('a type with no word yet finds nothing', async () => {
+    const t = typeSetup();
+    await t.controller.search('/pdf ');
+    assertEquals(t.files.searches, []);
+    assertEquals(t.updates[t.updates.length - 1].merged.items, []);
+});
+
+test('an ordinary search tells no type, and a "/" that is not a type is searched as text', async () => {
+    const t = typeSetup();
+    await t.controller.search('facture');
+    await t.controller.search('/etc/hosts');
+    assertEquals(t.options, [undefined, undefined]);
+    assertEquals(t.files.searches, ['facture', '/etc/hosts']);
+    assertEquals(t.apps.searches, ['facture', '/etc/hosts']);
+});
+
+test('the search remembered is the whole of it, type included', async () => {
+    const queryHistory = new QueryHistory();
+    const scheduler = new FakeScheduler();
+    const files = fakeProvider(scheduler, {id: 'files', results: [result('f', 'Facture.pdf')]});
+    const c = new SearchController({getProviders: () => [files], frecency: new Frecency(), scheduler, log: recordingLog(), onUpdate() {}, queryHistory, rememberQueries: () => true});
+    await c.search('/pdf facture');
+    await c.activate({key: 'files:f', providerId: 'files', result: result('f', 'Facture.pdf')});
+    assertEquals(queryHistory.entries, ['/pdf facture']);
+});
