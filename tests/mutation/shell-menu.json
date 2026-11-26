@@ -1,5 +1,5 @@
 {
- "description": "Mutants for the menu of actions in the live launcher. Not listed because equivalent or out of reach: the staleness check of an answer (the gap between asking and the answer is too short to close the window inside it, in a test), and forgetting the menu when closing (opening forgets it too). Not listed because it cannot be provoked in a live shell: a copy that fails (the clipboard always works there); it is covered by the unit tests of the controller. Also not listed because equivalent: the guard on Enter during the confirmation (a field that is not editable does not send Enter at all).",
+ "description": "Mutants for the menu of actions in the live launcher. Not listed because equivalent or out of reach: the staleness check of an answer (the gap between asking and the answer is too short to close the window inside it, in a test), and forgetting the menu when closing (opening forgets it too). Not listed because it cannot be provoked in a live shell: a copy that fails (the clipboard always works there); it is covered by the unit tests of the controller. Also not listed because equivalent: the guard on Enter during the confirmation (a field that is not editable does not send Enter at all). Each mutant runs only the part of tests/shell/files.sh that covers it (FILES_PARTS); the whole script runs in the gate.",
  "slow": true,
  "timeout": 400,
  "command": [
@@ -11,253 +11,601 @@
    "file": "src/ui/launcher.js",
    "label": "Ctrl+K does not open the menu",
    "old": "                else\n                    this.#log.guardAsync('opening the actions menu', () => this.#openMenu());",
-   "new": "                else\n                    void 0;"
+   "new": "                else\n                    void 0;",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "Ctrl+K does not close an open menu",
    "old": "                if (this.#menu.isOpen)\n                    this.#closeMenu();\n                else\n                    this.#log.guardAsync('opening",
-   "new": "                if (false)\n                    this.#closeMenu();\n                else\n                    this.#log.guardAsync('opening"
+   "new": "                if (false)\n                    this.#closeMenu();\n                else\n                    this.#log.guardAsync('opening",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the down arrow does not move in the menu",
    "old": "        case Clutter.KEY_Down:\n            this.#menu.move(1);\n            this.#showMenu();\n            return true;",
-   "new": "        case Clutter.KEY_Down:\n            return true;"
+   "new": "        case Clutter.KEY_Down:\n            return true;",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the up arrow goes the wrong way",
    "old": "            this.#menu.move(-1);\n            this.#showMenu();",
-   "new": "            this.#menu.move(1);\n            this.#showMenu();"
+   "new": "            this.#menu.move(1);\n            this.#showMenu();",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "Escape does not leave the menu",
    "old": "        case Clutter.KEY_Escape:\n            this.#menuBack();\n            return true;",
-   "new": "        case Clutter.KEY_Escape:\n            return false;"
+   "new": "        case Clutter.KEY_Escape:\n            return false;",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "Enter runs the opened result, not the menu action",
    "old": "            if (this.#menu.isOpen) {\n                if (!this.#confirmTimer)\n                    this.#log.guardAsync('running an action', () => this.#runMenuAction());\n            } else {\n                this.#activateSelected();\n            }",
-   "new": "            this.#activateSelected();"
+   "new": "            this.#activateSelected();",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "a failed action closes the window",
    "old": "        if (!outcome.ok)\n            return;\n        const own",
-   "new": "        const own"
+   "new": "        const own",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "a copy closes at once, without confirmation",
    "old": "        if (outcome.confirmation || own)\n            this.#showConfirmation(outcome.confirmation ?? own);\n        else\n            this.close();",
-   "new": "        this.close();"
+   "new": "        this.close();",
+   "command": [
+    "env",
+    "FILES_PARTS=calc",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "a submenu is not entered",
    "old": "            if (this.#menu.push(action.label, choices))\n                this.#showMenu();\n            return;",
-   "new": "            return;"
+   "new": "            return;",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "typing does not leave the menu",
    "old": "            // What is typed changes the search: the menu of the old result goes away.\n            this.#closeMenu();",
-   "new": "            // What is typed changes the search: the menu of the old result goes away."
+   "new": "            // What is typed changes the search: the menu of the old result goes away.",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the results do not come back after the menu",
    "old": "        this.#menuBox.hide();\n        this.#view.actor.show();",
-   "new": "        this.#menuBox.hide();"
+   "new": "        this.#menuBox.hide();",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the results stay shown behind the menu",
    "old": "        this.#view.actor.hide();\n        this.#menuBox.show();",
-   "new": "        this.#menuBox.show();"
+   "new": "        this.#menuBox.show();",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "going back from a submenu closes the whole menu",
    "old": "        if (this.#menu.back())\n            this.#showMenu();\n        else\n            this.#hideMenu();",
-   "new": "        this.#menu.close();\n        this.#hideMenu();"
+   "new": "        this.#menu.close();\n        this.#hideMenu();",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "a click on an action does not run it",
    "old": "                this.#log.guardAsync('running an action', () => this.#runMenuAction());\n            });\n            this.#menuRows.add_child(row);",
-   "new": "            });\n            this.#menuRows.add_child(row);"
+   "new": "            });\n            this.#menuRows.add_child(row);",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the window is not closed after the confirmation",
    "old": "            this.#confirmTimer = 0;\n            this.close();\n            return GLib.SOURCE_REMOVE;",
-   "new": "            this.#confirmTimer = 0;\n            return GLib.SOURCE_REMOVE;"
+   "new": "            this.#confirmTimer = 0;\n            return GLib.SOURCE_REMOVE;",
+   "command": [
+    "env",
+    "FILES_PARTS=calc",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the menu is still shown when the window reopens",
    "old": "        this.#resetMenu();\n        this.#hideMenu();\n        // Every opening",
-   "new": "        this.#resetMenu();\n        // Every opening"
+   "new": "        this.#resetMenu();\n        // Every opening",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/extension.js",
    "label": "the actions are never listed",
    "old": "getActions: item => backend.controller?.actionsFor(item) ?? Promise.resolve([]),",
-   "new": "getActions: () => Promise.resolve([]),"
+   "new": "getActions: () => Promise.resolve([]),",
+   "command": [
+    "env",
+    "FILES_PARTS=menu calc",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/extension.js",
    "label": "no action can run",
    "old": "onRunAction: (item, action) => backend.controller?.runAction(item, action) ?? Promise.resolve({ok: false, confirmation: null}),",
-   "new": "onRunAction: () => Promise.resolve({ok: false, confirmation: null}),"
+   "new": "onRunAction: () => Promise.resolve({ok: false, confirmation: null}),",
+   "command": [
+    "env",
+    "FILES_PARTS=menu calc",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/extension.js",
    "label": "the clipboard is not written",
    "old": "copyText: text => compat.copyText(text),",
-   "new": "copyText: () => {},"
+   "new": "copyText: () => {},",
+   "command": [
+    "env",
+    "FILES_PARTS=menu calc",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/shell/compat.js",
    "label": "the text goes to the primary selection, not the clipboard",
    "old": "St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, text);",
-   "new": "St.Clipboard.get_default().set_text(St.ClipboardType.PRIMARY, text);"
+   "new": "St.Clipboard.get_default().set_text(St.ClipboardType.PRIMARY, text);",
+   "command": [
+    "env",
+    "FILES_PARTS=menu calc",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "an answer is activated without saying so",
    "old": "        const confirmation = this.#confirmationOf(item);\n        if (confirmation) {\n            this.#log.guardAsync('activating a result', () => this.#activateConfirmed(item, confirmation));\n            return;\n        }\n",
-   "new": "        const confirmation = null;\n"
+   "new": "        const confirmation = null;\n",
+   "command": [
+    "env",
+    "FILES_PARTS=calc",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "keys still act during the confirmation",
    "old": "            if (this.#confirmTimer)\n                return Clutter.EVENT_STOP;\n            const symbol = event.get_key_symbol();",
-   "new": "            const symbol = event.get_key_symbol();"
+   "new": "            const symbol = event.get_key_symbol();",
+   "command": [
+    "env",
+    "FILES_PARTS=calc",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the menu's main action of an answer does not confirm",
    "old": "        const own = action.id === 'open' ? this.#confirmationOf(item) : null;",
-   "new": "        const own = null;"
+   "new": "        const own = null;",
+   "command": [
+    "env",
+    "FILES_PARTS=calc",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/extension.js",
    "label": "the calculator is not registered",
    "old": "        registry.register('calc', () => new CalcProvider({copyText: text => compat.copyText(text)}));\n",
-   "new": ""
+   "new": "",
+   "command": [
+    "env",
+    "FILES_PARTS=calc",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the field stays editable during the confirmation",
    "old": "        this.#entry.clutter_text.editable = false;\n        this.#presentMenuBox();",
-   "new": "        this.#presentMenuBox();"
+   "new": "        this.#presentMenuBox();",
+   "command": [
+    "env",
+    "FILES_PARTS=calc",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/extension.js",
    "label": "the System source is not registered",
    "old": "        registry.register('system', () => new SystemProvider());\n",
-   "new": ""
+   "new": "",
+   "command": [
+    "env",
+    "FILES_PARTS=system",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "Enter acts on a result that was not chosen",
    "old": "        const item = this.#items.find(candidate => candidate.key === this.#selectedKey);\n        if (item)\n            this.#activate(item);",
-   "new": "        const item = this.#items.find(candidate => candidate.key === this.#selectedKey) ?? this.#items[0];\n        if (item)\n            this.#activate(item);"
+   "new": "        const item = this.#items.find(candidate => candidate.key === this.#selectedKey) ?? this.#items[0];\n        if (item)\n            this.#activate(item);",
+   "command": [
+    "env",
+    "FILES_PARTS=system",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "Space types a space even on a chosen file",
    "old": "if (!this.#restoring && now === `${before} ` && this.#navigated && this.#canPreview(this.#selectedItem())) {",
-   "new": "if (false) {"
+   "new": "if (false) {",
+   "command": [
+    "env",
+    "FILES_PARTS=preview",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "Space previews before any arrow",
    "old": "if (!this.#restoring && now === `${before} ` && this.#navigated && this.#canPreview(this.#selectedItem())) {",
-   "new": "if (!this.#restoring && now === `${before} ` && this.#canPreview(this.#selectedItem())) {"
+   "new": "if (!this.#restoring && now === `${before} ` && this.#canPreview(this.#selectedItem())) {",
+   "command": [
+    "env",
+    "FILES_PARTS=preview",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the space is left in the field",
    "old": "                        if (entry.get_text() === now)\n                            entry.set_text(before);",
-   "new": "                        void before;"
+   "new": "                        void before;",
+   "command": [
+    "env",
+    "FILES_PARTS=preview",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "Ctrl+Y does nothing",
    "old": "            if (control && (symbol === Clutter.KEY_y || symbol === Clutter.KEY_Y)) {",
-   "new": "            if (false) {"
+   "new": "            if (false) {",
+   "command": [
+    "env",
+    "FILES_PARTS=preview",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the window does not come back after the preview",
    "old": "        this.#previewer.show(uri, reason => this.#log.guard('coming back from the preview', () => this.#resume(reason)));",
-   "new": "        this.#previewer.show(uri, () => {});"
+   "new": "        this.#previewer.show(uri, () => {});",
+   "command": [
+    "env",
+    "FILES_PARTS=preview",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the window does not step aside for the preview",
    "old": "        this.#suspend();\n        this.#previewer.show(",
-   "new": "        this.#previewer.show("
+   "new": "        this.#previewer.show(",
+   "command": [
+    "env",
+    "FILES_PARTS=preview",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "opening during a preview keeps the old one coming back",
    "old": "        // Opened again while a preview is shown: a fresh start, and no coming back from that preview.\n        this.#endSuspension();\n",
-   "new": ""
+   "new": "",
+   "command": [
+    "env",
+    "FILES_PARTS=preview",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the search is not kept when coming back",
    "old": "        this.#overlay.opacity = 255;\n        this.#panel.translation_y = 0;\n        this.#overlay.show();\n        try {",
-   "new": "        this.#entry.set_text('');\n        this.#overlay.opacity = 255;\n        this.#panel.translation_y = 0;\n        this.#overlay.show();\n        try {"
+   "new": "        this.#entry.set_text('');\n        this.#overlay.opacity = 255;\n        this.#panel.translation_y = 0;\n        this.#overlay.show();\n        try {",
+   "command": [
+    "env",
+    "FILES_PARTS=preview",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the menu's Preview is an ordinary action",
    "old": "        if (action.id === 'preview') {",
-   "new": "        if (false) {"
+   "new": "        if (false) {",
+   "command": [
+    "env",
+    "FILES_PARTS=preview menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the keyboard is not taken back after the preview",
    "old": "        this.#isOpen = true;\n        this.#entry.grab_key_focus();\n        this.#stopFocusWatch = compat.connectKeyFocus(() => this.#checkFocus());\n        // The same search",
-   "new": "        this.#isOpen = true;\n        // The same search"
+   "new": "        this.#isOpen = true;\n        // The same search",
+   "command": [
+    "env",
+    "FILES_PARTS=preview",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/shell/previewer.js",
    "label": "the preview window is not given the keyboard",
    "old": "    if (actor)\n        Main.activateWindow(actor.meta_window);",
-   "new": "    void Main;"
+   "new": "    void Main;",
+   "command": [
+    "env",
+    "FILES_PARTS=preview",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/shell/previewer.js",
    "label": "the end of the preview is not noticed",
    "old": "                if (visible === false && current.seen)\n                    this.#finish(current, 'closed');",
-   "new": ""
+   "new": "",
+   "command": [
+    "env",
+    "FILES_PARTS=preview",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/shell/previewer.js",
    "label": "the previewer is never found",
    "old": "        this.#available = activatable.includes(NAME) || running.includes(NAME);",
-   "new": "        this.#available = false;"
+   "new": "        this.#available = false;",
+   "command": [
+    "env",
+    "FILES_PARTS=preview",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/extension.js",
    "label": "the launcher gets no previewer",
    "old": "                previewer,\n                getPreviewUri:",
-   "new": "                getPreviewUri:"
+   "new": "                getPreviewUri:",
+   "command": [
+    "env",
+    "FILES_PARTS=preview",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the chosen row is drawn before the arrows are noted",
    "old": "        // Noted first: what the chosen row shows (\"Space: preview\") depends on it.\n        this.#navigated = true;\n        this.#choose(this.#items[next].key);",
-   "new": "        this.#choose(this.#items[next].key);\n        this.#navigated = true;"
+   "new": "        this.#choose(this.#items[next].key);\n        this.#navigated = true;",
+   "command": [
+    "env",
+    "FILES_PARTS=preview",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "choosing a type does not complete the field",
+   "old": "        if (typeof item.result.completesTo === 'string') {\n            this.#entry.set_text(item.result.completesTo);",
+   "new": "        if (typeof item.result.completesTo === 'string') {\n            this.#entry.set_text('');",
+   "command": [
+    "env",
+    "FILES_PARTS=types",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the typed type does not become a label",
+   "old": "            if (this.#typeChip === null && !this.#chipPending && parseTypeQuery(now)?.type) {",
+   "new": "            if (false) {",
+   "command": [
+    "env",
+    "FILES_PARTS=types",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the label is not shown",
+   "old": "            this.#typeLabel.show();",
+   "new": "            this.#typeLabel.hide();",
+   "command": [
+    "env",
+    "FILES_PARTS=types",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "Backspace at the start keeps the type",
+   "old": "            if (this.#typeChip === null || !atStart || text.get_selection())\n                return Clutter.EVENT_PROPAGATE;",
+   "new": "            if (true)\n                return Clutter.EVENT_PROPAGATE;",
+   "command": [
+    "env",
+    "FILES_PARTS=types",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the search forgets the type",
+   "old": "        return this.#typeChip === null ? words : `${typePrefix(this.#typeChip)}${words}`;",
+   "new": "        return words;",
+   "command": [
+    "env",
+    "FILES_PARTS=types",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "Tab on a type jumps instead of completing",
+   "old": "                if (this.#selectedItem()?.result?.completesTo)\n                    this.#activate(this.#selectedItem());\n                else\n                    this.#jumpSection(1);",
+   "new": "                this.#jumpSection(1);",
+   "command": [
+    "env",
+    "FILES_PARTS=types",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "a type does not choose the Files category",
+   "old": "            this.#filter = typeId === null ? null : 'files';",
+   "new": "            this.#filter = null;",
+   "command": [
+    "env",
+    "FILES_PARTS=types",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "reopening keeps the type",
+   "old": "        this.#setTypeChip(null);\n        this.#entry.set_text('');",
+   "new": "        this.#entry.set_text('');",
+   "command": [
+    "env",
+    "FILES_PARTS=types",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   }
  ]
 }

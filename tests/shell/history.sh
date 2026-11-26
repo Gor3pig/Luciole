@@ -16,7 +16,8 @@ ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 UUID=$(sed -n 's/.*"uuid": "\(.*\)".*/\1/p' "$ROOT/src/metadata.json")
 
 WORK=$(mktemp -d)
-trap 'rm -rf "$WORK"' EXIT
+# A process of the test shell may still be writing there for a moment after it exits.
+trap 'rm -rf "$WORK" 2>/dev/null || { sleep 1; rm -rf "$WORK"; }' EXIT
 
 glib-compile-schemas "$ROOT/src/schemas"
 mkdir -p "$WORK/config/glib-2.0/settings" "$WORK/data/gnome-shell/extensions" "$WORK/services/dbus-1/services"
@@ -41,6 +42,8 @@ run() { # run <mode>: a fresh shell on a fresh D-Bus session, with a prepared hi
     grep -E '^(ok:|FAIL|PASS|history)' "$WORK/out-$1.txt" || true
     grep -q '^PASS$' "$WORK/out-$1.txt" || {
         echo "FAIL: the $1 run did not pass"
+        echo "---- last lines of the shell log ----"
+        grep -vE "DEBUG|^#|^==" "$WORK/shell-$1.log" 2>/dev/null | tail -n 15
         exit 1
     }
 }

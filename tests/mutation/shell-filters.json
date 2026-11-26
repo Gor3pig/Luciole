@@ -1,5 +1,5 @@
 {
- "description": "Mutants for the categories in the live launcher: chips, shortcuts, click, reopening. Not listed because equivalent: a chip that can take the keyboard focus (Tab is handled by the field, and a click does not move the focus).",
+ "description": "Mutants for the categories in the live launcher: chips, shortcuts, click, reopening. Not listed because equivalent: a chip that can take the keyboard focus (Tab is handled by the field, and a click does not move the focus). Each mutant runs only the part of tests/shell/files.sh that covers it (FILES_PARTS); the whole script runs in the gate.",
  "slow": true,
  "timeout": 400,
  "command": [
@@ -11,73 +11,145 @@
    "file": "src/ui/launcher.js",
    "label": "the shortcuts are ignored",
    "old": "            if (control && this.#categoryShortcut(event))\n                return Clutter.EVENT_STOP;",
-   "new": "            if (false)\n                return Clutter.EVENT_STOP;"
+   "new": "            if (false)\n                return Clutter.EVENT_STOP;",
+   "command": [
+    "env",
+    "FILES_PARTS=categories",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the search is not restricted",
    "old": "        this.#log.guard('restricting the search', () => this.#onFilter(id));\n",
-   "new": "\n"
+   "new": "\n",
+   "command": [
+    "env",
+    "FILES_PARTS=categories",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the chosen chip is not shown",
    "old": "        this.#log.guard('restricting the search', () => this.#onFilter(id));\n        this.#markChips();",
-   "new": "        this.#log.guard('restricting the search', () => this.#onFilter(id));"
+   "new": "        this.#log.guard('restricting the search', () => this.#onFilter(id));",
+   "command": [
+    "env",
+    "FILES_PARTS=categories",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the search is not run again after a choice",
-   "old": "        this.#log.guard('searching', () => this.#onQuery(this.#entry.get_text()));\n    }\n\n    // What the field",
-   "new": "    }\n\n    // What the field"
+   "old": "        this.#navigated = false;\n        this.#searchAgain();\n    }\n\n    // What the field",
+   "new": "        this.#navigated = false;\n    }\n\n    // What the field",
+   "command": [
+    "env",
+    "FILES_PARTS=categories",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "a click on a chip does nothing",
    "old": "                chip.connect('clicked', () => this.#setFilter(category.id));\n",
-   "new": ""
+   "new": "",
+   "command": [
+    "env",
+    "FILES_PARTS=categories",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "reopening keeps the category",
    "old": "        this.#filter = null;\n        this.#log.guard('resetting the category', () => this.#onFilter(null));\n        this.#buildChips();",
-   "new": "        this.#buildChips();"
+   "new": "        this.#buildChips();",
+   "command": [
+    "env",
+    "FILES_PARTS=categories",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the empty-field hint never shows",
    "old": "        const show = done && this.#filter !== null && this.#entry.get_text() === '' && this.#items.length === 0;",
-   "new": "        const show = false;"
+   "new": "        const show = false;",
+   "command": [
+    "env",
+    "FILES_PARTS=categories",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the empty-field hint stays with text typed",
    "old": "this.#filter !== null && this.#entry.get_text() === '' && this.#items.length === 0;",
-   "new": "this.#filter !== null && this.#items.length === 0;"
+   "new": "this.#filter !== null && this.#items.length === 0;",
+   "command": [
+    "env",
+    "FILES_PARTS=categories",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the digit row is read by symbol only",
    "old": "digitOfKey({keyval: event.get_key_symbol(), keycode: event.get_key_code()})",
-   "new": "digitOfKey({keyval: event.get_key_symbol(), keycode: 0})"
+   "new": "digitOfKey({keyval: event.get_key_symbol(), keycode: 0})",
+   "command": [
+    "env",
+    "FILES_PARTS=categories",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/ui/launcher.js",
    "label": "there are no chips",
    "old": "        if (this.#categories.length === 0) {\n            this.#chipBox.hide();",
-   "new": "        if (true) {\n            this.#chipBox.hide();"
+   "new": "        if (true) {\n            this.#chipBox.hide();",
+   "command": [
+    "env",
+    "FILES_PARTS=categories",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/extension.js",
    "label": "the sources are not offered",
    "old": "getCategories: () => backend.controller?.categories() ?? [],",
-   "new": "getCategories: () => [],"
+   "new": "getCategories: () => [],",
+   "command": [
+    "env",
+    "FILES_PARTS=categories",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   },
   {
    "file": "src/extension.js",
    "label": "the choice never reaches the search",
    "old": "onFilter: id => backend.controller?.setFilter(id),",
-   "new": "onFilter: () => {},"
+   "new": "onFilter: () => {},",
+   "command": [
+    "env",
+    "FILES_PARTS=categories",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   }
  ]
 }

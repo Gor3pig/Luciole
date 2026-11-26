@@ -21,12 +21,14 @@ PACK_ARGS := --force --out-dir=$(DIST) --schema=$(SCHEMA) \
 POT     := $(SRC)/po/luciole.pot
 LANGS   := $(patsubst $(SRC)/po/%.po,%,$(wildcard $(SRC)/po/*.po))
 
-.PHONY: help check lint test fuzz mutation soak zipcheck gate schemas pot po locale icon assets pack shell-test shell-test-ui shell-test-search shell-test-degrade shell-test-files capture clean
+.PHONY: help check lint test fuzz mutation soak zipcheck gate gate-push gate-full schemas pot po locale icon assets pack shell-test shell-test-ui shell-test-search shell-test-degrade shell-test-files capture clean
 
 help:
 	@echo "make check       lint + unit tests"
 	@echo "make lint        ESLint"
-	@echo "make gate        the quality gate: everything below, in order (run before every commit)"
+	@echo "make gate        the quality gate, quick: changed lines' mutants, shell tests side by side"
+	@echo "make gate-push   the quality gate before a push: every mutant of what changed since the last push"
+	@echo "make gate-full   the quality gate at the end of a lot: every mutant, longer cycles"
 	@echo "make fuzz        random-data tests, fixed seeds (replay one with LUCIOLE_SEED=n)"
 	@echo "make mutation    break the code on purpose; the tests must notice (all mutants)"
 	@echo "make soak        thousands of random actions in a headless shell (endurance)"
@@ -68,6 +70,12 @@ zipcheck:
 
 gate:
 	sh tests/gate.sh
+
+gate-push:
+	GATE_PUSH=1 sh tests/gate.sh
+
+gate-full:
+	GATE_FULL=1 sh tests/gate.sh
 
 schemas:
 	glib-compile-schemas $(SRC)/schemas

@@ -6,31 +6,48 @@
 // a hole in the tests; a mutant that no longer applies ("stale") means the code
 // changed and its specification must be updated.
 //
-//   gjs -m tests/mutation/run.js [--changed] [--spec <name>] [--list]
+//   gjs -m tests/mutation/run.js [--changed] [--with-slow] [--lines] [--base <ref>]
+//                                [--spec <name>] [--jobs <n>] [--sample <share>] [--list]
 //
-//   --changed   only the mutants of files changed since the last commit
-//               (staged, unstaged or new), which is what `make gate` runs
-//   --spec      only tests/mutation/<name>.json
-//   --with-slow with --changed, also the specs marked "slow" (tests in a real shell)
+//   --changed    only the mutants of files changed since <ref> (staged, unstaged or new)
+//   --with-slow  with --changed, also the specs marked "slow" (tests in a real shell)
+//   --lines      with --changed, only the mutants of the changed lines (and a few around them),
+//                the mutants new in their specification, and a random share of the others
+//   --sample     that share (default 0.1); the seed is printed, LUCIOLE_MUTATION_SEED replays it
+//   --base       what "changed" is compared with (default HEAD: what is not committed yet)
+//   --spec       only tests/mutation/<name>.json
+//   --jobs       how many tests in a real shell run at the same time (default 3)
 //
-// Safety: every file is backed up before it is touched and restored after each
-// mutant, on error, and on Ctrl+C or termination. A backup left by a run that
-// was killed outright is restored at the next start.
+// Mutants run in copies of the project, several at a time; the project itself is never
+// modified, so an interrupted run leaves nothing behind but temporary copies, removed on
+// exit. A mutant may name its own test ("command"), else the one of its specification.
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GLibUnix from 'gi://GLibUnix';
 import System from 'system';
 
+import {changedLineRanges, isNew, linesOf, sample, touches} from './select.js';
+
 const ROOT = Gio.File.new_for_uri(import.meta.url).get_parent().get_parent().get_parent();
 const SPEC_DIR = ROOT.get_child('tests').get_child('mutation');
-const BACKUP_DIR = GLib.build_filenamev([GLib.get_tmp_dir(), 'luciole-mutation-backup']);
+// Left by the earlier version of this runner, which modified the project in place.
+const OLD_BACKUP_DIR = GLib.build_filenamev([GLib.get_tmp_dir(), 'luciole-mutation-backup']);
 const TIMEOUT_SECONDS = 180;
+// What a copy holds: everything a test needs to run.
+const COPIED = ['src', 'tests', 'Makefile', 'package.json', 'eslint.config.js'];
+const FAST_JOBS = 3;
 
 const args = ARGV;
+const option = name => (args.includes(name) ? args[args.indexOf(name) + 1] : null);
 const onlyChanged = args.includes('--changed');
+const byLines = args.includes('--lines');
 const listOnly = args.includes('--list');
-const specName = args.includes('--spec') ? args[args.indexOf('--spec') + 1] : null;
+const specName = option('--spec');
+const base = option('--base') ?? 'HEAD';
+const slowJobs = Math.max(1, Number(option('--jobs') ?? 3) || 3);
+const share = Number(option('--sample') ?? 0.1);
+const seed = Number(GLib.getenv('LUCIOLE_MUTATION_SEED') ?? Math.floor(Date.now() / 1000) % 100000);
 
 const decoder = new TextDecoder();
 const encoder = new TextEncoder();
@@ -44,20 +61,16 @@ function writeText(file, text) {
     file.replace_contents(encoder.encode(text), null, false, Gio.FileCreateFlags.NONE, null);
 }
 
-function backupPath(relative) {
-    return GLib.build_filenamev([BACKUP_DIR, relative.replaceAll('/', '__')]);
-}
-
-function restoreAll() {
-    const dir = Gio.File.new_for_path(BACKUP_DIR);
+// The earlier runner backed files up before mutating them in place: put back what it left.
+function restoreOldBackups() {
+    const dir = Gio.File.new_for_path(OLD_BACKUP_DIR);
     if (!dir.query_exists(null))
         return 0;
     let restored = 0;
     const enumerator = dir.enumerate_children('standard::name', Gio.FileQueryInfoFlags.NONE, null);
     for (let info = enumerator.next_file(null); info; info = enumerator.next_file(null)) {
-        const relative = info.get_name().replaceAll('__', '/');
         const backup = dir.get_child(info.get_name());
-        writeText(ROOT.resolve_relative_path(relative), readText(backup));
+        writeText(ROOT.resolve_relative_path(info.get_name().replaceAll('__', '/')), readText(backup));
         backup.delete(null);
         restored++;
     }
@@ -65,19 +78,26 @@ function restoreAll() {
     return restored;
 }
 
-function runCommand(argv, cwd, timeoutSeconds) {
+const running = new Set();
+
+// Runs a test; its output is dropped, or written to `logPath` when one is given.
+function runCommand(argv, cwd, timeoutSeconds, logPath = null) {
     return new Promise(resolve => {
         const launcher = new Gio.SubprocessLauncher({
-            flags: Gio.SubprocessFlags.STDOUT_SILENCE | Gio.SubprocessFlags.STDERR_SILENCE,
+            flags: logPath ? Gio.SubprocessFlags.STDERR_MERGE : Gio.SubprocessFlags.STDOUT_SILENCE | Gio.SubprocessFlags.STDERR_SILENCE,
         });
+        if (logPath)
+            launcher.set_stdout_file_path(logPath);
         launcher.set_cwd(cwd);
         const process = launcher.spawnv(argv);
+        running.add(process);
         const timer = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, timeoutSeconds, () => {
             process.force_exit();
             return GLib.SOURCE_REMOVE;
         });
         process.wait_async(null, (_source, result) => {
             GLib.source_remove(timer);
+            running.delete(process);
             process.wait_finish(result);
             // A test run that was killed by the timeout counts as a failure of the
             // tests, hence as the mutant being noticed.
@@ -86,19 +106,37 @@ function runCommand(argv, cwd, timeoutSeconds) {
     });
 }
 
-function lines(argv) {
-    const launcher = new Gio.SubprocessLauncher({flags: Gio.SubprocessFlags.STDOUT_PIPE});
+function output(argv) {
+    const launcher = new Gio.SubprocessLauncher({flags: Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_SILENCE});
     launcher.set_cwd(ROOT.get_path());
     const process = launcher.spawnv(argv);
     const [, out] = process.communicate_utf8(null, null);
-    return out.split('\n').filter(line => line !== '');
+    return process.get_successful() ? out : null;
 }
+
+const lines = argv => (output(argv) ?? '').split('\n').filter(line => line !== '');
 
 function changedFiles() {
     return new Set([
-        ...lines(['git', 'diff', '--name-only', 'HEAD']),
+        ...lines(['git', 'diff', '--name-only', base]),
         ...lines(['git', 'ls-files', '--others', '--exclude-standard']),
     ]);
+}
+
+// The changed lines of a file: [first, last] ranges, or null for "all of it" (a new file).
+function changedRanges(file) {
+    if (lines(['git', 'ls-files', '--others', '--exclude-standard', '--', file]).length > 0)
+        return null;
+    return changedLineRanges(output(['git', 'diff', '-U0', base, '--', file]) ?? '');
+}
+
+function earlierMutants(specId) {
+    const text = output(['git', 'show', `${base}:tests/mutation/${specId}.json`]);
+    try {
+        return text ? JSON.parse(text).mutants : null;
+    } catch {
+        return null;
+    }
 }
 
 function loadSpecs() {
@@ -116,63 +154,128 @@ function loadSpecs() {
     return specs.sort((a, b) => a.id.localeCompare(b.id));
 }
 
+const copies = [];
+
+// A copy of the project for one worker, made once and reused for each of its mutants.
+function makeCopy() {
+    const dir = GLib.dir_make_tmp('luciole-mutation-XXXXXX');
+    const present = COPIED.filter(name => ROOT.get_child(name).query_exists(null));
+    const launcher = new Gio.SubprocessLauncher({flags: Gio.SubprocessFlags.NONE});
+    launcher.set_cwd(ROOT.get_path());
+    const process = launcher.spawnv(['cp', '-a', ...present, dir]);
+    process.wait(null);
+    if (!process.get_successful())
+        throw new Error(`could not copy the project to ${dir}`);
+    copies.push(dir);
+    return dir;
+}
+
+function removeCopies() {
+    for (const dir of copies)
+        new Gio.SubprocessLauncher({flags: Gio.SubprocessFlags.NONE}).spawnv(['rm', '-rf', dir]).wait(null);
+    copies.length = 0;
+}
+
 // ---------------------------------------------------------------------------
 
-const leftover = restoreAll();
+const leftover = restoreOldBackups();
 if (leftover > 0)
-    print(`restored ${leftover} file(s) left modified by an interrupted run`);
+    print(`restored ${leftover} file(s) left modified by an interrupted run of the earlier runner`);
 
 for (const signal of [2, 15]) {
     GLibUnix.signal_add(GLib.PRIORITY_HIGH, signal, () => {
-        restoreAll();
-        print('\ninterrupted: files restored');
+        for (const process of running)
+            process.force_exit();
+        removeCopies();
+        print('\ninterrupted: the project was never modified; the copies are removed');
         System.exit(130);
         return GLib.SOURCE_REMOVE;
     });
 }
 
 const changed = onlyChanged ? changedFiles() : null;
-const specs = loadSpecs();
-let total = 0;
-let killed = 0;
-const survivors = [];
+const rangesCache = new Map();
+const rangesOf = file => {
+    if (!rangesCache.has(file))
+        rangesCache.set(file, changedRanges(file));
+    return rangesCache.get(file);
+};
+
+const chosen = [];
 const stale = [];
 let skipped = 0;
+let onLines = 0;
+let fresh = 0;
+let drawn = 0;
 
-for (const spec of specs) {
+for (const spec of loadSpecs()) {
     if (spec.slow && onlyChanged && !args.includes('--with-slow'))
         continue;
+    const earlier = byLines ? earlierMutants(spec.id) : null;
+    const others = [];
     for (const mutant of spec.mutants) {
         if (changed && !changed.has(mutant.file)) {
             skipped++;
             continue;
         }
-        if (listOnly) {
-            print(`${spec.id}: ${mutant.file}: ${mutant.label}`);
-            continue;
-        }
-        const file = ROOT.resolve_relative_path(mutant.file);
-        const original = readText(file);
+        const text = readText(ROOT.resolve_relative_path(mutant.file));
         // A mutant may carry `also`: more replacements in the same file, for a protection that is
         // doubled elsewhere (removing one alone changes nothing, so both go together).
         const edits = [{old: mutant.old, new: mutant.new}, ...(mutant.also ?? [])];
-        const occurrences = Math.min(...edits.map(edit => original.split(edit.old).length - 1));
-        if (occurrences !== 1 || edits.some(edit => original.split(edit.old).length - 1 !== 1)) {
-            stale.push(`${mutant.file}: ${mutant.label} (${occurrences} matches)`);
+        if (edits.some(edit => text.split(edit.old).length - 1 !== 1)) {
+            stale.push(`${mutant.file}: ${mutant.label}`);
             print(`STALE     ${mutant.file}: ${mutant.label}`);
             continue;
         }
+        const entry = {spec, mutant, edits};
+        if (!changed || !byLines) {
+            chosen.push(entry);
+            continue;
+        }
+        const ranges = rangesOf(mutant.file);
+        const place = linesOf(text, mutant.old);
+        if (ranges === null || (place && touches(place, ranges))) {
+            onLines++;
+            chosen.push(entry);
+        } else if (isNew(mutant, earlier)) {
+            fresh++;
+            chosen.push(entry);
+        } else {
+            others.push(entry);
+        }
+    }
+    // Each spec draws its own share, from a seed of its own derived from the printed one.
+    const picked = sample(others, share, seed * 31 + spec.id.length);
+    drawn += picked.length;
+    skipped += others.length - picked.length;
+    chosen.push(...picked);
+}
 
-        total++;
-        GLib.mkdir_with_parents(BACKUP_DIR, 0o700);
-        writeText(Gio.File.new_for_path(backupPath(mutant.file)), original);
+if (listOnly) {
+    for (const {spec, mutant} of chosen)
+        print(`${spec.id}: ${mutant.file}: ${mutant.label}`);
+    System.exit(0);
+}
+if (changed && byLines)
+    print(`chosen: ${onLines} on changed lines, ${fresh} new or changed, ${drawn} drawn at random (seed ${seed})`);
+
+// Slow mutants (a real shell each) and quick ones run in their own pools, side by side.
+const slowQueue = chosen.filter(entry => entry.spec.slow);
+const fastQueue = chosen.filter(entry => !entry.spec.slow);
+let killed = 0;
+const survivors = [];
+
+async function worker(queue, dir) {
+    for (let entry = queue.shift(); entry; entry = queue.shift()) {
+        const {spec, mutant, edits} = entry;
+        const file = Gio.File.new_for_path(GLib.build_filenamev([dir, mutant.file]));
+        const original = readText(file);
         let status;
         try {
             writeText(file, edits.reduce((text, edit) => text.replace(edit.old, () => edit.new), original));
-            status = await runCommand(spec.command, ROOT.get_path(), spec.timeout ?? TIMEOUT_SECONDS);
+            status = await runCommand(mutant.command ?? spec.command, dir, spec.timeout ?? TIMEOUT_SECONDS);
         } finally {
             writeText(file, original);
-            restoreAll();
         }
         if (status === 0) {
             survivors.push(`${mutant.file}: ${mutant.label}`);
@@ -183,9 +286,49 @@ for (const spec of specs) {
     }
 }
 
-if (listOnly)
-    System.exit(0);
+// First, each test once without any mutant, in the same conditions (copies, side by side): a
+// test that fails on its own would count every mutant as noticed and hide the ones it misses.
+async function baseline(queue, dirs) {
+    const commands = new Map();
+    for (const {spec, mutant} of queue) {
+        const argv = mutant.command ?? spec.command;
+        commands.set(JSON.stringify(argv), {argv, timeout: spec.timeout ?? TIMEOUT_SECONDS});
+    }
+    const pending = [...commands.values()];
+    const failed = [];
+    await Promise.all(dirs.map(async dir => {
+        for (let next = pending.shift(); next; next = pending.shift()) {
+            const log = GLib.build_filenamev([dir, 'baseline.log']);
+            if (await runCommand(next.argv, dir, next.timeout, log) !== 0) {
+                const lastLines = readText(Gio.File.new_for_path(log)).trimEnd().split('\n').slice(-8).join('\n    ');
+                failed.push(`${next.argv.join(' ')}\n    ${lastLines}`);
+            }
+        }
+    }));
+    return failed;
+}
 
+const pools = [];
+for (const [queue, jobs] of [[slowQueue, slowJobs], [fastQueue, FAST_JOBS]]) {
+    const dirs = [];
+    for (let n = 0; n < Math.min(jobs, queue.length); n++)
+        dirs.push(makeCopy());
+    pools.push({queue, dirs});
+}
+try {
+    const failed = (await Promise.all(pools.map(({queue, dirs}) => baseline(queue, dirs)))).flat();
+    if (failed.length > 0) {
+        for (const command of failed)
+            print(`BASELINE FAILED  ${command}`);
+        print('\nthe tests fail without any mutant: nothing can be judged until they pass');
+        System.exit(1);
+    }
+    await Promise.all(pools.flatMap(({queue, dirs}) => dirs.map(dir => worker(queue, dir))));
+} finally {
+    removeCopies();
+}
+
+const total = killed + survivors.length;
 print(`\n${total} mutants run, ${killed} killed, ${survivors.length} survived, ${stale.length} stale` +
-    (skipped > 0 ? ` (${skipped} skipped: their files did not change)` : ''));
+    (skipped > 0 ? ` (${skipped} skipped${changed && byLines ? ': not on changed lines and not drawn' : ': their files did not change'})` : ''));
 System.exit(survivors.length > 0 || stale.length > 0 ? 1 : 0);

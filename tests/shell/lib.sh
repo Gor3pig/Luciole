@@ -18,10 +18,28 @@ start_shell() {
     # everything the private bus starts (a preferences window, a portal...): without
     # it a graphical program would fall back to the real session's display.
     WAYLAND_NAME="luciole-test-$$"
+    # Private settings only (a file in the test's own folder): the screen time history is turned
+    # off there, so the test shell does not report usage to the system's screen time service as
+    # the real user's (nor collide with another test shell doing so at the same time).
+    if [ "${GSETTINGS_BACKEND:-}" != keyfile ] || [ -z "${XDG_CONFIG_HOME:-}" ]; then
+        echo "FAIL: a test shell must run with private settings (GSETTINGS_BACKEND=keyfile, its own XDG_CONFIG_HOME)"
+        exit 1
+    fi
+    gsettings set org.gnome.desktop.screen-time-limits history-enabled false
+    # A runtime directory of its own too: the shell keeps files there (its display socket, a
+    # marker that extensions crashed it), which must not be the real session's nor shared with
+    # another test shell running at the same time.
+    # Only PipeWire, which the screenshots of capture.sh stream through, is still reached where
+    # it runs.
+    if [ -z "${PIPEWIRE_RUNTIME_DIR:-}" ] && [ -n "${XDG_RUNTIME_DIR:-}" ]; then
+        export PIPEWIRE_RUNTIME_DIR="$XDG_RUNTIME_DIR"
+    fi
+    PRIVATE_RUNTIME=$(mktemp -d)
+    export XDG_RUNTIME_DIR="$PRIVATE_RUNTIME"
     gnome-shell --headless --wayland --no-x11 --wayland-display="$WAYLAND_NAME" --virtual-monitor 1280x720 ${SHELL_EXTRA_ARGS:-} >"$LOG" 2>&1 &
     SHELL_PID=$!
     gdbus call --session --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus \
-        --method org.freedesktop.DBus.UpdateActivationEnvironment "{'WAYLAND_DISPLAY': '$WAYLAND_NAME', 'DISPLAY': ''}" >/dev/null
+        --method org.freedesktop.DBus.UpdateActivationEnvironment "{'WAYLAND_DISPLAY': '$WAYLAND_NAME', 'DISPLAY': '', 'XDG_RUNTIME_DIR': '$PRIVATE_RUNTIME'}" >/dev/null
     trap cleanup EXIT
 }
 
@@ -31,6 +49,11 @@ cleanup() {
     [ -n "${CMD_FIFO:-}" ] && rm -f "$CMD_FIFO" "$ACK_FIFO"
     kill "$SHELL_PID" 2>/dev/null
     wait "$SHELL_PID" 2>/dev/null
+    if [ -n "${PRIVATE_RUNTIME:-}" ]; then
+        # The document portal of the test session mounts a folder there until its bus closes.
+        fusermount3 -u -z "$PRIVATE_RUNTIME/doc" 2>/dev/null || true
+        rm -rf "$PRIVATE_RUNTIME" 2>/dev/null || true
+    fi
 }
 
 # start_index_service: publishes a stand-in file index on the test bus (see index-service.js).

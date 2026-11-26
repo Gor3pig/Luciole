@@ -29,7 +29,8 @@ esac
 UUID=luciole@gor3pig.github.io
 
 WORK=$(mktemp -d)
-trap 'rm -rf "$WORK"' EXIT
+# A process of the test shell may still be writing there for a moment after it exits.
+trap 'rm -rf "$WORK" 2>/dev/null || { sleep 1; rm -rf "$WORK"; }' EXIT
 if [ -n "${CAPTURE_UP:-}" ]; then
     mkdir -p "$WORK/data/luciole"
     printf '{"version":1,"queries":["firefox","calculatrice","notes"]}' >"$WORK/data/luciole/queries.json"

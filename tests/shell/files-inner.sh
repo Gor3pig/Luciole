@@ -36,10 +36,95 @@ clear_entry() {
     done
 }
 
+# ---- Helpers ----
+
+# chip_info: "<number of chips> <index of the checked one>" ("hidden" when the row is not shown).
+chip_info() {
+    shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-chips')) { const k = a.get_children(); return a.visible ? k.length + ' ' + k.findIndex(c => c.checked) : 'hidden'; } for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
+}
+# chip_center <index>: where to click to hit that chip.
+chip_center() {
+    shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-chips')) { const c = a.get_children()[$1]; const [x, y] = c.get_transformed_position(); const [w, h] = c.get_transformed_size(); return Math.round(x + w / 2) + ' ' + Math.round(y + h / 2); } for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
+}
+empty_hint_shown() {
+    shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-empty-hint')) return String(a.visible); for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
+}
+# wait_last <regex>: the most recent "results:" line of the log matches it (polls for 4 s).
+wait_last() {
+    i=0
+    while [ "$i" -lt 80 ]; do
+        grep -F '[Luciole] results:' "$LOG" | tail -n 1 | grep -qE "$1" && return 0
+        sleep 0.05
+        i=$((i + 1))
+    done
+    return 1
+}
+last_results() { grep -F '[Luciole] results:' "$LOG" | tail -n 1 | sed 's/.*results: //'; }
+# menu_state: "hidden", or "<number of actions> <index highlighted> <labels>".
+menu_state() {
+    shell_eval "(function find(a) { if (a.style_class === 'luciole-menu') { if (!a.visible) return 'hidden'; const rows = a.get_children()[0].get_children().filter(c => c.style_class === 'luciole-menu-row'); return rows.length + ' ' + rows.findIndex(r => r.has_style_pseudo_class('selected')) + ' ' + rows.map(r => r.accessible_name).join(';'); } for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
+}
+results_visible() {
+    shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-results-view')) return String(a.visible); for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
+}
+confirmation_shown() {
+    shell_eval "(function find(a) { if (a.style_class === 'luciole-menu-confirmation') return 'yes'; for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage) || 'no'"
+}
+clipboard_text() {
+    shell_eval "(function() { globalThis.clipValue = '?'; imports.gi.St.Clipboard.get_default().get_text(imports.gi.St.ClipboardType.CLIPBOARD, (c, t) => { globalThis.clipValue = t; }); return 'asked'; })()" >/dev/null
+    sleep 0.4
+    shell_eval "String(globalThis.clipValue)"
+}
+launcher_closed_count() { grep -cF "[Luciole] closed" "$LOG"; }
+reopen_launcher() {
+    OPENED_NOW=$(grep -cF "[Luciole] opened" "$LOG")
+    combo
+    wait_log "[Luciole] opened" $((OPENED_NOW + 1)) || fail "the launcher did not reopen"
+    sleep 0.4
+}
+# selected_row: the title of the highlighted result, or "none".
+selected_row() {
+    shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-row') && a.has_style_pseudo_class && a.has_style_pseudo_class('selected')) return (function t(b) { if ((b.style_class || '').includes('luciole-row-title')) return b.get_children().map(c => c.text || '').join(''); for (const c of b.get_children()) { const r = t(c); if (r) return r; } return ''; })(a) || 'untitled'; for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage) || 'none'"
+}
+type_label() {
+    shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-type-chip')) return a.visible ? a.text : 'hidden'; for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
+}
+# menu_row_center <index>: where to click to hit that action.
+menu_row_center() {
+    shell_eval "(function find(a) { if (a.style_class === 'luciole-menu') { const rows = a.get_children()[0].get_children().filter(c => c.style_class === 'luciole-menu-row'); const c = rows[$1]; const [x, y] = c.get_transformed_position(); const [w, h] = c.get_transformed_size(); return Math.round(x + w / 2) + ' ' + Math.round(y + h / 2); } for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
+}
+
+# ---- Parts: each can run alone (FILES_PARTS="menu calc"; empty: all of them) ----
+part() {
+    [ -z "${FILES_PARTS:-}" ] && return 0
+    case " $FILES_PARTS " in *" $1 "*) return 0 ;; esac
+    return 1
+}
+# fresh_start: the window open, the field empty (no type label), no menu, All chosen, the usual
+# keyboard layout: whatever the part before it left.
+# The window is asked about, not guessed from the log: after the races a close may still be under way.
+launcher_shown() {
+    shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-overlay')) return a.visible && a.opacity === 255 ? 'yes' : 'no'; for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage) || 'no'"
+}
+fresh_start() {
+    gsettings reset org.gnome.desktop.input-sources sources 2>/dev/null || true
+    sleep 0.5
+    if [ "$(launcher_shown)" != yes ]; then
+        reopen_launcher
+    fi
+    [ "$(launcher_shown)" = yes ] || fail "the launcher is not shown at the start of a part ($(launcher_shown))"
+    [ "$(menu_state)" = hidden ] || escape
+    clear_entry 30
+    chord Control_L+0
+    sleep 0.4
+}
+
 wait_log "search ready: apps, files" || fail "both providers did not start"
 combo
 wait_log "[Luciole] opened" || fail "the launcher did not open"
 
+if part basics; then
+fresh_start
 # Three visible quokka files (the hidden folder and node_modules are excluded): 3 results,
 # never 4 or more. No installed application is called "quokka", so the count does not
 # depend on the machine.
@@ -64,30 +149,13 @@ press ISO_Left_Tab
 wait_log "selected: " 2 || fail "Shift+Tab did not select anything"
 grep 'selected: ' "$LOG" | tail -n 1 | grep -qF "selected: apps:luciole-test-facture.desktop" || fail "Shift+Tab did not come back to the top hit"
 echo "ok: Tab and Shift+Tab move between sections"
+fi
 
+if part categories; then
+fresh_start
 # Categories: chips under the field, Ctrl+0/1/2 and a click choose where the search goes.
-# chip_info: "<number of chips> <index of the checked one>" ("hidden" when the row is not shown).
-chip_info() {
-    shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-chips')) { const k = a.get_children(); return a.visible ? k.length + ' ' + k.findIndex(c => c.checked) : 'hidden'; } for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
-}
-# chip_center <index>: where to click to hit that chip.
-chip_center() {
-    shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-chips')) { const c = a.get_children()[$1]; const [x, y] = c.get_transformed_position(); const [w, h] = c.get_transformed_size(); return Math.round(x + w / 2) + ' ' + Math.round(y + h / 2); } for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
-}
-empty_hint_shown() {
-    shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-empty-hint')) return String(a.visible); for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
-}
-# wait_last <regex>: the most recent "results:" line of the log matches it (polls for 4 s).
-wait_last() {
-    i=0
-    while [ "$i" -lt 80 ]; do
-        grep -F '[Luciole] results:' "$LOG" | tail -n 1 | grep -qE "$1" && return 0
-        sleep 0.05
-        i=$((i + 1))
-    done
-    return 1
-}
-last_results() { grep -F '[Luciole] results:' "$LOG" | tail -n 1 | sed 's/.*results: //'; }
+typed factu
+wait_last 'results: 2 first=Facture Express query=factu' || fail "categories: the application and the file were not found (last: $(last_results))"
 
 [ "$(chip_info)" = "5 0" ] || fail "categories: expected 3 chips with the first checked, got '$(chip_info)'"
 echo "ok: the chips are there (All, Applications, Files, Calculator, System), All is chosen"
@@ -179,35 +247,12 @@ chord Control_L+0
 sleep 0.3
 
 # The menu of actions (Ctrl+K) of the selected result.
-# menu_state: "hidden", or "<number of actions> <index highlighted> <labels>".
-menu_state() {
-    shell_eval "(function find(a) { if (a.style_class === 'luciole-menu') { if (!a.visible) return 'hidden'; const rows = a.get_children()[0].get_children().filter(c => c.style_class === 'luciole-menu-row'); return rows.length + ' ' + rows.findIndex(r => r.has_style_pseudo_class('selected')) + ' ' + rows.map(r => r.accessible_name).join(';'); } for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
-}
-results_visible() {
-    shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-results-view')) return String(a.visible); for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
-}
-confirmation_shown() {
-    shell_eval "(function find(a) { if (a.style_class === 'luciole-menu-confirmation') return 'yes'; for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage) || 'no'"
-}
-clipboard_text() {
-    shell_eval "(function() { globalThis.clipValue = '?'; imports.gi.St.Clipboard.get_default().get_text(imports.gi.St.ClipboardType.CLIPBOARD, (c, t) => { globalThis.clipValue = t; }); return 'asked'; })()" >/dev/null
-    sleep 0.4
-    shell_eval "String(globalThis.clipValue)"
-}
-launcher_closed_count() { grep -cF "[Luciole] closed" "$LOG"; }
-reopen_launcher() {
-    OPENED_NOW=$(grep -cF "[Luciole] opened" "$LOG")
-    combo
-    wait_log "[Luciole] opened" $((OPENED_NOW + 1)) || fail "the launcher did not reopen"
-    sleep 0.4
-}
+fi
 
+if part system; then
+fresh_start
 # The System source: Settings panels and the shell's own actions. What ends the session is never
 # chosen for the user.
-# selected_row: the title of the highlighted result, or "none".
-selected_row() {
-    shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-row') && a.has_style_pseudo_class && a.has_style_pseudo_class('selected')) return (function t(b) { if ((b.style_class || '').includes('luciole-row-title')) return b.get_children().map(c => c.text || '').join(''); for (const c of b.get_children()) { const r = t(c); if (r) return r; } return ''; })(a) || 'untitled'; for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage) || 'none'"
-}
 clear_entry 8
 typed "panneau luciole"
 wait_last 'results: 1 first=Panneau Luciole de test query=panneau luciole' || fail "the test panel was not found (last: $(last_results))"
@@ -255,7 +300,10 @@ sleep 0.4
 echo "ok: locking the screen is chosen like an ordinary result"
 clear_entry 12
 sleep 0.3
+fi
 
+if part preview; then
+fresh_start
 # The preview: Space on a file chosen with the arrows steps aside for GNOME's previewer (the real
 # one, on this private bus), and the window comes back as it was when the preview is closed.
 clear_entry 8
@@ -282,8 +330,14 @@ while [ "$i" -lt 50 ]; do
     i=$((i + 1))
 done
 echo "preview: windows now: $(shell_eval "global.get_window_actors().map(a => a.meta_window.get_wm_class()).join(',')")"
-sleep 0.5
-FOCUSED=$(shell_eval "String(global.display.focus_window?.get_wm_class() ?? 'none')")
+# The window gets the keyboard soon after it shows (later on a busy machine): up to 5 s.
+i=0
+while [ "$i" -lt 25 ]; do
+    FOCUSED=$(shell_eval "String(global.display.focus_window?.get_wm_class() ?? 'none')")
+    [ "$FOCUSED" = org.gnome.NautilusPreviewer ] && break
+    sleep 0.2
+    i=$((i + 1))
+done
 echo "preview: keyboard focus on $FOCUSED"
 [ "$FOCUSED" = org.gnome.NautilusPreviewer ] || fail "preview: the preview window did not get the keyboard"
 sleep 0.5
@@ -333,7 +387,71 @@ sleep 0.4
 echo "ok: Preview in the menu works the same way"
 clear_entry 8
 sleep 0.3
+fi
 
+if part types; then
+fresh_start
+# The type filter: "/" lists the types; one chosen becomes a label in the field and restricts the
+# search to files of that type; Backspace at the start takes it away; "/etc/hosts" is just text.
+clear_entry 12
+typed "/"
+wait_last 'results: 8 first=Images query=/' || fail "type filter: '/' did not list the eight types (last: $(last_results))"
+press Down
+press Down
+sleep 0.3
+press Return
+sleep 0.6
+[ "$(type_label)" = PDF ] || fail "type filter: choosing PDF did not put the label in the field ('$(type_label)')"
+[ "$(entry_text_length)" = 0 ] || fail "type filter: the field should hold only the words ($(entry_text_length) characters)"
+[ "$(chip_info)" = "5 2" ] || fail "type filter: the Files category was not chosen with the type ('$(chip_info)')"
+typed quok
+wait_last 'results: 0 first=- query=/pdf quok' || fail "type filter: /pdf quok should find nothing: the quokka files are images and documents (last: $(last_results))"
+clear_entry 4
+typed facture
+wait_last 'results: 1 first=Facture mars.pdf query=/pdf facture' || fail "type filter: /pdf facture did not find only the PDF (last: $(last_results))"
+echo "ok: '/' lists the types; PDF chosen becomes a label and only PDF files are found"
+clear_entry 7
+sleep 0.3
+press BackSpace
+sleep 0.5
+[ "$(type_label)" = hidden ] || fail "type filter: Backspace at the start did not take the type away ('$(type_label)')"
+[ "$(chip_info)" = "5 0" ] || fail "type filter: the category did not come back to All ('$(chip_info)')"
+typed "/images quok"
+wait_last 'results: 1 first=quokka-photo.png query=/images quok' || fail "type filter: typing /images quok did not find only the image (last: $(last_results))"
+[ "$(type_label)" = Images ] || fail "type filter: typing '/images ' did not make the label ('$(type_label)')"
+echo "ok: typing '/images ' makes the label; Backspace at the start takes it away"
+clear_entry 6
+press BackSpace
+sleep 0.4
+typed "/etc/hosts"
+sleep 0.8
+[ "$(type_label)" = hidden ] || fail "type filter: '/etc/hosts' was taken for a type"
+last_results | grep -q 'query=/etc/hosts' || fail "type filter: '/etc/hosts' was not searched as text (last: $(last_results))"
+clear_entry 12
+typed "/pd"
+wait_last 'results: 1 first=PDF query=/pd' || fail "type filter: '/pd' did not suggest PDF (last: $(last_results))"
+press Tab
+sleep 0.6
+[ "$(type_label)" = PDF ] || fail "type filter: Tab did not complete the type ('$(type_label)')"
+press BackSpace
+sleep 0.4
+echo "ok: an unknown '/word' is plain text; Tab completes a type"
+typed "/pdf "
+sleep 0.6
+[ "$(type_label)" = PDF ] || fail "type filter: the label did not come for the reopening check"
+CLOSED_T=$(launcher_closed_count)
+combo
+wait_log "[Luciole] closed" $((CLOSED_T + 1)) || fail "type filter: the launcher did not close"
+sleep 0.4
+reopen_launcher
+[ "$(type_label)" = hidden ] || fail "type filter: reopening kept the type ('$(type_label)')"
+echo "ok: reopening starts without a type"
+clear_entry 4
+sleep 0.3
+fi
+
+if part calc; then
+fresh_start
 # The calculator: the answer comes first, Enter copies it and says so, the menu offers the whole calculation.
 clear_entry 8
 typed "2+2*3"
@@ -416,7 +534,10 @@ wait_last 'results: 0 first=- query=2026-11-26' || fail "a date was taken for a 
 echo "ok: the Calculator category, and a date is left alone"
 clear_entry 10
 sleep 0.3
+fi
 
+if part menu; then
+fresh_start
 clear_entry 8
 typed rapport
 wait_last 'results: 1 first=rapport' || fail "the real file was not found (last: $(last_results))"
@@ -547,10 +668,6 @@ echo "ok: an application's own action runs and the window closes"
 sleep 0.4
 
 # A click on an action runs it; closing the window with the menu shown leaves no menu behind.
-# menu_row_center <index>: where to click to hit that action.
-menu_row_center() {
-    shell_eval "(function find(a) { if (a.style_class === 'luciole-menu') { const rows = a.get_children()[0].get_children().filter(c => c.style_class === 'luciole-menu-row'); const c = rows[$1]; const [x, y] = c.get_transformed_position(); const [w, h] = c.get_transformed_size(); return Math.round(x + w / 2) + ' ' + Math.round(y + h / 2); } for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
-}
 reopen_launcher
 typed rapport
 wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
@@ -616,11 +733,12 @@ if [ $((OPENED_NOW - CLOSED_NOW)) = 0 ]; then
     reopen_launcher
 fi
 clear_entry 8
+fi
 
 # Opening a file is covered by the unit tests, with an injected opener: the files here do not exist.
-clear_entry 5
+fresh_start
 typed quok
-wait_log "results: 3 first=" 2 || fail "results did not come back"
+wait_last 'results: 3 first=.*query=quok' || fail "results did not come back (last: $(last_results))"
 
 grep 'perf query to final results:' "$LOG" | sed -n 's/.*final results: \([0-9.]*\) ms.*/\1/p' >"$LOG.q"
 [ -s "$LOG.q" ] || fail "no timing was recorded for the final results"

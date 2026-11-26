@@ -88,7 +88,7 @@ if [ -n "${CAPTURE_DOWN:-}" ]; then
 fi
 sleep 1 # let animations finish
 
-gjs -m "$(dirname "$0")/capture.js" "$OUTPUT" || fail "the capture failed"
+gjs -m "$(dirname "$0")/capture.js" "$OUTPUT" 2>"$LOG.capture" || fail "the capture failed: $(tail -n 3 "$LOG.capture")"
 [ -s "$OUTPUT" ] || fail "the capture file is empty"
 echo "captured $OUTPUT"
 echo "PASS"

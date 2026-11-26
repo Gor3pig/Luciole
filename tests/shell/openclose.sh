@@ -17,7 +17,8 @@ CYCLES=${1:-150}
 UUID=luciole@gor3pig.github.io
 
 WORK=$(mktemp -d)
-trap 'rm -rf "$WORK"' EXIT
+# A process of the test shell may still be writing there for a moment after it exits.
+trap 'rm -rf "$WORK" 2>/dev/null || { sleep 1; rm -rf "$WORK"; }' EXIT
 
 glib-compile-schemas "$ROOT/src/schemas"
 . "$ROOT/tests/shell/lib.sh"

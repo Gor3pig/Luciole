@@ -26,14 +26,15 @@ MAX_EXTRA_BYTES=200000
 # (measured: 20 to 45 kB over 75 cycles; this catches a leak of a few kB per cycle)
 
 WORK=$(mktemp -d)
-trap 'rm -rf "$WORK"' EXIT
+# A process of the test shell may still be writing there for a moment after it exits.
+trap 'rm -rf "$WORK" 2>/dev/null || { sleep 1; rm -rf "$WORK"; }' EXIT
 
 glib-compile-schemas "$ROOT/src/schemas"
 . "$ROOT/tests/shell/lib.sh"
 
 run() { # run <name> <uuid> <extensions dir>
     echo "######## $1 ($CYCLES cycles)"
-    SHELL_EXTRA_ARGS=--unsafe-mode XDG_DATA_HOME="$3" GSETTINGS_BACKEND=memory XDG_SESSION_TYPE=wayland \
+    SHELL_EXTRA_ARGS=--unsafe-mode XDG_DATA_HOME="$3" XDG_CONFIG_HOME="$WORK/config-$1" GSETTINGS_BACKEND=keyfile XDG_SESSION_TYPE=wayland \
         dbus-run-session -- sh "$ROOT/tests/shell/cycle-inner.sh" "$CYCLES" "$WORK/$1.log" "$2" \
         2>&1 | tee "$WORK/$1.out" | grep -vE '^cycle [0-9]+:|dbus-daemon\[|^$|libedbus|Gdk-Message|connection to the bus|ibus|atspi|portal'
 }

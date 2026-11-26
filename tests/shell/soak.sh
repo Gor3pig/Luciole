@@ -20,7 +20,8 @@ SEED=${2:-1}
 UUID=$(sed -n 's/.*"uuid": "\(.*\)".*/\1/p' "$ROOT/src/metadata.json")
 
 WORK=$(mktemp -d)
-trap 'rm -rf "$WORK"' EXIT
+# A process of the test shell may still be writing there for a moment after it exits.
+trap 'rm -rf "$WORK" 2>/dev/null || { sleep 1; rm -rf "$WORK"; }' EXIT
 
 glib-compile-schemas "$ROOT/src/schemas"
 mkdir -p "$WORK/config/glib-2.0/settings" "$WORK/data/gnome-shell/extensions" "$WORK/data/applications" \

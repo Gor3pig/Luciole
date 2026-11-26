@@ -1,5 +1,5 @@
 {
- "description": "Mutants for the core logic: each one breaks the code on purpose and the unit tests must fail. Not listed because equivalent: the session's own refusal of an empty search (QueryHistory.record refuses it too). Also not listed because equivalent: the controller keeping a filter that is not an identifier (effectiveFilter treats it as everything anyway). Not listed because equivalent for the calculator: a text with a single piece (the 'no work' rule refuses it already), a conversion with no unit on the left (the unit lookup refuses it), a very long unit name (it is not found anyway), a zero that keeps its sign (JavaScript writes -0 as 0), and a decimal mark other than a comma (it is shown as a point). Not provable here: that the System window closes BEFORE an action runs (it matters for the shell's confirmation dialogs, which a headless test shell cannot show).",
+ "description": "Mutants for the core logic: each one breaks the code on purpose and the unit tests must fail. Not listed because equivalent: the session's own refusal of an empty search (QueryHistory.record refuses it too). Also not listed because equivalent: the controller keeping a filter that is not an identifier (effectiveFilter treats it as everything anyway). Not listed because equivalent for the calculator: a text with a single piece (the 'no work' rule refuses it already), a conversion with no unit on the left (the unit lookup refuses it), a very long unit name (it is not found anyway), a zero that keeps its sign (JavaScript writes -0 as 0), and a decimal mark other than a comma (it is shown as a point). Not provable here: that the System window closes BEFORE an action runs (it matters for the shell's confirmation dialogs, which a headless test shell cannot show). Also equivalent for the type filter: a very long name after '/' (no type has one), and the controller's own refusal of a type with no word (the files source finds nothing without a word anyway).",
  "command": [
   "gjs",
   "-m",
@@ -1005,8 +1005,8 @@
   {
    "file": "src/core/session.js",
    "label": "a filtered search still has a top hit",
-   "old": "topHit: !this.#emptyQuery && effectiveFilter(this.#filter, this.#getProviders()) === null}",
-   "new": "topHit: !this.#emptyQuery}"
+   "old": "topHit: !this.#emptyQuery && this.#typeFilter === null && effectiveFilter(this.#filter, this.#getProviders()) === null}",
+   "new": "topHit: !this.#emptyQuery && this.#typeFilter === null}"
   },
   {
    "file": "src/core/action-menu.js",
@@ -1119,8 +1119,8 @@
   {
    "file": "src/providers/files-query.js",
    "label": "Open With is not a submenu",
-   "old": "{id: 'open-with', label: _('Open With\u2026'), submenu: true}",
-   "new": "{id: 'open-with', label: _('Open With\u2026')}"
+   "old": "{id: 'open-with', label: _('Open With…'), submenu: true}",
+   "new": "{id: 'open-with', label: _('Open With…')}"
   },
   {
    "file": "src/providers/files-query.js",
@@ -1413,8 +1413,8 @@
   {
    "file": "src/core/calc.js",
    "label": "the arrow is not read",
-   "old": "        } else if (c === '\u2192') {\n            tokens.push({type: 'word', value: 'to'});\n            i++;",
-   "new": "        } else if (c === '\u2192') {\n            return null;"
+   "old": "        } else if (c === '→') {\n            tokens.push({type: 'word', value: 'to'});\n            i++;",
+   "new": "        } else if (c === '→') {\n            return null;"
   },
   {
    "file": "src/core/calc.js",
@@ -1443,8 +1443,8 @@
   {
    "file": "src/core/units.js",
    "label": "Fahrenheit has no offset",
-   "old": "{kind: 'temperature', symbol: '\u00b0F', names: ['\u00b0f', 'f', 'fahrenheit', '\u00b0fahrenheit'], factor: 5 / 9, offset: 459.67}",
-   "new": "{kind: 'temperature', symbol: '\u00b0F', names: ['\u00b0f', 'f', 'fahrenheit', '\u00b0fahrenheit'], factor: 5 / 9, offset: 0}"
+   "old": "{kind: 'temperature', symbol: '°F', names: ['°f', 'f', 'fahrenheit', '°fahrenheit'], factor: 5 / 9, offset: 459.67}",
+   "new": "{kind: 'temperature', symbol: '°F', names: ['°f', 'f', 'fahrenheit', '°fahrenheit'], factor: 5 / 9, offset: 0}"
   },
   {
    "file": "src/core/units.js",
@@ -1757,6 +1757,192 @@
    "label": "any address is passed on for a preview",
    "old": "return typeof uri === 'string' && uri.startsWith('file:///') ? uri : null;",
    "new": "return typeof uri === 'string' ? uri : null;"
+  },
+  {
+   "file": "src/core/type-filter.js",
+   "label": "'/' alone offers nothing",
+   "old": "    if (trimmed === '/')\n        return {suggestions: FILE_TYPES.map(type => type.id)};\n",
+   "new": "\n"
+  },
+  {
+   "file": "src/core/type-filter.js",
+   "label": "spaces before '/' are not allowed",
+   "old": "const trimmed = query.trimStart();",
+   "new": "const trimmed = query;"
+  },
+  {
+   "file": "src/core/type-filter.js",
+   "label": "a whole name without a space is taken as chosen",
+   "old": "    if (rest === undefined) {",
+   "new": "    if (rest === undefined && !type) {"
+  },
+  {
+   "file": "src/core/type-filter.js",
+   "label": "suggestions are not offered for a beginning",
+   "old": "        if (suggestions.length > 0)\n            return {suggestions};\n",
+   "new": "\n"
+  },
+  {
+   "file": "src/core/type-filter.js",
+   "label": "an unknown word is taken as a type",
+   "old": "    if (!type)\n        return null;\n    return {type: type.id, text: rest.trim()};",
+   "new": "    return {type: type?.id ?? 'images', text: rest.trim()};"
+  },
+  {
+   "file": "src/core/type-filter.js",
+   "label": "the words keep their spaces",
+   "old": "return {type: type.id, text: rest.trim()};",
+   "new": "return {type: type.id, text: rest};"
+  },
+  {
+   "file": "src/core/type-filter.js",
+   "label": "names keep their case and accents",
+   "old": "    return BY_NAME.get(fold(name)) ?? null;",
+   "new": "    return BY_NAME.get(name) ?? null;"
+  },
+  {
+   "file": "src/core/type-filter.js",
+   "label": "the name wins over the MIME type",
+   "old": "    if (typeof mime === 'string' && mime !== '')\n        return type.mime",
+   "new": "    if (false)\n        return type.mime"
+  },
+  {
+   "file": "src/core/type-filter.js",
+   "label": "an exact MIME type matches by its beginning",
+   "old": "(prefix.endsWith('/') || prefix.endsWith('.') || prefix.endsWith('-') ? mime.startsWith(prefix) : false)",
+   "new": "mime.startsWith(prefix)"
+  },
+  {
+   "file": "src/core/type-filter.js",
+   "label": "a family of MIME types matches only exactly",
+   "old": "(prefix.endsWith('/') || prefix.endsWith('.') || prefix.endsWith('-') ? mime.startsWith(prefix) : false)",
+   "new": "false"
+  },
+  {
+   "file": "src/core/type-filter.js",
+   "label": "the extension keeps its case",
+   "old": "return dot > 0 && dot < name.length - 1 ? fold(name.slice(dot + 1)) : '';",
+   "new": "return dot > 0 && dot < name.length - 1 ? name.slice(dot + 1) : '';"
+  },
+  {
+   "file": "src/core/type-filter.js",
+   "label": "a hidden file's name is taken for an extension",
+   "old": "return dot > 0 && dot < name.length - 1",
+   "new": "return dot >= 0 && dot < name.length - 1"
+  },
+  {
+   "file": "src/core/type-filter.js",
+   "label": "PDF files are not documents",
+   "old": "mime: ['application/pdf', 'application/vnd.oasis.opendocument.',",
+   "new": "mime: ['application/vnd.oasis.opendocument.',"
+  },
+  {
+   "file": "src/core/type-filter.js",
+   "label": "the written type has no space after it",
+   "old": "return type ? `/${type.names[0]} ` : '';",
+   "new": "return type ? `/${type.names[0]}` : '';"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "'/' searches instead of listing the types",
+   "old": "        if (typed?.suggestions) {",
+   "new": "        if (false) {"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "the type is not passed on",
+   "old": "                ...(this.#typeFilter !== null ? {typeFilter: this.#typeFilter} : {}),\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "a typed search goes to every source",
+   "old": "        if (this.#typeFilter !== null)\n            return providers.filter(provider => provider.id === 'files');\n",
+   "new": "\n"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "the type is searched as words",
+   "old": "        const query = typed ? typed.text : this.#query;",
+   "new": "        const query = this.#query;"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "a typed search has a top hit",
+   "old": "topHit: !this.#emptyQuery && this.#typeFilter === null && effectiveFilter",
+   "new": "topHit: !this.#emptyQuery && effectiveFilter"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "a typed search keeps every file",
+   "old": "        if (typeFilter !== null)\n            rows = keepType(rows, typeFilter);\n",
+   "new": "\n"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "a file is kept twice",
+   "old": "        if (seen.has(row.url) || !fileIsOfType(typeId, {mime: row.mime, name: row.name}))",
+   "new": "        if (!fileIsOfType(typeId, {mime: row.mime, name: row.name}))"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "a typed search keeps any number of files",
+   "old": "        if (kept.length >= 40)\n            break;\n",
+   "new": "\n"
+  },
+  {
+   "file": "tests/mutation/select.js",
+   "label": "a removal hunk is read as an empty range",
+   "old": "ranges.push(count === 0 ? [Math.max(1, start), Math.max(1, start)] : [start, start + count - 1]);",
+   "new": "ranges.push([start, start + count - 1]);"
+  },
+  {
+   "file": "tests/mutation/select.js",
+   "label": "no margin around a change",
+   "old": "first <= end + margin && last >= start - margin",
+   "new": "first <= end && last >= start"
+  },
+  {
+   "file": "tests/mutation/select.js",
+   "label": "a small share draws nothing",
+   "old": "Math.max(1, Math.ceil(items.length * share))",
+   "new": "Math.max(0, Math.floor(items.length * share))"
+  },
+  {
+   "file": "tests/mutation/select.js",
+   "label": "the list itself is shuffled",
+   "old": "const pool = [...items];",
+   "new": "const pool = items;"
+  },
+  {
+   "file": "tests/mutation/select.js",
+   "label": "the new text of a mutant is not compared",
+   "old": "earlier.old === mutant.old &&\n        earlier.new === mutant.new &&",
+   "new": "earlier.old === mutant.old &&"
+  },
+  {
+   "file": "tests/mutation/select.js",
+   "label": "a piece found twice is placed",
+   "old": "if (at < 0 || text.indexOf(piece, at + 1) >= 0)",
+   "new": "if (at < 0)"
+  },
+  {
+   "file": "tests/mutation/select.js",
+   "label": "the seed is ignored",
+   "old": "let state = (Number(seed) >>> 0) || 1;",
+   "new": "let state = 1;"
+  },
+  {
+   "file": "tests/mutation/select.js",
+   "label": "the last line of a piece is wrong",
+   "old": "return [first, first + piece.split('\\n').length - 1];",
+   "new": "return [first, first];"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "a search restricted to a type still has a top hit",
+   "old": "topHit: !this.#emptyQuery && this.#typeFilter === null && effectiveFilter(this.#filter, this.#getProviders()) === null}",
+   "new": "topHit: !this.#emptyQuery && effectiveFilter(this.#filter, this.#getProviders()) === null}"
   }
  ]
 }

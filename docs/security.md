@@ -96,6 +96,10 @@ duplicates).
   else. While it is shown, Luciole lets go of the keyboard and gives it to the preview window; it
   comes back when the previewer says the preview was closed, or after two seconds if it never
   appeared. Without the previewer installed, no preview is offered.
+* **A type of file is picked from a fixed list.** In "/pdf facture" only the words reach the
+  index, as the bound full-text terms they always were; the type is one of eight known ones, and is
+  applied by comparing each file's MIME type (or, when the index does not know it, its extension)
+  with that list. Anything else after "/" is searched as plain text.
 * **No dynamic code.** No `eval`, no `Function`, no shell command built from
   text. Applications and files are opened with GIO using the entry or address
   that came from the index, not from the typed text.
@@ -131,6 +135,22 @@ Every change must pass `make gate` (see `tests/gate.sh`):
   memory did not run away;
 * a check of the built package: expected files present, nothing extra, no
   private detail of the build machine, schema compiles strictly.
+
+The gate runs the same checks at three depths, which differ only in how many mutants run and
+how the shell tests are scheduled:
+
+* `make gate`, while working: the mutants of the changed lines (and a few lines around them),
+  the mutants new in their specification, and a random tenth of the others, drawn again each
+  run (the seed is printed so a run can be replayed); the shell tests three at a time;
+* `make gate-push`, before a push: every mutant of every file changed since the last push, the
+  shell tests one after the other so their timings are measured alone;
+* `make gate-full`, at the end of a set of features: every mutant, longer loops.
+
+Mutants run in temporary copies of the project, several at a time, so the working copy is never
+modified, even by an interrupted run. Before judging any mutant, each test runs once without
+one: a test that fails on its own would otherwise count every mutant as noticed. A mutant of a
+shell test runs only the part of the test that covers it (`FILES_PARTS`); the whole test runs in
+the gate.
 
 ## Not covered yet
 

@@ -225,8 +225,8 @@
   {
    "file": "src/providers/files.js",
    "label": "results not ordered",
-   "old": "ORDER BY DESC(?rank)\n",
-   "new": ""
+   "old": "ORDER BY DESC(?rank)\nLIMIT 40`;",
+   "new": "LIMIT 40`;"
   },
   {
    "file": "src/providers/files.js",
@@ -305,6 +305,12 @@
    "label": "history size not limited",
    "old": "if (size > MAX_HISTORY_BYTES) {",
    "new": "if (false) {"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "results restricted to a type not ordered",
+   "old": "ORDER BY DESC(?rank)\nLIMIT 300`;",
+   "new": "LIMIT 300`;"
   }
  ]
 }
