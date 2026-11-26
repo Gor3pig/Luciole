@@ -105,7 +105,8 @@ export function mergeResults(entries, {topHitMin = 0.55, topHit = true, maxTotal
 /**
  * Which item stays selected when the list changes. The selection follows the
  * best result until the user moves it; once they have, it stays on the same
- * item as long as that item is still there, so late results never move it.
+ * item as long as that item is still there, so late results never move it. A result
+ * marked `explicitSelectionOnly` is skipped by that automatic choice.
  *
  * @param {string | null} previousKey
  * @param {Item[]} items
@@ -117,7 +118,9 @@ export function nextSelection(previousKey, items, userNavigated) {
         return null;
     if (userNavigated && previousKey !== null && items.some(item => item.key === previousKey))
         return previousKey;
-    return items[0].key;
+    // A result that does something drastic (switching the computer off) is never chosen on the
+    // user's behalf: only the arrow keys select it. With nothing else to choose, nothing is.
+    return items.find(item => item.result?.explicitSelectionOnly !== true)?.key ?? null;
 }
 
 /**

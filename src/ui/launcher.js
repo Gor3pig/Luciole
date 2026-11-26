@@ -313,6 +313,10 @@ export class Launcher {
             this.#log.guardAsync('activating a result', () => this.#activateConfirmed(item, confirmation));
             return;
         }
+        // Some results (the system's) are run once the window is gone, so what they open is not
+        // fighting the window for the keyboard grab.
+        if (item.result.closeBeforeActivate === true)
+            this.close();
         this.#log.guard('activating a result', () => this.#onActivate(item));
         this.close();
     }

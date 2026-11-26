@@ -10,6 +10,7 @@ import {SearchController} from './core/session.js';
 import {AppsProvider} from './providers/apps.js';
 import {CalcProvider} from './providers/calc.js';
 import {FilesProvider} from './providers/files.js';
+import {SystemProvider} from './providers/system.js';
 import * as compat from './shell/compat.js';
 import {FrecencyStore, QueryHistoryStore} from './shell/persistence.js';
 import {measure} from './shell/perf.js';
@@ -133,6 +134,7 @@ export default class LucioleExtension extends Extension {
         const registry = new ProviderRegistry({log});
         registry.register('apps', () => new AppsProvider());
         registry.register('files', () => new FilesProvider());
+        registry.register('system', () => new SystemProvider());
         registry.register('calc', () => new CalcProvider({copyText: text => compat.copyText(text)}));
         disposables.add(() => registry.stop());
 

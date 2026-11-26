@@ -156,6 +156,18 @@
    "label": "the field stays editable during the confirmation",
    "old": "        this.#entry.clutter_text.editable = false;\n        this.#presentMenuBox();",
    "new": "        this.#presentMenuBox();"
+  },
+  {
+   "file": "src/extension.js",
+   "label": "the System source is not registered",
+   "old": "        registry.register('system', () => new SystemProvider());\n",
+   "new": ""
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "Enter acts on a result that was not chosen",
+   "old": "        const item = this.#items.find(candidate => candidate.key === this.#selectedKey);\n        if (item)\n            this.#activate(item);",
+   "new": "        const item = this.#items.find(candidate => candidate.key === this.#selectedKey) ?? this.#items[0];\n        if (item)\n            this.#activate(item);"
   }
  ]
 }

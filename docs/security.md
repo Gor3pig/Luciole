@@ -84,6 +84,13 @@ duplicates).
   nested at most 16 deep, and no loop of any kind, so no input can make it run long. A result that
   is not a finite number (division by zero, overflow) is dropped. It uses no network: there are
   no currencies.
+* **The System source asks, it does not do.** It lists the actions the shell itself offers (lock,
+  power off, restart, log out, suspend, switch user, screenshot) and the Settings panels, and
+  nothing else: only the shell's own eight identifiers are ever passed back to it, and the shell
+  re-checks that an action is available and confirms the drastic ones with its own dialog. Actions
+  that end the session are never the top hit and are never selected for the user: Enter does
+  nothing until an arrow key has chosen them. A panel is opened only if it is one of the installed
+  desktop files named `gnome-*-panel.desktop`. Luciole reads no setting.
 * **No dynamic code.** No `eval`, no `Function`, no shell command built from
   text. Applications and files are opened with GIO using the entry or address
   that came from the index, not from the typed text.

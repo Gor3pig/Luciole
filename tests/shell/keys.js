@@ -34,7 +34,7 @@ const BTN_LEFT = 0x110;
 const KEY_ESCAPE = 65307;
 const NAMED_KEYS = {
     Down: 65364, Up: 65362, Return: 65293, BackSpace: 65288, Escape: KEY_ESCAPE, Tab: 65289,
-    ISO_Left_Tab: 65056, 0: 48, 1: 49, 2: 50, 3: 51, 4: 52, k: 107, Next: 65366, Prior: 65365, Right: 65363, Left: 65361, Control_L: KEY_CONTROL_L, Alt_L: KEY_ALT_L, Shift_L: 65505, Super_L: 65515,
+    ISO_Left_Tab: 65056, 0: 48, 1: 49, 2: 50, 3: 51, 4: 52, 5: 53, k: 107, Next: 65366, Prior: 65365, Right: 65363, Left: 65361, Control_L: KEY_CONTROL_L, Alt_L: KEY_ALT_L, Shift_L: 65505, Super_L: 65515,
 };
 
 const bus = Gio.bus_get_sync(Gio.BusType.SESSION, null);

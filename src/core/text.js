@@ -86,10 +86,12 @@ export function splitByRanges(text, ranges) {
 // Characters that must never reach the screen from a name written by someone else:
 //  - control characters (line breaks, tabs, escape, NUL, the C1 range) and the line and
 //    paragraph separators, which break a one-line row or hide text;
+//  - the soft hyphen, invisible unless a line breaks there but part of the text a search compares
+//    (some desktop files spell "Sou-ris" with one), so "souris" would not be found;
 //  - the bidirectional overrides, embeddings and isolates, which reverse the display order of
 //    what follows, so a file name can be made to read as a harmless one.
 // eslint-disable-next-line no-control-regex -- matching control characters is the whole point
-const CONTROL_OR_BIDI = /[\u0000-\u001f\u007f-\u009f\u2028\u2029\u202a-\u202e\u2066-\u2069]/gu;
+const CONTROL_OR_BIDI = /[\u0000-\u001f\u007f-\u009f\u2028\u2029\u202a-\u202e\u2066-\u2069\u00ad]/gu;
 const MAX_LABEL_LENGTH = 300;
 
 /**

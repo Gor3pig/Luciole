@@ -1,5 +1,5 @@
 {
- "description": "Mutants for the core logic: each one breaks the code on purpose and the unit tests must fail. Not listed because equivalent: the session's own refusal of an empty search (QueryHistory.record refuses it too). Also not listed because equivalent: the controller keeping a filter that is not an identifier (effectiveFilter treats it as everything anyway). Not listed because equivalent for the calculator: a text with a single piece (the 'no work' rule refuses it already), a conversion with no unit on the left (the unit lookup refuses it), a very long unit name (it is not found anyway), a zero that keeps its sign (JavaScript writes -0 as 0), and a decimal mark other than a comma (it is shown as a point).",
+ "description": "Mutants for the core logic: each one breaks the code on purpose and the unit tests must fail. Not listed because equivalent: the session's own refusal of an empty search (QueryHistory.record refuses it too). Also not listed because equivalent: the controller keeping a filter that is not an identifier (effectiveFilter treats it as everything anyway). Not listed because equivalent for the calculator: a text with a single piece (the 'no work' rule refuses it already), a conversion with no unit on the left (the unit lookup refuses it), a very long unit name (it is not found anyway), a zero that keeps its sign (JavaScript writes -0 as 0), and a decimal mark other than a comma (it is shown as a point). Not provable here: that the System window closes BEFORE an action runs (it matters for the shell's confirmation dialogs, which a headless test shell cannot show).",
  "command": [
   "gjs",
   "-m",
@@ -693,8 +693,8 @@
   {
    "file": "src/core/text.js",
    "label": "bidi characters kept",
-   "old": "\\u2028\\u2029\\u202a-\\u202e\\u2066-\\u2069]/gu;",
-   "new": "\\u2028\\u2029]/gu;"
+   "old": "\\u2028\\u2029\\u202a-\\u202e\\u2066-\\u2069\\u00ad]/gu;",
+   "new": "\\u2028\\u2029\\u00ad]/gu;"
   },
   {
    "file": "src/core/text.js",
@@ -1541,6 +1541,192 @@
    "label": "a source cannot word the main action",
    "old": "const own = actions.find(action => action.id === 'open');",
    "new": "const own = undefined;"
+  },
+  {
+   "file": "src/core/system-items.js",
+   "label": "an unknown action identifier becomes a result",
+   "old": "if (!KNOWN_ACTIONS.has(action?.id) || typeof action.name !== 'string' || action.name === '')",
+   "new": "if (typeof action?.id !== 'string' || typeof action.name !== 'string' || action.name === '')"
+  },
+  {
+   "file": "src/core/system-items.js",
+   "label": "an action without a name becomes a result",
+   "old": "typeof action.name !== 'string' || action.name === '')\n            continue;\n        const destructive",
+   "new": "typeof action.name !== 'string')\n            continue;\n        const destructive"
+  },
+  {
+   "file": "src/core/system-items.js",
+   "label": "restarting can be chosen for the user",
+   "old": "new Set(['power-off', 'restart', 'logout', 'suspend', 'switch-user']);",
+   "new": "new Set(['power-off', 'logout', 'suspend', 'switch-user']);"
+  },
+  {
+   "file": "src/core/system-items.js",
+   "label": "powering off can be chosen for the user",
+   "old": "new Set(['power-off', 'restart', 'logout', 'suspend', 'switch-user']);",
+   "new": "new Set(['restart', 'logout', 'suspend', 'switch-user']);"
+  },
+  {
+   "file": "src/core/system-items.js",
+   "label": "locking is made hand-chosen",
+   "old": "new Set(['power-off', 'restart', 'logout', 'suspend', 'switch-user']);",
+   "new": "new Set(['power-off', 'restart', 'logout', 'suspend', 'switch-user', 'lock-screen']);"
+  },
+  {
+   "file": "src/core/system-items.js",
+   "label": "nothing is marked hand-chosen",
+   "old": "            ...(destructive ? {explicitSelectionOnly: true} : {}),",
+   "new": "            ...({}),"
+  },
+  {
+   "file": "src/core/system-items.js",
+   "label": "a shell action is dropped for its title",
+   "old": "            providerScore: 0.8,\n",
+   "new": "\n"
+  },
+  {
+   "file": "src/core/system-items.js",
+   "label": "an action does not close the window first",
+   "old": "            // The window closes first, so the shell's dialog does not compete with its grab.\n            closeBeforeActivate: true,",
+   "new": "            closeBeforeActivate: false,"
+  },
+  {
+   "file": "src/core/system-items.js",
+   "label": "a panel does not close the window first",
+   "old": "            matchFields: [panel.name, ...keywords.map(text => ({text, weight: 0.7}))],\n            closeBeforeActivate: true,",
+   "new": "            matchFields: [panel.name, ...keywords.map(text => ({text, weight: 0.7}))],\n            closeBeforeActivate: false,"
+  },
+  {
+   "file": "src/core/system-items.js",
+   "label": "power off is not said to ask for confirmation",
+   "old": "new Set(['power-off', 'restart', 'logout']);",
+   "new": "new Set(['restart', 'logout']);"
+  },
+  {
+   "file": "src/core/system-items.js",
+   "label": "suspending is said to ask for confirmation",
+   "old": "new Set(['power-off', 'restart', 'logout']);",
+   "new": "new Set(['power-off', 'restart', 'logout', 'suspend']);"
+  },
+  {
+   "file": "src/core/system-items.js",
+   "label": "any desktop file is taken for a panel",
+   "old": "!PANEL_ID.test(panel.id) || ",
+   "new": "false || "
+  },
+  {
+   "file": "src/core/system-items.js",
+   "label": "keywords count as much as the name",
+   "old": "{text, weight: 0.7}",
+   "new": "{text, weight: 1}"
+  },
+  {
+   "file": "src/core/system-items.js",
+   "label": "keywords are not used",
+   "old": "matchFields: [panel.name, ...keywords.map(text => ({text, weight: 0.7}))],",
+   "new": "matchFields: [panel.name],"
+  },
+  {
+   "file": "src/core/system-items.js",
+   "label": "a panel without a name becomes a result",
+   "old": "typeof panel.name !== 'string' || panel.name === '')\n            continue;\n        const keywords",
+   "new": "typeof panel.name !== 'string')\n            continue;\n        const keywords"
+  },
+  {
+   "file": "src/core/system-items.js",
+   "label": "a keyword that is not text is used",
+   "old": "keywords.filter(keyword => typeof keyword === 'string' && keyword !== '')",
+   "new": "keywords"
+  },
+  {
+   "file": "src/core/system-items.js",
+   "label": "the panel id pattern accepts any characters",
+   "old": "const PANEL_ID = /^gnome-[a-z0-9-]+-panel\\.desktop$/;",
+   "new": "const PANEL_ID = /^gnome-.+-panel\\.desktop$/;"
+  },
+  {
+   "file": "src/providers/system.js",
+   "label": "the provider can be the top hit",
+   "old": "    get topHitEligible() {\n        return false;",
+   "new": "    get topHitEligible() {\n        return true;"
+  },
+  {
+   "file": "src/providers/system.js",
+   "label": "every action is run, known or not",
+   "old": "kind === 'action' && KNOWN_ACTIONS.has(action) && result.id ===",
+   "new": "kind === 'action' && result.id ==="
+  },
+  {
+   "file": "src/providers/system.js",
+   "label": "an action is run whatever the result id says",
+   "old": "KNOWN_ACTIONS.has(action) && result.id === `${ACTION_PREFIX}${action}`",
+   "new": "KNOWN_ACTIONS.has(action)"
+  },
+  {
+   "file": "src/providers/system.js",
+   "label": "a panel is run whatever the result id says",
+   "old": "typeof panel === 'string' && result.id === `${PANEL_PREFIX}${panel}`",
+   "new": "typeof panel === 'string'"
+  },
+  {
+   "file": "src/providers/system.js",
+   "label": "a panel that is not installed is run",
+   "old": "            if (!known)\n                throw new Error(`the settings panel ${panel} is not installed`);\n",
+   "new": "\n"
+  },
+  {
+   "file": "src/providers/system.js",
+   "label": "an action is run without the shell",
+   "old": "            if (!this.#actions)\n                throw new Error('the system actions are not available');\n",
+   "new": "\n"
+  },
+  {
+   "file": "src/providers/system.js",
+   "label": "every item kind is accepted",
+   "old": "        } else {\n            throw new Error('unknown system item');\n        }",
+   "new": "        }"
+  },
+  {
+   "file": "src/providers/system.js",
+   "label": "an empty query matches every action",
+   "old": "const ids = terms?.length ? this.#actions.getMatchingActions(terms) : [];",
+   "new": "const ids = this.#actions.getMatchingActions(terms ?? []);"
+  },
+  {
+   "file": "src/providers/system.js",
+   "label": "the failure to reach the shell is not reported",
+   "old": "            this.#log.warn(`the system actions are not available: ${error.message}`);",
+   "new": "            void error;"
+  },
+  {
+   "file": "src/providers/system.js",
+   "label": "the provider is not before the others in priority order",
+   "old": "        return 25;",
+   "new": "        return 5;"
+  },
+  {
+   "file": "src/core/merge.js",
+   "label": "a result that must be chosen by hand is chosen for the user",
+   "old": "return items.find(item => item.result?.explicitSelectionOnly !== true)?.key ?? null;",
+   "new": "return items[0].key;"
+  },
+  {
+   "file": "src/core/merge.js",
+   "label": "with only hand-chosen results the first is chosen",
+   "old": "return items.find(item => item.result?.explicitSelectionOnly !== true)?.key ?? null;",
+   "new": "return (items.find(item => item.result?.explicitSelectionOnly !== true) ?? items[0]).key;"
+  },
+  {
+   "file": "src/core/merge.js",
+   "label": "any truthy value makes a result hand-chosen",
+   "old": "item.result?.explicitSelectionOnly !== true)?.key",
+   "new": "!item.result?.explicitSelectionOnly)?.key"
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "a soft hyphen stays in a name",
+   "old": "\\u2066-\\u2069\\u00ad]/gu",
+   "new": "\\u2066-\\u2069]/gu"
   }
  ]
 }

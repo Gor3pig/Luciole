@@ -24,6 +24,7 @@ const PROVIDERS = [
     {id: 'apps', title: () => _('Applications')},
     {id: 'files', title: () => _('Files')},
     {id: 'calc', title: () => _('Calculator')},
+    {id: 'system', title: () => _('System')},
 ];
 
 /** Which GNOME shortcut already uses this accelerator, if any ("schema key"). */

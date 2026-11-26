@@ -89,21 +89,21 @@ wait_last() {
 }
 last_results() { grep -F '[Luciole] results:' "$LOG" | tail -n 1 | sed 's/.*results: //'; }
 
-[ "$(chip_info)" = "4 0" ] || fail "categories: expected 3 chips with the first checked, got '$(chip_info)'"
-echo "ok: the chips are there (All, Applications, Files, Calculator), All is chosen"
+[ "$(chip_info)" = "5 0" ] || fail "categories: expected 3 chips with the first checked, got '$(chip_info)'"
+echo "ok: the chips are there (All, Applications, Files, Calculator, System), All is chosen"
 chord Control_L+2
 wait_last 'results: 1 first=Facture m.* query=factu' || fail "Ctrl+2 did not restrict to files (last: $(last_results))"
-[ "$(chip_info)" = "4 2" ] || fail "Ctrl+2 did not check the Files chip ('$(chip_info)')"
+[ "$(chip_info)" = "5 2" ] || fail "Ctrl+2 did not check the Files chip ('$(chip_info)')"
 chord Control_L+1
 wait_last 'results: 1 first=Facture Express query=factu' || fail "Ctrl+1 did not restrict to applications (last: $(last_results))"
-[ "$(chip_info)" = "4 1" ] || fail "Ctrl+1 did not check the Applications chip ('$(chip_info)')"
+[ "$(chip_info)" = "5 1" ] || fail "Ctrl+1 did not check the Applications chip ('$(chip_info)')"
 chord Control_L+0
 wait_last 'results: 2 first=Facture Express query=factu' || fail "Ctrl+0 did not bring everything back (last: $(last_results))"
-[ "$(chip_info)" = "4 0" ] || fail "Ctrl+0 did not check the All chip ('$(chip_info)')"
+[ "$(chip_info)" = "5 0" ] || fail "Ctrl+0 did not check the All chip ('$(chip_info)')"
 echo "ok: Ctrl+2 files only, Ctrl+1 applications only, Ctrl+0 everything"
-chord Control_L+4
+chord Control_L+5
 sleep 0.4
-[ "$(chip_info)" = "4 0" ] || fail "Ctrl+4 changed the category although there is no fourth source ('$(chip_info)')"
+[ "$(chip_info)" = "5 0" ] || fail "Ctrl+5 changed the category although there is no fifth source ('$(chip_info)')"
 [ "$(wc -l <"$WORK/closed-count" 2>/dev/null || echo 0)" = 0 ] || true
 echo "ok: a digit with no source behind it does nothing"
 
@@ -113,7 +113,7 @@ pointer "$1" "$2"
 sleep 0.3
 click
 wait_last 'results: 1 first=Facture m.* query=factu' || fail "a click on the Files chip did not restrict to files (last: $(last_results))"
-[ "$(chip_info)" = "4 2" ] || fail "the click did not check the Files chip ('$(chip_info)')"
+[ "$(chip_info)" = "5 2" ] || fail "the click did not check the Files chip ('$(chip_info)')"
 [ "$(grep -cF "[Luciole] closed" "$LOG")" = "$CLOSED_BEFORE" ] || fail "a click on a chip closed the launcher"
 typed ab
 sleep 0.3
@@ -141,7 +141,7 @@ sleep 0.4
 combo
 wait_log "[Luciole] opened" 2 || fail "the launcher did not reopen"
 sleep 0.4
-[ "$(chip_info)" = "4 0" ] || fail "reopening did not start on All ('$(chip_info)')"
+[ "$(chip_info)" = "5 0" ] || fail "reopening did not start on All ('$(chip_info)')"
 [ "$(empty_hint_shown)" = false ] || fail "the hint shows on a fresh opening"
 echo "ok: reopening starts on All"
 typed quok
@@ -169,10 +169,10 @@ chord Control_L+0
 sleep 0.3
 send "code Control_L+3"
 sleep 0.5
-[ "$(chip_info)" = "4 2" ] || fail "Ctrl and the key in the position of 2 did not choose Files on a French keyboard ('$(chip_info)')"
+[ "$(chip_info)" = "5 2" ] || fail "Ctrl and the key in the position of 2 did not choose Files on a French keyboard ('$(chip_info)')"
 send "code Control_L+2"
 sleep 0.5
-[ "$(chip_info)" = "4 1" ] || fail "Ctrl and the key in the position of 1 did not choose Applications on a French keyboard ('$(chip_info)')"
+[ "$(chip_info)" = "5 1" ] || fail "Ctrl and the key in the position of 1 did not choose Applications on a French keyboard ('$(chip_info)')"
 echo "ok: on a French keyboard the shortcuts are the digit-row keys, whatever they type"
 gsettings reset org.gnome.desktop.input-sources sources
 chord Control_L+0
@@ -201,6 +201,60 @@ reopen_launcher() {
     wait_log "[Luciole] opened" $((OPENED_NOW + 1)) || fail "the launcher did not reopen"
     sleep 0.4
 }
+
+# The System source: Settings panels and the shell's own actions. What ends the session is never
+# chosen for the user.
+# selected_row: the title of the highlighted result, or "none".
+selected_row() {
+    shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-row') && a.has_style_pseudo_class && a.has_style_pseudo_class('selected')) return (function t(b) { if ((b.style_class || '').includes('luciole-row-title')) return b.get_children().map(c => c.text || '').join(''); for (const c of b.get_children()) { const r = t(c); if (r) return r; } return ''; })(a) || 'untitled'; for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage) || 'none'"
+}
+clear_entry 8
+typed "panneau luciole"
+wait_last 'results: 1 first=Panneau Luciole de test query=panneau luciole' || fail "the test panel was not found (last: $(last_results))"
+sleep 0.3
+[ "$(selected_row)" != none ] || fail "system: an ordinary panel should be selected for the user"
+CLOSED_SYS=$(launcher_closed_count)
+rm -f "$WORK/panel-ran"
+press Return
+wait_log "[Luciole] closed" $((CLOSED_SYS + 1)) || fail "system: the window did not close after Enter on a panel"
+i=0; while [ ! -e "$WORK/panel-ran" ] && [ "$i" -lt 60 ]; do sleep 0.1; i=$((i + 1)); done
+[ -e "$WORK/panel-ran" ] || fail "system: opening the panel did not run its launcher"
+echo "ok: a Settings panel is found by its name, and Enter opens it after the window closes"
+sleep 0.4
+reopen_launcher
+typed "wifi"
+wait_last 'results: 1 first=Wi-Fi query=wifi' || fail "the Wi-Fi panel was not found (last: $(last_results))"
+chord Control_L+4
+sleep 0.5
+[ "$(chip_info)" = "5 4" ] || fail "Ctrl+4 did not check the System chip ('$(chip_info)')"
+wait_last 'results: 1 first=Wi-Fi query=wifi' || fail "the System category lost the panel (last: $(last_results))"
+chord Control_L+0
+clear_entry 4
+echo "ok: the System category"
+
+# Logging out is offered but never selected for the user; Enter does nothing until an arrow chooses it.
+typed "deconnecter"
+wait_last 'results: 1 first=Fermer la session query=deconnecter' || fail "the log out action was not found (last: $(last_results))"
+sleep 0.4
+[ "$(selected_row)" = none ] || fail "system: log out was selected for the user ('$(selected_row)')"
+CLOSED_SYS=$(launcher_closed_count)
+press Return
+sleep 0.6
+[ "$(launcher_closed_count)" = "$CLOSED_SYS" ] || fail "system: Enter acted on a result that was not chosen"
+press Down
+sleep 0.3
+[ "$(selected_row)" = "Fermer la session" ] || fail "system: the down arrow did not choose log out ('$(selected_row)')"
+echo "ok: an action that ends the session is never chosen for the user; Enter does nothing until an arrow does"
+
+# Locking is not drastic: it is chosen like any result (and not run here: it would lock the test shell).
+clear_entry 11
+typed "verrouiller"
+wait_last 'results: 2 first=Verrouiller' || fail "the lock action was not found (last: $(last_results))"
+sleep 0.4
+[ "$(selected_row)" != none ] || fail "system: the lock action should be selected like an ordinary result"
+echo "ok: locking the screen is chosen like an ordinary result"
+clear_entry 12
+sleep 0.3
 
 # The calculator: the answer comes first, Enter copies it and says so, the menu offers the whole calculation.
 clear_entry 8
@@ -273,7 +327,7 @@ wait_last 'results: 1 first=4 query=2\+2' || fail "no answer for 2+2 (last: $(la
 chord Control_L+3
 sleep 0.5
 wait_last 'results: 1 first=4 query=2\+2' || fail "the Calculator category lost the answer"
-[ "$(chip_info)" = "4 3" ] || fail "Ctrl+3 did not check the Calculator chip ('$(chip_info)')"
+[ "$(chip_info)" = "5 3" ] || fail "Ctrl+3 did not check the Calculator chip ('$(chip_info)')"
 chord Control_L+1
 sleep 0.3
 wait_last 'results: 0 first=- query=2\+2' || fail "applications only should not answer a calculation (last: $(last_results))"

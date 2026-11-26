@@ -33,6 +33,15 @@ Actions=new-test;
 Name=Nouvelle fenetre de test
 Exec=true
 DESKTOP
+# A Settings panel of our own (the name pattern is the real panels'): opening it must run this.
+cat >"$WORK/data/applications/gnome-luciole-test-panel.desktop" <<DESKTOP
+[Desktop Entry]
+Type=Application
+Name=Panneau Luciole de test
+Keywords=lucioletest;
+Exec=touch $WORK/panel-ran
+NoDisplay=true
+DESKTOP
 # A file that really exists, in the stand-in index, to ask which applications open it.
 mkdir -p "$WORK/docs"
 printf 'a test file\n' >"$WORK/docs/rapport-test.txt"

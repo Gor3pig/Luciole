@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 17:14+0100\n"
+"POT-Creation-Date: 2026-11-26 17:22+0100\n"
 "PO-Revision-Date: 2026-11-25 20:00+0100\n"
 "Last-Translator: Luciole contributors\n"
 "Language-Team: en <>\n"
@@ -24,6 +24,18 @@ msgstr "Open"
 msgid "Enter"
 msgstr "Enter"
 
+#: src/core/system-items.js
+msgid "System action"
+msgstr "System action"
+
+#: src/core/system-items.js
+msgid "asks for confirmation"
+msgstr "asks for confirmation"
+
+#: src/core/system-items.js
+msgid "Settings"
+msgstr "Settings"
+
 #: src/prefs.js src/providers/apps.js
 msgid "Applications"
 msgstr "Applications"
@@ -35,6 +47,10 @@ msgstr "Files"
 #: src/prefs.js src/providers/calc.js
 msgid "Calculator"
 msgstr "Calculator"
+
+#: src/prefs.js src/providers/system.js
+msgid "System"
+msgstr "System"
 
 #: src/prefs.js
 msgid "Luciole icon: a firefly glowing in a jar"

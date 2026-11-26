@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 17:14+0100\n"
+"POT-Creation-Date: 2026-11-26 17:22+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -25,6 +25,18 @@ msgstr ""
 msgid "Enter"
 msgstr ""
 
+#: src/core/system-items.js
+msgid "System action"
+msgstr ""
+
+#: src/core/system-items.js
+msgid "asks for confirmation"
+msgstr ""
+
+#: src/core/system-items.js
+msgid "Settings"
+msgstr ""
+
 #: src/prefs.js src/providers/apps.js
 msgid "Applications"
 msgstr ""
@@ -35,6 +47,10 @@ msgstr ""
 
 #: src/prefs.js src/providers/calc.js
 msgid "Calculator"
+msgstr ""
+
+#: src/prefs.js src/providers/system.js
+msgid "System"
 msgstr ""
 
 #: src/prefs.js
