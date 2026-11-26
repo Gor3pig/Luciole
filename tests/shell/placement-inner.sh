@@ -71,6 +71,11 @@ set -- $(actor_geometry luciole-panel)
 [ "$1" -gt "$SECOND_X" ] || fail "the panel is not on the second monitor (x=$1)"
 echo "ok: the launcher appears on the monitor the pointer is on"
 
+# Stacking (the window is still open): above the top bar (panelBox), below the shell's own dialogs.
+ORDER=$(shell_eval "(function find(a) { const k = a.get_children(); const i = k.findIndex(c => (c.style_class || '').includes('luciole-overlay')); if (i >= 0) { const bar = k.findIndex(c => c.name === 'panelBox'); const dlg = k.findIndex(c => c.name === 'modalDialogGroup'); return (bar >= 0 && dlg >= 0 && bar < i && i < dlg) ? 'between' : 'wrong ' + [bar, i, dlg].join(','); } for (const c of k) { const r = find(c); if (r) return r; } return ''; })(global.stage)")
+echo "stacking: $ORDER"
+[ "$ORDER" = between ] || fail "the window is not stacked between the top bar and the shell dialogs ($ORDER)"
+
 # A monitor change while it is open closes it (the shell's own signal, sent from outside).
 # Two independent mechanisms guarantee it: the extension's own handler, and the loss of keyboard
 # focus that the shell's re-layout causes; the test cannot tell them apart, only that it closes.

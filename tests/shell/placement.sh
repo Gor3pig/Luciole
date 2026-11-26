@@ -33,5 +33,5 @@ SHELL_EXTRA_ARGS="--unsafe-mode --virtual-monitor 1280x720" XDG_DATA_HOME="$WORK
     >"$WORK/out.txt" 2>&1 || true
 
 [ -z "${KEEP_OUTPUT:-}" ] || { cp "$WORK/out.txt" "$KEEP_OUTPUT"; cp "$WORK/shell.log" "$KEEP_OUTPUT.shell.log"; }
-grep -E '^(ok:|FAIL|PASS|monitors|overlay|panel)' "$WORK/out.txt" || true
+grep -E '^(ok:|FAIL|PASS|monitors|overlay|panel|stacking)' "$WORK/out.txt" || true
 grep -q '^PASS$' "$WORK/out.txt"

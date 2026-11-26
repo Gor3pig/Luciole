@@ -36,6 +36,18 @@
    "label": "the backdrop setting is not read",
    "old": "getBackdrop: () => settings.get_string('backdrop'),",
    "new": "getBackdrop: () => 'none',"
+  },
+  {
+   "file": "src/shell/compat.js",
+   "label": "the window is stacked above the shell's dialogs",
+   "old": "Main.uiGroup.insert_child_below(actor, Main.layoutManager.modalDialogGroup);",
+   "new": "Main.uiGroup.add_child(actor);"
+  },
+  {
+   "file": "src/shell/compat.js",
+   "label": "the window is stacked under the top bar",
+   "old": "Main.uiGroup.insert_child_below(actor, Main.layoutManager.modalDialogGroup);",
+   "new": "Main.uiGroup.insert_child_below(actor, Main.layoutManager.panelBox);"
   }
  ]
 }

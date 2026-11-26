@@ -50,8 +50,13 @@ export function popModal(grab) {
     Main.popModal(grab);
 }
 
+/**
+ * Adds the actor to the shell's top-level group, just under the layer of the shell's own
+ * dialogs: above the top bar and the windows, below a system dialog. (The dialog layer
+ * itself lays its children out on its own and would ignore our monitor placement.)
+ */
 export function addToUiGroup(actor) {
-    Main.uiGroup.add_child(actor);
+    Main.uiGroup.insert_child_below(actor, Main.layoutManager.modalDialogGroup);
 }
 
 /**
