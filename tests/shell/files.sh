@@ -43,6 +43,17 @@ Keywords=lucioletest;
 Exec=touch $WORK/panel-ran
 NoDisplay=true
 DESKTOP
+# An application of our own that opens text files: "Open With" must not depend on the editors the
+# machine has installed.
+cat >"$WORK/data/applications/luciole-test-reader.desktop" <<DESKTOP
+[Desktop Entry]
+Type=Application
+Name=Lecteur Luciole de test
+Exec=true %f
+MimeType=text/plain;
+DESKTOP
+# GIO finds which applications open a type through this index, written when an application is installed.
+printf '[MIME Cache]\ntext/plain=luciole-test-reader.desktop;\n' >"$WORK/data/applications/mimeinfo.cache"
 # A file that really exists, in the stand-in index, to ask which applications open it.
 mkdir -p "$WORK/docs"
 printf 'a test file\n' >"$WORK/docs/rapport-test.txt"

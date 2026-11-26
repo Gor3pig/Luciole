@@ -21,7 +21,7 @@ PACK_ARGS := --force --out-dir=$(DIST) --schema=$(SCHEMA) \
 POT     := $(SRC)/po/luciole.pot
 LANGS   := $(patsubst $(SRC)/po/%.po,%,$(wildcard $(SRC)/po/*.po))
 
-.PHONY: help check lint test fuzz mutation soak zipcheck gate gate-push gate-full schemas pot po locale icon assets pack shell-test shell-test-ui shell-test-search shell-test-degrade shell-test-files capture clean
+.PHONY: help check lint test fuzz mutation soak zipcheck gate gate-push gate-full test-gnome50 schemas pot po locale icon assets pack shell-test shell-test-ui shell-test-search shell-test-degrade shell-test-files capture clean
 
 help:
 	@echo "make check       lint + unit tests"
@@ -29,6 +29,7 @@ help:
 	@echo "make gate        the quality gate, quick: changed lines' mutants, shell tests side by side"
 	@echo "make gate-push   the quality gate before a push: every mutant of what changed since the last push"
 	@echo "make gate-full   the quality gate at the end of a lot: every mutant, longer cycles"
+	@echo "make test-gnome50  the tests on GNOME Shell 50, in a podman container (nothing installed on the host)"
 	@echo "make fuzz        random-data tests, fixed seeds (replay one with LUCIOLE_SEED=n)"
 	@echo "make mutation    break the code on purpose; the tests must notice (all mutants)"
 	@echo "make soak        thousands of random actions in a headless shell (endurance)"
@@ -76,6 +77,9 @@ gate-push:
 
 gate-full:
 	GATE_FULL=1 sh tests/gate.sh
+
+test-gnome50:
+	sh tests/container/run.sh --capture
 
 schemas:
 	glib-compile-schemas $(SRC)/schemas

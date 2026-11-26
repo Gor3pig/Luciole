@@ -9,6 +9,16 @@ STATE_ENABLED=1.0
 STATE_DISABLED=2.0
 # Log lines that mean the extension misbehaved. The temporary directories of the
 # tests contain "luciole", so match the extension's own markers, not the word.
+# Messages of GNOME Shell itself, about what a headless test session lacks (no login session, no
+# parental controls service) or about its own screen sharing indicator, which it may destroy before
+# reading it at the end of a remote desktop session. Exact texts only: any other error still counts.
+SHELL_NOISE='Failed to get parental controls settings: Malcontent\.ManagerError|Could not get proxy for session null|Object Gjs_status_remoteAccess_ScreenSharingIndicator \([0-9a-fx]+\), has been already disposed'
+
+# log_errors <pattern>: the lines of the shell log matching the pattern, without the noise above.
+log_errors() {
+    grep -E "$1" "$LOG" | grep -vE "$SHELL_NOISE"
+}
+
 EXTENSION_ERROR_PATTERN='JS ERROR|CRITICAL.*\[Luciole\]|WARNING.*\[Luciole\]|\[Luciole\] .*(failed|error)|luciole@gor3pig\.github\.io.*(CRITICAL|rror|arning)|already disposed'
 
 # start_shell <logfile>: starts a headless shell and stops it when the script exits.
@@ -34,6 +44,9 @@ start_shell() {
     if [ -z "${PIPEWIRE_RUNTIME_DIR:-}" ] && [ -n "${XDG_RUNTIME_DIR:-}" ]; then
         export PIPEWIRE_RUNTIME_DIR="$XDG_RUNTIME_DIR"
     fi
+    # The tests read French labels (the shell's and Luciole's own): the same language on any machine.
+    export LANG=fr_FR.UTF-8 LANGUAGE=fr_FR:fr
+    unset LC_ALL LC_MESSAGES
     PRIVATE_RUNTIME=$(mktemp -d)
     export XDG_RUNTIME_DIR="$PRIVATE_RUNTIME"
     gnome-shell --headless --wayland --no-x11 --wayland-display="$WAYLAND_NAME" --virtual-monitor 1280x720 ${SHELL_EXTRA_ARGS:-} >"$LOG" 2>&1 &

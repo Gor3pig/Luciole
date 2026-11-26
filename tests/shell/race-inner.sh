@@ -81,7 +81,7 @@ consistent() {
         1) [ "$GRAB" = luciole-overlay ] || fail "$1: open, but the grab is held by '$GRAB'"
            [ "$(input_mode)" = "$POPUP_MODE" ] || fail "$1: open, but the shell action mode is $(input_mode), not the modal popup mode" ;;
     esac
-    ! grep -qE 'JS ERROR|CRITICAL|\[Luciole\] .*error' "$LOG" || fail "$1: errors in the log"
+    [ -z "$(log_errors 'JS ERROR|CRITICAL|\[Luciole\] .*error')" ] || fail "$1: errors in the log: $(log_errors 'JS ERROR|CRITICAL|\[Luciole\] .*error' | head -n 3)"
     echo "race: $1 -> $([ "$DIFF" = 1 ] && echo open || echo closed), consistent"
 }
 
@@ -131,44 +131,56 @@ consistent "reopened while closing, final"
 keyboard_ok "after reopening while closing"
 
 # 6. The list changes height: it eases when animations are on, and jumps when the setting is off.
-# Queries chosen for their number of rows in the test shell: "f" 326 px, "fi" 282, "fir" 238.
+# The test's own applications (see race.sh): "zquok" 4 rows, "zquok b" 2, "zquok be" 1. The heights
+# themselves depend on the fonts of the machine, so they are measured first.
 open_and_type() {
     OPENED=$(count opened)
     combo
     i=0; while [ "$(count opened)" -le "$OPENED" ] && [ "$i" -lt 100 ]; do sleep 0.05; i=$((i + 1)); done
     sleep 0.4
-    typed f
+    typed zquok
     sleep 0.6
 }
 open_and_type
+H1=$(list_state | cut -d' ' -f1)
+typed " b"
+sleep 0.6
+H2=$(list_state | cut -d' ' -f1)
+typed e
+sleep 0.6
+H3=$(list_state | cut -d' ' -f1)
+escape; escape; settle
+[ "$H1" -gt "$H2" ] && [ "$H2" -gt "$H3" ] || fail "height: the test applications should give three heights, got $H1 $H2 $H3"
+
+open_and_type
 set -- $(list_state)
-[ "$1" = 326 ] || fail "height: expected 326 px for 'f', got '$1'"
+[ "$1" = "$H1" ] || fail "height: expected $H1 px for 'zquok', got '$1'"
 start_sampler
-typed ir
+typed " be"
 sleep 0.6
 SAMPLES=$(read_samples)
 set -- $(list_state)
-[ "$1" = 238 ] && [ "$2" = 238 ] && [ "$3" = false ] || fail "height: after easing the list is '$*', expected 238 238 false (exactly natural, no fixed height)"
+[ "$1" = "$H3" ] && [ "$2" = "$H3" ] && [ "$3" = false ] || fail "height: after easing the list is '$*', expected $H3 $H3 false (exactly natural, no fixed height)"
 BETWEEN=0
 for h in $SAMPLES; do
-    [ "$h" -ge 238 ] && [ "$h" -le 326 ] || fail "height: a sample ($h) is outside 238-326 (overshoot) in: $SAMPLES"
-    [ "$h" != 238 ] && [ "$h" != 326 ] && [ "$h" != 282 ] && BETWEEN=$((BETWEEN + 1))
+    [ "$h" -ge "$H3" ] && [ "$h" -le "$H1" ] || fail "height: a sample ($h) is outside $H3-$H1 (overshoot) in: $SAMPLES"
+    [ "$h" != "$H1" ] && [ "$h" != "$H2" ] && [ "$h" != "$H3" ] && BETWEEN=$((BETWEEN + 1))
 done
 [ "$BETWEEN" -ge 2 ] || fail "height: the list did not ease (only $BETWEEN in-between heights) in: $SAMPLES"
-echo "race: height eased from 326 to 238 px through $BETWEEN in-between heights, ends exactly natural"
+echo "race: height eased from $H1 to $H3 px through $BETWEEN in-between heights, ends exactly natural"
 escape; escape; settle
 
 gsettings set org.gnome.shell.extensions.luciole animations false || fail "could not turn the animations setting off"
 open_and_type
 start_sampler
-typed ir
+typed " be"
 sleep 0.6
 SAMPLES=$(read_samples)
 for h in $SAMPLES; do
-    [ "$h" = 326 ] || [ "$h" = 282 ] || [ "$h" = 238 ] || fail "height: with the setting off, the list passed through $h px in: $SAMPLES"
+    [ "$h" = "$H1" ] || [ "$h" = "$H2" ] || [ "$h" = "$H3" ] || fail "height: with the setting off, the list passed through $h px in: $SAMPLES"
 done
 set -- $(list_state)
-[ "$1" = 238 ] && [ "$3" = false ] || fail "height: with the setting off the list is '$*'"
+[ "$1" = "$H3" ] && [ "$3" = false ] || fail "height: with the setting off the list is '$*'"
 echo "race: with the setting off, the height jumps (no in-between height)"
 escape; escape; settle
 gsettings set org.gnome.shell.extensions.luciole animations true || fail "could not turn the animations setting on"
@@ -186,7 +198,7 @@ kill -0 "$SHELL_PID" 2>/dev/null || fail "disabled while opening: the shell died
 [ "$(luciole_actors)" = 0 ] || fail "disabled while opening: actors left in the scene"
 [ "$(input_mode)" != "$POPUP_MODE" ] || fail "disabled while opening: the shell is still in the modal popup mode"
 [ "$(grab_state)" = none ] || fail "disabled while opening: the grab is still held by '$(grab_state)'"
-! grep -qE 'JS ERROR|CRITICAL' "$LOG" || fail "disabled while opening: errors in the log"
+[ -z "$(log_errors 'JS ERROR|CRITICAL')" ] || fail "disabled while opening: errors in the log: $(log_errors 'JS ERROR|CRITICAL' | head -n 3)"
 echo "race: disabled while opening -> clean, nothing left"
 ext_call EnableExtension "$UUID" >/dev/null
 wait_ext_state "$STATE_ENABLED" || fail "enabled again: not ENABLED (state=$(ext_state))"

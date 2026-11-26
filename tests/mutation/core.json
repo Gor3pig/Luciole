@@ -1973,6 +1973,24 @@
    "label": "in the light theme a row's icon touches its text",
    "old": ".luciole-row-content {\n    spacing: 12px;",
    "new": ".luciole-row-content {\n    spacing: 0;"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "on GNOME 50 the animations are never allowed",
+   "old": "    return reduceValue === undefined || reducedMotion !== reduceValue;",
+   "new": "    return reducedMotion !== reduceValue && reduceValue !== undefined;"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "reduced motion is ignored",
+   "old": "    return reduceValue === undefined || reducedMotion !== reduceValue;",
+   "new": "    return true;"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "anything truthy turns the animations on",
+   "old": "    if (enableAnimations !== true)\n        return false;\n    return reduceValue",
+   "new": "    if (!enableAnimations)\n        return false;\n    return reduceValue"
   }
  ]
 }

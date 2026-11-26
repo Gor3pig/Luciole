@@ -1,0 +1,19 @@
+# SPDX-FileCopyrightText: 2026 Luciole contributors
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+# GNOME Shell 50 (Fedora 44) for running the tests of Luciole on the older supported version.
+# Built and used by tests/container/run.sh; nothing is installed on the host.
+FROM registry.fedoraproject.org/fedora:44
+
+# The image installs English translations only; the tests read French labels of the shell.
+# gnome-shell needs logind, hence systemd as the container's first process.
+RUN rm -f /etc/rpm/macros.image-language-conf \
+    && dnf -y install --setopt=install_weak_deps=False \
+        systemd gnome-shell gjs glib2 glib2-devel dbus-daemon dbus-tools \
+        gsettings-desktop-schemas localsearch tinysparql sushi \
+        pipewire wireplumber gstreamer1 gstreamer1-plugins-base gstreamer1-plugins-good pipewire-gstreamer \
+        glibc-langpack-fr adwaita-sans-fonts adwaita-icon-theme make procps-ng which findutils diffutils \
+    && dnf clean all \
+    && useradd --create-home tester
+
+CMD ["/usr/sbin/init"]

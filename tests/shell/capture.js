@@ -3,7 +3,7 @@
 
 // Takes one PNG screenshot of the test shell's virtual monitor.
 //
-//   gjs -m tests/shell/capture.js <output.png> [connector]
+//   gjs -m tests/shell/capture.js <output.png> [connector] [left top right bottom]
 //
 // The shell's own screenshot interface refuses unknown clients, so this uses
 // Mutter's ScreenCast interface (the one desktop portals use): it opens a
@@ -13,7 +13,9 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
-const [output, connector = 'Meta-0'] = ARGV;
+// An optional crop: the pixels to cut from the left, top, right and bottom of the frame.
+const [output, connector = 'Meta-0', ...crop] = ARGV;
+const cropBox = crop.length === 4 && crop.every(n => /^\d+$/.test(n)) ? crop.map(Number) : null;
 if (!output) {
     printerr('usage: capture.js <output.png> [connector]');
     imports.system.exit(2);
@@ -47,7 +49,9 @@ function saveFrame(nodeId) {
     const gst = Gio.Subprocess.new([
         'gst-launch-1.0', '-q',
         'pipewiresrc', `path=${nodeId}`, 'num-buffers=1',
-        '!', 'videoconvert', '!', 'pngenc', '!', 'filesink', `location=${output}`,
+        '!', 'videoconvert',
+        ...(cropBox ? ['!', 'videocrop', `left=${cropBox[0]}`, `top=${cropBox[1]}`, `right=${cropBox[2]}`, `bottom=${cropBox[3]}`] : []),
+        '!', 'pngenc', '!', 'filesink', `location=${output}`,
     ], Gio.SubprocessFlags.NONE);
     gst.wait_check_async(null, (_proc, result) => {
         try {

@@ -15,6 +15,9 @@ start_shell "$LOG_FILE"
 start_index_service
 wait_for_extension
 gsettings set org.gnome.shell.extensions.luciole debug-timings true || fail "could not set debug-timings"
+# GNOME offers Log Out only with several accounts or sessions, or when this asks it to: the test
+# must not depend on the accounts of the machine it runs on.
+gsettings set org.gnome.shell always-show-log-out true || fail "could not show Log Out"
 ext_call EnableExtension "$UUID" >/dev/null
 wait_ext_state "$STATE_ENABLED" || fail "extension not ENABLED (state=$(ext_state))"
 start_keys
@@ -627,7 +630,7 @@ press Return
 sleep 1
 set -- $(menu_state)
 [ "$1" -ge 1 ] && [ "$1" != 6 ] || fail "menu: Open With did not list applications ('$(menu_state)')"
-echo "ok: Open With lists the applications that open the file ($1 here)"
+echo "ok: Open With lists the applications that open the file ($1 here: $(menu_state))"
 escape
 sleep 0.3
 set -- $(menu_state)
@@ -726,8 +729,8 @@ sleep 1
 kill -0 "$SHELL_PID" 2>/dev/null || fail "menu: the shell died during the race"
 [ "$(menu_state)" = hidden ] || [ "$(menu_state)" = "" ] || true
 # (The failure provoked on purpose above is logged as an error: it is the only one expected.)
-if grep -E 'JS ERROR|CRITICAL' "$LOG" | grep -vF 'the file is no longer there' | grep -q .; then
-    grep -E 'JS ERROR|CRITICAL' "$LOG" | grep -vF 'the file is no longer there' | head -5
+if log_errors 'JS ERROR|CRITICAL' | grep -vF 'the file is no longer there' | grep -q .; then
+    log_errors 'JS ERROR|CRITICAL' | grep -vF 'the file is no longer there' | head -5
     fail "menu: errors in the log after the race"
 fi
 echo "ok: asking for the menu while closing, reopening and typing leaves no error behind"

@@ -18,7 +18,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {ensureActorVisibleInScrollView} from 'resource:///org/gnome/shell/misc/animationUtils.js';
 import {PACKAGE_VERSION} from 'resource:///org/gnome/shell/misc/config.js';
 
-import {chooseMonitorIndex} from '../core/layout.js';
+import {chooseMonitorIndex, systemMotion} from '../core/layout.js';
 
 export const SHELL_MAJOR_VERSION = parseInt(PACKAGE_VERSION.split('.')[0], 10);
 
@@ -78,11 +78,15 @@ export function isScreenLocked() {
     return Main.screenShield?.locked ?? false;
 }
 
-/** False when the user disabled animations or asked for reduced motion. */
+/** False when the user disabled animations or asked for reduced motion (GNOME 51 and later). */
 export function useMotion() {
     const settings = St.Settings.get();
-    return settings.enable_animations &&
-        settings.reducedMotion !== St.ReducedMotion.REDUCE;
+    // St.ReducedMotion does not exist in GNOME 50: reading through it would throw on every opening.
+    return systemMotion({
+        enableAnimations: settings.enable_animations,
+        reducedMotion: settings.reducedMotion,
+        reduceValue: St.ReducedMotion?.REDUCE,
+    });
 }
 
 export function connectScreenLock(disposables, handler) {

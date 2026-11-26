@@ -88,7 +88,17 @@ if [ -n "${CAPTURE_DOWN:-}" ]; then
 fi
 sleep 1 # let animations finish
 
-gjs -m "$(dirname "$0")/capture.js" "$OUTPUT" 2>"$LOG.capture" || fail "the capture failed: $(tail -n 3 "$LOG.capture")"
+# CAPTURE_CROP=1: only the window of Luciole, with a margin of the desktop around it (no top bar).
+CROP=""
+if [ "${CAPTURE_CROP:-0}" = 1 ]; then
+    set -- $(actor_geometry luciole-panel)
+    [ "$#" = 4 ] || fail "CAPTURE_CROP: the window of Luciole was not found"
+    # 40 px of desktop around the window; the frame is the 1280x720 virtual monitor.
+    CROP=$(awk -v x="$1" -v y="$2" -v w="$3" -v h="$4" 'BEGIN { m = 40; l = x - m; t = y - m; r = 1280 - (x + w) - m; b = 720 - (y + h) - m;
+        printf "%d %d %d %d", (l > 0 ? l : 0), (t > 0 ? t : 0), (r > 0 ? r : 0), (b > 0 ? b : 0) }')
+fi
+# shellcheck disable=SC2086
+gjs -m "$(dirname "$0")/capture.js" "$OUTPUT" Meta-0 $CROP 2>"$LOG.capture" || fail "the capture failed: $(tail -n 3 "$LOG.capture")"
 [ -s "$OUTPUT" ] || fail "the capture file is empty"
 echo "captured $OUTPUT"
 echo "PASS"

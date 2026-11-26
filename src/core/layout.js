@@ -78,6 +78,20 @@ export function backdropClass(level) {
  * @param {unknown} preference - the setting; anything but an explicit false counts as on
  * @returns {boolean}
  */
+/**
+ * Whether the system lets the interface move: animations are on and, where the shell knows the
+ * setting (GNOME 51 and later), reduced motion was not asked for. GNOME 50 has no such setting:
+ * `reduceValue` is then undefined and only the animations switch counts.
+ *
+ * @param {{enableAnimations: unknown, reducedMotion?: unknown, reduceValue?: unknown}} settings
+ * @returns {boolean}
+ */
+export function systemMotion({enableAnimations, reducedMotion, reduceValue}) {
+    if (enableAnimations !== true)
+        return false;
+    return reduceValue === undefined || reducedMotion !== reduceValue;
+}
+
 export function motionEnabled(systemAllows, preference) {
     return systemAllows === true && preference !== false;
 }

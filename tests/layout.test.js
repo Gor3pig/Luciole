@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Luciole contributors
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-import {backdropClass, chooseMonitorIndex, motionEnabled, needsHeightEase, TOP_FRACTION, verticalLayout} from '../src/core/layout.js';
+import {backdropClass, chooseMonitorIndex, motionEnabled, systemMotion, needsHeightEase, TOP_FRACTION, verticalLayout} from '../src/core/layout.js';
 import {assert, assertEquals, test} from './harness.js';
 
 test('the monitor of the focused window wins over the pointer and the primary one', () => {
@@ -83,4 +83,18 @@ test('a list changing height is eased only between two real, different heights',
     assertEquals(needsHeightEase(200, 0), false);
     for (const odd of [NaN, Infinity, -5, undefined, null, '100'])
         assertEquals(needsHeightEase(odd, 200), false, `from ${String(odd)}`);
+});
+
+test('the system lets the interface move unless animations are off or reduced motion is asked', () => {
+    const REDUCE = 1;
+    assertEquals(systemMotion({enableAnimations: true, reducedMotion: 0, reduceValue: REDUCE}), true);
+    assertEquals(systemMotion({enableAnimations: true, reducedMotion: REDUCE, reduceValue: REDUCE}), false, 'reduced motion');
+    assertEquals(systemMotion({enableAnimations: false, reducedMotion: 0, reduceValue: REDUCE}), false, 'animations off');
+    assertEquals(systemMotion({enableAnimations: undefined, reduceValue: REDUCE}), false, 'unknown is off');
+    assertEquals(systemMotion({enableAnimations: 1, reduceValue: REDUCE}), false, 'only a real true');
+});
+
+test('on GNOME 50, which has no reduced motion setting, the animations switch alone decides', () => {
+    assertEquals(systemMotion({enableAnimations: true, reducedMotion: undefined, reduceValue: undefined}), true);
+    assertEquals(systemMotion({enableAnimations: false, reducedMotion: undefined, reduceValue: undefined}), false);
 });

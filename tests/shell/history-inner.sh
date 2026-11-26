@@ -153,5 +153,5 @@ off)
 esac
 
 kill -0 "$SHELL_PID" 2>/dev/null || fail "the shell died"
-! grep -qE 'JS ERROR|CRITICAL|\[Luciole\] .*error' "$LOG" || fail "errors in the log: $(grep -E -A4 'JS ERROR|CRITICAL|\[Luciole\] .*error' "$LOG" | head -n 12)"
+[ -z "$(log_errors 'JS ERROR|CRITICAL|\[Luciole\] .*error')" ] || fail "errors in the log: $(log_errors 'JS ERROR|CRITICAL|\[Luciole\] .*error' | head -n 6)"
 echo "PASS"

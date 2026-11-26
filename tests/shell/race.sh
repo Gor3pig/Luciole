@@ -22,6 +22,13 @@ trap 'rm -rf "$WORK" 2>/dev/null || { sleep 1; rm -rf "$WORK"; }' EXIT
 glib-compile-schemas "$ROOT/src/schemas"
 mkdir -p "$WORK/config/glib-2.0/settings" "$WORK/data/gnome-shell/extensions" "$WORK/services/dbus-1/services"
 ln -s "$ROOT/src" "$WORK/data/gnome-shell/extensions/$UUID"
+# Applications of the test's own, so the list heights do not depend on what the machine has
+# installed: "zquok" finds the four, "zquok b" two, "zquok be" one.
+mkdir -p "$WORK/data/applications"
+for name in Ant Bee Bat Cat; do
+    printf '[Desktop Entry]\nType=Application\nName=Zquok %s\nExec=true\n' "$name" \
+        >"$WORK/data/applications/luciole-test-zquok-$name.desktop"
+done
 cat >"$WORK/services/dbus-1/services/org.freedesktop.LocalSearch3.service" <<SERVICE
 [D-BUS Service]
 Name=org.freedesktop.LocalSearch3
