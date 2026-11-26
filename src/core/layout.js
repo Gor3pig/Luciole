@@ -56,3 +56,16 @@ export function verticalLayout(monitorHeight) {
     const resultsMax = Math.min(MAX_RESULTS_HEIGHT, Math.max(MIN_RESULTS_HEIGHT, Math.round(room)));
     return {top, resultsMax};
 }
+
+const BACKDROPS = ['light', 'standard'];
+
+/**
+ * The style class for the dimming behind the launcher, from the "backdrop" setting.
+ * "none", and anything unknown, gives no class: no dimming is the safe reading.
+ *
+ * @param {unknown} level
+ * @returns {string | null}
+ */
+export function backdropClass(level) {
+    return BACKDROPS.includes(level) ? `luciole-backdrop-${level}` : null;
+}

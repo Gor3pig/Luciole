@@ -19,6 +19,17 @@
       <summary>Display order of result providers</summary>
     </key>
 
+    <key name="backdrop" type="s">
+      <choices>
+        <choice value="none"/>
+        <choice value="light"/>
+        <choice value="standard"/>
+      </choices>
+      <default>"none"</default>
+      <summary>Dimming of the screen behind the launcher</summary>
+      <description>none: the desktop stays fully visible; light: slightly dimmed; standard: clearly dimmed.</description>
+    </key>
+
     <key name="max-results" type="i">
       <range min="3" max="30"/>
       <default>6</default>

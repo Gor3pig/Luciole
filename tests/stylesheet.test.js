@@ -49,3 +49,26 @@ test('every rule is scoped to the luciole- class prefix', () => {
     for (const selector of Object.keys(light))
         assert(selector.includes('.luciole-'), `unscoped selector: ${selector}`);
 });
+
+function declared(css, selector, property) {
+    const text = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    for (const match of text.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+        if (match[1].trim() !== selector)
+            continue;
+        for (const declaration of match[2].split(';')) {
+            const [name, ...value] = declaration.split(':');
+            if (name.trim() === property)
+                return value.join(':').trim();
+        }
+    }
+    return null;
+}
+
+test('in both themes the window is not dimmed unless the backdrop option asks for it', () => {
+    for (const name of ['stylesheet.css', 'stylesheet-dark.css']) {
+        const css = readSource(name);
+        assertEquals(declared(css, '.luciole-overlay', 'background-color'), 'transparent', `${name}: default`);
+        assertEquals(declared(css, '.luciole-backdrop-light', 'background-color'), 'rgba(0, 0, 0, 0.22)', `${name}: light`);
+        assertEquals(declared(css, '.luciole-backdrop-standard', 'background-color'), 'rgba(0, 0, 0, 0.5)', `${name}: standard`);
+    }
+});

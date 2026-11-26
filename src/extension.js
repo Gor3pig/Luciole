@@ -53,6 +53,7 @@ export default class LucioleExtension extends Extension {
                 onQuery: query => backend.controller?.search(query),
                 onActivate: item => backend.controller?.activate(item),
                 onSecondary: item => backend.controller?.activateSecondary(item),
+                getBackdrop: () => settings.get_string('backdrop'),
             });
             disposables.add(() => launcher.destroy());
 

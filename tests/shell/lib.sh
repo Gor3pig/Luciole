@@ -125,6 +125,11 @@ actor_geometry() {
     shell_eval "(function find(a) { if ((a.style_class || '').includes('$1')) { const [x, y] = a.get_transformed_position(); const [w, h] = a.get_transformed_size(); return Math.round(x) + ' ' + Math.round(y) + ' ' + Math.round(w) + ' ' + Math.round(h); } for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
 }
 
+# overlay_alpha: the alpha (0-255) of the background the theme gives the launcher window.
+overlay_alpha() {
+    shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-overlay')) return String(a.get_theme_node().get_background_color().alpha); for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
+}
+
 rss_kb() {
     awk '/^VmRSS:/ {print $2}' "/proc/$SHELL_PID/status"
 }

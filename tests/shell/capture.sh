@@ -10,6 +10,7 @@
 #
 # With CAPTURE_INDEX=1 the file provider is enabled and answered by a stand-in
 # index with made-up files (see index-service.js); never by the real one.
+# CAPTURE_BACKDROP=none|light|standard sets the dimming behind the window.
 # INDEX_EXTRA=<n> adds n files; CAPTURE_DOWN=<n> presses the Down arrow n times.
 #
 # Safety: the shell runs on its own D-Bus session with its own settings file in

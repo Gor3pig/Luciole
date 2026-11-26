@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-25 20:19+0100\n"
+"POT-Creation-Date: 2026-11-26 00:38+0100\n"
 "PO-Revision-Date: 2026-11-25 20:00+0100\n"
 "Last-Translator: Luciole contributors\n"
 "Language-Team: fr <>\n"
@@ -25,12 +25,36 @@ msgid "Files"
 msgstr "Fichiers"
 
 #: src/prefs.js
+msgid "Backdrop"
+msgstr "Voile"
+
+#: src/prefs.js
+msgid "Dims the rest of the screen while Luciole is open"
+msgstr "Assombrit le reste de l'écran pendant que Luciole est ouverte"
+
+#: src/prefs.js
+msgid "None"
+msgstr "Aucun"
+
+#: src/prefs.js
+msgid "Light"
+msgstr "Léger"
+
+#: src/prefs.js
+msgid "Standard"
+msgstr "Standard"
+
+#: src/prefs.js
 msgid "General"
 msgstr "Général"
 
 #: src/prefs.js
 msgid "Shortcut"
 msgstr "Raccourci"
+
+#: src/prefs.js
+msgid "Appearance"
+msgstr "Apparence"
 
 #: src/prefs.js src/ui/results-view.js
 msgid "Results"
@@ -52,7 +76,9 @@ msgstr "Historique"
 msgid ""
 "Luciole remembers which results you open, only on this computer, to rank "
 "them better."
-msgstr "Luciole retient les résultats que vous ouvrez, uniquement sur cet ordinateur, pour mieux les classer."
+msgstr ""
+"Luciole retient les résultats que vous ouvrez, uniquement sur cet "
+"ordinateur, pour mieux les classer."
 
 #: src/prefs.js
 msgid "Clear History"
@@ -95,7 +121,9 @@ msgstr "Définir le raccourci"
 #: src/prefs.js
 msgid ""
 "Press the new shortcut. Escape cancels, Backspace disables the shortcut."
-msgstr "Appuyez sur le nouveau raccourci. Échap annule, Retour arrière désactive le raccourci."
+msgstr ""
+"Appuyez sur le nouveau raccourci. Échap annule, Retour arrière désactive le "
+"raccourci."
 
 #: src/prefs.js
 msgid "Cancel"
@@ -107,7 +135,9 @@ msgstr "Sources"
 
 #: src/prefs.js
 msgid "What Luciole searches. Applications are always listed before files."
-msgstr "Ce que Luciole recherche. Les applications sont toujours listées avant les fichiers."
+msgstr ""
+"Ce que Luciole recherche. Les applications sont toujours listées avant les "
+"fichiers."
 
 #: src/prefs.js
 msgid "Excluded Folders"
@@ -117,7 +147,10 @@ msgstr "Dossiers exclus"
 msgid ""
 "Files in these folders are never shown. A name such as “node_modules” "
 "excludes every folder with that name; hidden files are always left out."
-msgstr "Les fichiers de ces dossiers ne sont jamais affichés. Un nom comme « node_modules » exclut tous les dossiers portant ce nom ; les fichiers cachés sont toujours ignorés."
+msgstr ""
+"Les fichiers de ces dossiers ne sont jamais affichés. Un nom comme "
+"« node_modules » exclut tous les dossiers portant ce nom ; les fichiers "
+"cachés sont toujours ignorés."
 
 #: src/prefs.js
 msgid "Add Folder…"
@@ -130,7 +163,9 @@ msgstr "Types de fichiers exclus"
 #: src/prefs.js
 msgid ""
 "Files with these extensions are never shown, for example “tmp” or “.log”."
-msgstr "Les fichiers ayant ces extensions ne sont jamais affichés, par exemple « tmp » ou « .log »."
+msgstr ""
+"Les fichiers ayant ces extensions ne sont jamais affichés, par exemple "
+"« tmp » ou « .log »."
 
 #: src/prefs.js
 msgid "Add Type"

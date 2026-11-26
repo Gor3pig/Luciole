@@ -647,6 +647,48 @@
    "label": "absurd height not neutralised",
    "old": "Number.isFinite(monitorHeight) && monitorHeight > 0 ? monitorHeight : 0",
    "new": "monitorHeight"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "none gets a backdrop class",
+   "old": "return BACKDROPS.includes(level) ?",
+   "new": "return BACKDROPS.includes(level) || level === 'none' ?"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "any value gets a backdrop class",
+   "old": "return BACKDROPS.includes(level) ? `luciole-backdrop-${level}` : null;",
+   "new": "return typeof level === 'string' && level !== 'none' ? `luciole-backdrop-${level}` : null;"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "standard missing",
+   "old": "const BACKDROPS = ['light', 'standard'];",
+   "new": "const BACKDROPS = ['light'];"
+  },
+  {
+   "file": "src/stylesheet.css",
+   "label": "default dimming in the light theme",
+   "old": ".luciole-overlay {\n    background-color: transparent;",
+   "new": ".luciole-overlay {\n    background-color: rgba(0, 0, 0, 0.26);"
+  },
+  {
+   "file": "src/stylesheet-dark.css",
+   "label": "default dimming in the dark theme",
+   "old": ".luciole-overlay {\n    background-color: transparent;",
+   "new": ".luciole-overlay {\n    background-color: rgba(0, 0, 0, 0.44);"
+  },
+  {
+   "file": "src/stylesheet-dark.css",
+   "label": "dark standard backdrop too weak",
+   "old": "rgba(0, 0, 0, 0.5)",
+   "new": "rgba(0, 0, 0, 0.3)"
+  },
+  {
+   "file": "src/stylesheet.css",
+   "label": "light backdrop too strong",
+   "old": "rgba(0, 0, 0, 0.22)",
+   "new": "rgba(0, 0, 0, 0.4)"
   }
  ]
 }

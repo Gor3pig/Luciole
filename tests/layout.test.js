@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Luciole contributors
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-import {chooseMonitorIndex, TOP_FRACTION, verticalLayout} from '../src/core/layout.js';
+import {backdropClass, chooseMonitorIndex, TOP_FRACTION, verticalLayout} from '../src/core/layout.js';
 import {assert, assertEquals, test} from './harness.js';
 
 test('the monitor of the focused window wins over the pointer and the primary one', () => {
@@ -49,4 +49,12 @@ test('the layout never fails on an absurd height', () => {
         assert(Number.isFinite(top) && top >= 0, `top ${top} for ${height}`);
         assert(resultsMax >= 120 && resultsMax <= 600, `resultsMax ${resultsMax} for ${height}`);
     }
+});
+
+test('the backdrop setting gives a style class, and nothing for none or anything unknown', () => {
+    assertEquals(backdropClass('light'), 'luciole-backdrop-light');
+    assertEquals(backdropClass('standard'), 'luciole-backdrop-standard');
+    assertEquals(backdropClass('none'), null);
+    for (const odd of ['', 'LIGHT', 'dark', 'standard ', undefined, null, 3, {}, ['light']])
+        assertEquals(backdropClass(odd), null, `for ${JSON.stringify(odd)}`);
 });

@@ -62,12 +62,30 @@ export default class LucioleExtensionPreferences extends ExtensionPreferences {
         window.add(this._sourcesPage(window, settings));
     }
 
+    _backdropRow(settings) {
+        const levels = ['none', 'light', 'standard'];
+        const row = new Adw.ComboRow({
+            title: _('Backdrop'),
+            subtitle: _('Dims the rest of the screen while Luciole is open'),
+            model: Gtk.StringList.new([_('None'), _('Light'), _('Standard')]),
+        });
+        row.selected = Math.max(0, levels.indexOf(settings.get_string('backdrop')));
+        row.connect('notify::selected', () => {
+            settings.set_string('backdrop', levels[row.selected] ?? 'none');
+        });
+        return row;
+    }
+
     _generalPage(window, settings) {
         const page = new Adw.PreferencesPage({title: _('General'), icon_name: 'preferences-system-symbolic'});
 
         const shortcutGroup = new Adw.PreferencesGroup({title: _('Shortcut')});
         shortcutGroup.add(this._shortcutRow(window, settings));
         page.add(shortcutGroup);
+
+        const appearanceGroup = new Adw.PreferencesGroup({title: _('Appearance')});
+        appearanceGroup.add(this._backdropRow(settings));
+        page.add(appearanceGroup);
 
         const resultsGroup = new Adw.PreferencesGroup({title: _('Results')});
         const maxResults = new Adw.SpinRow({

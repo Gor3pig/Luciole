@@ -80,6 +80,26 @@ SENT=$(shell_eval "global.backend.get_monitor_manager().emit('monitors-changed')
 wait_count 'closed' $((CLOSED + 1)) || fail "the launcher stayed open when the monitors changed"
 echo "ok: the launcher closes when the monitors change"
 
+# The dimming behind the window is an option, off by default. The alpha is what the theme
+# really gives the window (0.22 and 0.5 of 255), read from the live actor at each opening.
+open_at 640 360
+ALPHA_NONE=$(overlay_alpha)
+close_launcher
+gsettings set org.gnome.shell.extensions.luciole backdrop light || fail "could not set the backdrop"
+open_at 640 360
+ALPHA_LIGHT=$(overlay_alpha)
+close_launcher
+gsettings set org.gnome.shell.extensions.luciole backdrop standard || fail "could not set the backdrop"
+open_at 640 360
+ALPHA_STANDARD=$(overlay_alpha)
+close_launcher
+gsettings reset org.gnome.shell.extensions.luciole backdrop
+echo "backdrop: alpha none=$ALPHA_NONE light=$ALPHA_LIGHT standard=$ALPHA_STANDARD"
+[ "$ALPHA_NONE" = 0 ] || fail "there is dimming by default (alpha $ALPHA_NONE)"
+[ "$ALPHA_LIGHT" -ge 52 ] && [ "$ALPHA_LIGHT" -le 60 ] || fail "light dimming is not about 22% (alpha $ALPHA_LIGHT)"
+[ "$ALPHA_STANDARD" -ge 124 ] && [ "$ALPHA_STANDARD" -le 130 ] || fail "standard dimming is not about 50% (alpha $ALPHA_STANDARD)"
+echo "ok: no dimming by default; light and standard dim as chosen"
+
 # And it opens normally afterwards.
 open_at 640 360
 close_launcher

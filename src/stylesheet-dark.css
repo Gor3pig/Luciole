@@ -4,7 +4,16 @@
 /* Luciole: dark variant. Same selectors and properties as stylesheet.css. */
 
 .luciole-overlay {
-    background-color: rgba(0, 0, 0, 0.44);
+    background-color: transparent;
+}
+
+/* The dimming behind the launcher is an option (setting "backdrop"): none by default. */
+.luciole-backdrop-light {
+    background-color: rgba(0, 0, 0, 0.22);
+}
+
+.luciole-backdrop-standard {
+    background-color: rgba(0, 0, 0, 0.5);
 }
 
 .luciole-panel {

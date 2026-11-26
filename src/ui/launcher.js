@@ -5,7 +5,7 @@ import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 
-import {verticalLayout} from '../core/layout.js';
+import {backdropClass, verticalLayout} from '../core/layout.js';
 import {jumpSection, nextSelection} from '../core/merge.js';
 import * as compat from '../shell/compat.js';
 import {describeWindow} from './a11y.js';
@@ -43,6 +43,7 @@ export class Launcher {
     #onQuery;
     #onActivate;
     #onSecondary;
+    #getBackdrop;
     #overlay = null;
     #panel = null;
     #entry = null;
@@ -64,13 +65,15 @@ export class Launcher {
      * @param {(query: string) => void} options.onQuery - the text changed (also called with '' on open)
      * @param {(item: object) => void} options.onActivate - the user chose a result
      * @param {(item: object) => void} options.onSecondary - the user asked for the other action (Ctrl+Enter)
+     * @param {() => string} options.getBackdrop - the dimming setting: 'none', 'light' or 'standard'
      */
-    constructor({log, gettext, onQuery, onActivate, onSecondary}) {
+    constructor({log, gettext, onQuery, onActivate, onSecondary, getBackdrop}) {
         this.#log = log;
         this.#gettext = gettext;
         this.#onQuery = onQuery;
         this.#onActivate = onActivate;
         this.#onSecondary = onSecondary;
+        this.#getBackdrop = getBackdrop;
     }
 
     get isOpen() {
@@ -90,6 +93,7 @@ export class Launcher {
 
         this.#ensureBuilt();
         this.#place();
+        this.#applyBackdrop();
         this.#items = [];
         this.#merged = null;
         this.#selectedKey = null;
@@ -284,6 +288,13 @@ export class Launcher {
         this.#overlay.set_size(monitor.width, monitor.height);
         this.#overlay.set_style(`padding-top: ${top}px;`);
         this.#view.setMaxHeight(resultsMax);
+    }
+
+    // Read at every opening, so a change in the preferences applies at once.
+    #applyBackdrop() {
+        const level = this.#log.guard('reading the backdrop setting', () => this.#getBackdrop(), 'none');
+        const extra = backdropClass(level);
+        this.#overlay.set_style_class_name(extra ? `luciole-overlay ${extra}` : 'luciole-overlay');
     }
 
     #ensureBuilt() {

@@ -24,6 +24,18 @@
    "label": "the field is not placed from the layout",
    "old": "        this.#overlay.set_style(`padding-top: ${top}px;`);",
    "new": "        this.#overlay.set_style('padding-top: 100px;');"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the backdrop setting is not applied",
+   "old": "this.#overlay.set_style_class_name(extra ? `luciole-overlay ${extra}` : 'luciole-overlay');",
+   "new": "this.#overlay.set_style_class_name('luciole-overlay');"
+  },
+  {
+   "file": "src/extension.js",
+   "label": "the backdrop setting is not read",
+   "old": "getBackdrop: () => settings.get_string('backdrop'),",
+   "new": "getBackdrop: () => 'none',"
   }
  ]
 }

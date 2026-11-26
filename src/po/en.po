@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-25 20:19+0100\n"
+"POT-Creation-Date: 2026-11-26 00:38+0100\n"
 "PO-Revision-Date: 2026-11-25 20:00+0100\n"
 "Last-Translator: Luciole contributors\n"
 "Language-Team: en <>\n"
@@ -25,12 +25,36 @@ msgid "Files"
 msgstr "Files"
 
 #: src/prefs.js
+msgid "Backdrop"
+msgstr "Backdrop"
+
+#: src/prefs.js
+msgid "Dims the rest of the screen while Luciole is open"
+msgstr "Dims the rest of the screen while Luciole is open"
+
+#: src/prefs.js
+msgid "None"
+msgstr "None"
+
+#: src/prefs.js
+msgid "Light"
+msgstr "Light"
+
+#: src/prefs.js
+msgid "Standard"
+msgstr "Standard"
+
+#: src/prefs.js
 msgid "General"
 msgstr "General"
 
 #: src/prefs.js
 msgid "Shortcut"
 msgstr "Shortcut"
+
+#: src/prefs.js
+msgid "Appearance"
+msgstr "Appearance"
 
 #: src/prefs.js src/ui/results-view.js
 msgid "Results"
@@ -52,7 +76,9 @@ msgstr "History"
 msgid ""
 "Luciole remembers which results you open, only on this computer, to rank "
 "them better."
-msgstr "Luciole remembers which results you open, only on this computer, to rank them better."
+msgstr ""
+"Luciole remembers which results you open, only on this computer, to rank "
+"them better."
 
 #: src/prefs.js
 msgid "Clear History"
@@ -95,7 +121,8 @@ msgstr "Set Shortcut"
 #: src/prefs.js
 msgid ""
 "Press the new shortcut. Escape cancels, Backspace disables the shortcut."
-msgstr "Press the new shortcut. Escape cancels, Backspace disables the shortcut."
+msgstr ""
+"Press the new shortcut. Escape cancels, Backspace disables the shortcut."
 
 #: src/prefs.js
 msgid "Cancel"
@@ -117,7 +144,9 @@ msgstr "Excluded Folders"
 msgid ""
 "Files in these folders are never shown. A name such as “node_modules” "
 "excludes every folder with that name; hidden files are always left out."
-msgstr "Files in these folders are never shown. A name such as “node_modules” excludes every folder with that name; hidden files are always left out."
+msgstr ""
+"Files in these folders are never shown. A name such as “node_modules” "
+"excludes every folder with that name; hidden files are always left out."
 
 #: src/prefs.js
 msgid "Add Folder…"
@@ -130,7 +159,8 @@ msgstr "Excluded File Types"
 #: src/prefs.js
 msgid ""
 "Files with these extensions are never shown, for example “tmp” or “.log”."
-msgstr "Files with these extensions are never shown, for example “tmp” or “.log”."
+msgstr ""
+"Files with these extensions are never shown, for example “tmp” or “.log”."
 
 #: src/prefs.js
 msgid "Add Type"

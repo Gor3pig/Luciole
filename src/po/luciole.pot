@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-25 20:19+0100\n"
+"POT-Creation-Date: 2026-11-26 00:38+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -26,11 +26,35 @@ msgid "Files"
 msgstr ""
 
 #: src/prefs.js
+msgid "Backdrop"
+msgstr ""
+
+#: src/prefs.js
+msgid "Dims the rest of the screen while Luciole is open"
+msgstr ""
+
+#: src/prefs.js
+msgid "None"
+msgstr ""
+
+#: src/prefs.js
+msgid "Light"
+msgstr ""
+
+#: src/prefs.js
+msgid "Standard"
+msgstr ""
+
+#: src/prefs.js
 msgid "General"
 msgstr ""
 
 #: src/prefs.js
 msgid "Shortcut"
+msgstr ""
+
+#: src/prefs.js
+msgid "Appearance"
 msgstr ""
 
 #: src/prefs.js src/ui/results-view.js

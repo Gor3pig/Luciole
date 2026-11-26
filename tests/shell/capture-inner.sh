@@ -17,6 +17,7 @@ wait_for_extension
 
 gsettings set org.gnome.shell.extensions.luciole debug-timings true || fail "could not set debug-timings"
 gsettings set org.gnome.desktop.interface color-scheme "$SCHEME" || fail "could not set the colour scheme"
+[ -z "${CAPTURE_BACKDROP:-}" ] || gsettings set org.gnome.shell.extensions.luciole backdrop "$CAPTURE_BACKDROP" || fail "could not set the backdrop"
 if [ "${CAPTURE_INDEX:-0}" = 1 ]; then
     start_index_service
 else
