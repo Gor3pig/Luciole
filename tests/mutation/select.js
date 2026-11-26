@@ -82,3 +82,15 @@ export function isNew(mutant, earlierMutants) {
         earlier.new === mutant.new && JSON.stringify(earlier.also ?? null) === JSON.stringify(mutant.also ?? null) &&
         JSON.stringify(earlier.command ?? null) === JSON.stringify(mutant.command ?? null));
 }
+
+/**
+ * What a mutant's result depends on, as one text to hash: the whole tree of sources and tests (as a
+ * fingerprint), the edits, the test that judges it, and the versions of the shell and of GJS. Its
+ * label does not count. The same text means the same code, the same tests and the same programs:
+ * a mutant the tests noticed then is noticed again.
+ */
+export function cacheKey({tree, mutant, command, versions}) {
+    return JSON.stringify([
+        String(tree), mutant.file, mutant.old, mutant.new, mutant.also ?? null, command, versions ?? null,
+    ]);
+}

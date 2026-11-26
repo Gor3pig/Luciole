@@ -9,7 +9,8 @@
 #                                 three at a time
 #   GATE_PUSH=1 sh tests/gate.sh  before a push: every mutant of every file changed since the
 #                                 last push, shell tests one after the other (their timings hold)
-#   GATE_FULL=1 sh tests/gate.sh  end of a lot: the whole mutation set, longer cycle counts
+#   GATE_FULL=1 sh tests/gate.sh  end of a lot: the whole mutation set, cache ignored, longer
+#                                 cycle counts
 #   GATE_SOAK=1 sh tests/gate.sh  also the long endurance test
 #   GATE_KEEP_GOING=1 ...         do not stop at the first failure
 #
@@ -74,7 +75,7 @@ pushed_base() {
 
 mutation() {
     if [ -n "${GATE_FULL:-}" ]; then
-        gjs -m tests/mutation/run.js
+        gjs -m tests/mutation/run.js --no-cache
     elif [ -n "${GATE_PUSH:-}" ]; then
         gjs -m tests/mutation/run.js --changed --with-slow --base "$(pushed_base)"
     else

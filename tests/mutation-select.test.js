@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Luciole contributors
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-import {changedLineRanges, isNew, linesOf, sample, touches} from './mutation/select.js';
+import {cacheKey, changedLineRanges, isNew, linesOf, sample, touches} from './mutation/select.js';
 import {assert, assertEquals, test} from './harness.js';
 
 test('the changed lines are read from a diff without context', () => {
@@ -64,4 +64,25 @@ test('a mutant is new when its earlier specification does not have it exactly', 
     assert(isNew({...mutant, command: ['sh', 'x']}, [mutant]), 'another test');
     assert(isNew(mutant, []), 'not there');
     assert(isNew(mutant, null), 'no earlier specification');
+});
+
+test('a cached result is found again only for the very same code, mutant, test and programs', () => {
+    const mutant = {file: 'a.js', label: 'x', old: 'a', new: 'b'};
+    const base = {tree: 't1', mutant, command: ['sh', 'x.sh'], versions: ['shell 51', 'gjs 1.88']};
+    const key = cacheKey(base);
+    assertEquals(cacheKey({...base}), key, 'the same, the same key');
+    assertEquals(cacheKey({...base, mutant: {...mutant, label: 'renamed'}}), key, 'the label does not count');
+    const differs = [
+        ['another tree', {...base, tree: 't2'}],
+        ['another file', {...base, mutant: {...mutant, file: 'b.js'}}],
+        ['another old text', {...base, mutant: {...mutant, old: 'c'}}],
+        ['another new text', {...base, mutant: {...mutant, new: 'c'}}],
+        ['more edits', {...base, mutant: {...mutant, also: [{old: 'p', new: 'q'}]}}],
+        ['another test', {...base, command: ['sh', 'y.sh']}],
+        ['another part of a test', {...base, command: ['env', 'FILES_PARTS=menu', 'sh', 'x.sh']}],
+        ['another shell', {...base, versions: ['shell 50', 'gjs 1.88']}],
+        ['another GJS', {...base, versions: ['shell 51', 'gjs 1.86']}],
+    ];
+    for (const [why, other] of differs)
+        assert(cacheKey(other) !== key, why);
 });

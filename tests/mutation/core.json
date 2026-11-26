@@ -1943,6 +1943,30 @@
    "label": "a search restricted to a type still has a top hit",
    "old": "topHit: !this.#emptyQuery && this.#typeFilter === null && effectiveFilter(this.#filter, this.#getProviders()) === null}",
    "new": "topHit: !this.#emptyQuery && effectiveFilter(this.#filter, this.#getProviders()) === null}"
+  },
+  {
+   "file": "tests/mutation/select.js",
+   "label": "the cache ignores the tree",
+   "old": "        String(tree), mutant.file,",
+   "new": "        mutant.file,"
+  },
+  {
+   "file": "tests/mutation/select.js",
+   "label": "the cache ignores the extra edits",
+   "old": "mutant.new, mutant.also ?? null, command,",
+   "new": "mutant.new, command,"
+  },
+  {
+   "file": "tests/mutation/select.js",
+   "label": "the cache ignores the versions",
+   "old": ", command, versions ?? null,\n",
+   "new": ", command,\n"
+  },
+  {
+   "file": "tests/mutation/select.js",
+   "label": "the cache ignores the test",
+   "old": ", mutant.also ?? null, command, versions",
+   "new": ", mutant.also ?? null, versions"
   }
  ]
 }

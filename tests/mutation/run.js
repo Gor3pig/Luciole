@@ -17,17 +17,23 @@
 //   --base       what "changed" is compared with (default HEAD: what is not committed yet)
 //   --spec       only tests/mutation/<name>.json
 //   --jobs       how many tests in a real shell run at the same time (default 3)
+//   --no-cache   run every chosen mutant, even one already noticed on the very same code
 //
 // Mutants run in copies of the project, several at a time; the project itself is never
 // modified, so an interrupted run leaves nothing behind but temporary copies, removed on
 // exit. A mutant may name its own test ("command"), else the one of its specification.
+//
+// Cache: a mutant the tests noticed is not run again while nothing changed: not a file of the
+// sources or the tests, not the mutant, not its test, not the versions of GNOME Shell and GJS
+// (see cacheKey in select.js). A survivor is never cached. Kept outside the project, in the
+// user's cache folder.
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GLibUnix from 'gi://GLibUnix';
 import System from 'system';
 
-import {changedLineRanges, isNew, linesOf, sample, touches} from './select.js';
+import {cacheKey, changedLineRanges, isNew, linesOf, sample, touches} from './select.js';
 
 const ROOT = Gio.File.new_for_uri(import.meta.url).get_parent().get_parent().get_parent();
 const SPEC_DIR = ROOT.get_child('tests').get_child('mutation');
@@ -37,6 +43,10 @@ const TIMEOUT_SECONDS = 180;
 // What a copy holds: everything a test needs to run.
 const COPIED = ['src', 'tests', 'Makefile', 'package.json', 'eslint.config.js'];
 const FAST_JOBS = 3;
+const CACHE_FILE = GLib.build_filenamev([GLib.get_user_cache_dir(), 'luciole', 'mutation-cache.json']);
+const CACHE_MAX = 5000;
+// What the tree fingerprint leaves out: the specifications (each mutant is part of its own key).
+const NOT_IN_TREE = /^tests\/mutation\/[^/]+\.json$/;
 
 const args = ARGV;
 const option = name => (args.includes(name) ? args[args.indexOf(name) + 1] : null);
@@ -47,6 +57,7 @@ const specName = option('--spec');
 const base = option('--base') ?? 'HEAD';
 const slowJobs = Math.max(1, Number(option('--jobs') ?? 3) || 3);
 const share = Number(option('--sample') ?? 0.1);
+const useCache = !args.includes('--no-cache');
 const seed = Number(GLib.getenv('LUCIOLE_MUTATION_SEED') ?? Math.floor(Date.now() / 1000) % 100000);
 
 const decoder = new TextDecoder();
@@ -259,9 +270,60 @@ if (listOnly) {
 if (changed && byLines)
     print(`chosen: ${onLines} on changed lines, ${fresh} new or changed, ${drawn} drawn at random (seed ${seed})`);
 
+// ---- Cache of the mutants already noticed ----
+
+function treeFingerprint() {
+    const files = lines(['git', 'ls-files', '--cached', '--others', '--exclude-standard', '--', ...COPIED])
+        .filter(path => !NOT_IN_TREE.test(path)).sort();
+    const all = new GLib.Checksum(GLib.ChecksumType.SHA256);
+    for (const path of new Set(files)) {
+        const file = ROOT.resolve_relative_path(path);
+        if (file.query_file_type(Gio.FileQueryInfoFlags.NOFOLLOW_SYMLINKS, null) !== Gio.FileType.REGULAR)
+            continue;
+        const [, bytes] = file.load_contents(null);
+        all.update(encoder.encode(`${path}\0${GLib.compute_checksum_for_bytes(GLib.ChecksumType.SHA256, bytes)}\0`));
+    }
+    return all.get_string();
+}
+
+function loadCache() {
+    try {
+        const list = JSON.parse(readText(Gio.File.new_for_path(CACHE_FILE)));
+        return Array.isArray(list) ? list.filter(key => typeof key === 'string') : [];
+    } catch {
+        return [];
+    }
+}
+
+function saveCache(keys) {
+    GLib.mkdir_with_parents(GLib.path_get_dirname(CACHE_FILE), 0o700);
+    // Written whole then renamed: an interrupted run never leaves a half-written cache.
+    const file = Gio.File.new_for_path(CACHE_FILE);
+    file.replace_contents(encoder.encode(JSON.stringify(keys.slice(-CACHE_MAX))), null, false,
+        Gio.FileCreateFlags.PRIVATE | Gio.FileCreateFlags.REPLACE_DESTINATION, null);
+}
+
+const versions = useCache ? [output(['gnome-shell', '--version']), output(['gjs', '--version'])] : null;
+const tree = useCache ? treeFingerprint() : null;
+const keyOf = ({spec, mutant}) => GLib.compute_checksum_for_string(GLib.ChecksumType.SHA256,
+    cacheKey({tree, mutant, command: mutant.command ?? spec.command, versions}), -1);
+const cached = useCache ? loadCache() : [];
+const known = new Set(cached);
+const noticed = [];
+let reused = 0;
+const toRun = chosen.filter(entry => {
+    if (useCache && known.has(keyOf(entry))) {
+        reused++;
+        return false;
+    }
+    return true;
+});
+if (reused > 0)
+    print(`${reused} already noticed on this very code (cache), not run again`);
+
 // Slow mutants (a real shell each) and quick ones run in their own pools, side by side.
-const slowQueue = chosen.filter(entry => entry.spec.slow);
-const fastQueue = chosen.filter(entry => !entry.spec.slow);
+const slowQueue = toRun.filter(entry => entry.spec.slow);
+const fastQueue = toRun.filter(entry => !entry.spec.slow);
 let killed = 0;
 const survivors = [];
 
@@ -282,6 +344,8 @@ async function worker(queue, dir) {
             print(`SURVIVED  ${mutant.file}: ${mutant.label}`);
         } else {
             killed++;
+            if (useCache)
+                noticed.push(keyOf(entry));
         }
     }
 }
@@ -326,9 +390,11 @@ try {
     await Promise.all(pools.flatMap(({queue, dirs}) => dirs.map(dir => worker(queue, dir))));
 } finally {
     removeCopies();
+    if (useCache && noticed.length > 0)
+        saveCache([...cached.filter(key => !noticed.includes(key)), ...noticed]);
 }
 
 const total = killed + survivors.length;
-print(`\n${total} mutants run, ${killed} killed, ${survivors.length} survived, ${stale.length} stale` +
+print(`\n${total} mutants run${reused > 0 ? ` (and ${reused} from the cache)` : ''}, ${killed} killed, ${survivors.length} survived, ${stale.length} stale` +
     (skipped > 0 ? ` (${skipped} skipped${changed && byLines ? ': not on changed lines and not drawn' : ': their files did not change'})` : ''));
 System.exit(survivors.length > 0 || stale.length > 0 ? 1 : 0);

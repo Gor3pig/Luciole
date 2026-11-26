@@ -150,7 +150,10 @@ Mutants run in temporary copies of the project, several at a time, so the workin
 modified, even by an interrupted run. Before judging any mutant, each test runs once without
 one: a test that fails on its own would otherwise count every mutant as noticed. A mutant of a
 shell test runs only the part of the test that covers it (`FILES_PARTS`); the whole test runs in
-the gate.
+the gate. A mutant already noticed is not run again while nothing changed: not a file of the
+sources or the tests, not the mutant or its test, not the versions of GNOME Shell and GJS (any
+change to any of them runs it again). A survivor is never kept, and `make gate-full` ignores this
+cache.
 
 ## Not covered yet
 
