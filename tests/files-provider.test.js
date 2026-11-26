@@ -40,7 +40,7 @@ const FILES = [
     ['/home/me/Documents', 'say "hi" now.txt'],
 ];
 
-function setupProvider({files = FILES, excludedFolders = [], excludedTypes = [], openConnection} = {}) {
+function setupProvider({files = FILES, excludedFolders = [], excludedTypes = [], openConnection, missing = []} = {}) {
     const log = recordingLog();
     const database = openConnection ? null : memoryDatabase(files);
     const opened = [];
@@ -53,6 +53,7 @@ function setupProvider({files = FILES, excludedFolders = [], excludedTypes = [],
         openUri: async uri => {
             launched.push(uri);
         },
+        exists: async uri => !missing.includes(uri),
     });
     const settings = {
         get_strv: key => (key === 'excluded-folders' ? excludedFolders : excludedTypes),
@@ -260,4 +261,34 @@ test('destroying the provider while a search is running never crashes and never 
         for (let turns = 0; turns < 5; turns++)
             await nextIdle();
     }
+});
+
+async function failureOf(promise) {
+    try {
+        await promise;
+    } catch (error) {
+        return error.message;
+    }
+    return null;
+}
+
+test('a file that is no longer there is not opened, and the failure is reported', async () => {
+    const t = setupProvider({missing: ['file:///home/me/Documents/Facture%20mars.pdf']});
+    await t.ready;
+    const [first] = await t.search('facture');
+    assert((await failureOf(t.provider.activate(first)))?.includes('no longer there'), 'no failure reported');
+    assertEquals(t.launched, []);
+    t.provider.destroy();
+});
+
+test('an address that is not a local file is never opened', async () => {
+    const t = setupProvider();
+    await t.ready;
+    for (const url of ['https://example.org/x', 'file://server/share/x', 'file:///a?b=1', 'smb://host/x', '']) {
+        assert((await failureOf(t.provider.activate({data: {url}}))) !== null, `${url} was accepted`);
+        assert((await failureOf(t.provider.activateAction({data: {parentUrl: url}}, {id: 'open-folder'}))) !== null,
+            `${url} was accepted as a folder`);
+    }
+    assertEquals(t.launched, []);
+    t.provider.destroy();
 });

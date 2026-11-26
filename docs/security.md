@@ -22,8 +22,9 @@ source is handled. It also lists what is *not* covered yet.
 | Other processes | None started by the extension itself. |
 
 The history file records which applications and files were opened, with
-dates. It is capped in size (a few hundred entries, ten dates each), can be
-cleared from the preferences, and is never read by anything but Luciole.
+dates. It is capped in size (a few hundred entries, ten dates each), a file over
+1 MB is not read at all, it can be cleared from the preferences, and it is never read by
+anything but Luciole.
 
 ## Where untrusted data comes from
 
@@ -48,11 +49,18 @@ cleared from the preferences, and is never read by anything but Luciole.
   capped.
 * **Hidden files and excluded folders and types are never shown**, whatever the
   index returns.
-* **Names are displayed as text, never as markup.** The highlighted part of a
-  result is built from separate labels, not from an escaped markup string.
+* **Names are displayed as text, never as markup, and cleaned first.** The highlighted part of
+  a result is built from separate labels, not from an escaped markup string. Every text a
+  provider returns goes through one cleaning step before it is matched or shown: control
+  characters and line breaks are removed, and so are the bidirectional override and isolate
+  characters that can make a file name read as a harmless one; a very long name is cut. A result
+  left with no title is dropped.
 * **A broken history is ignored.** Unreadable, corrupt or hostile content (wrong
   types, non-finite numbers, too many entries) gives an empty history, with a
   warning in the log, and never an exception.
+* **Only existing local files are opened.** An address must be `file:///` and a path (no host, no
+  other scheme, no query), and the file or folder must still exist, or nothing is launched and the
+  failure is logged. The search field takes at most 256 characters.
 * **No dynamic code.** No `eval`, no `Function`, no shell command built from
   text. Applications and files are opened with GIO using the entry or address
   that came from the index, not from the typed text.
@@ -74,7 +82,8 @@ cleared from the preferences, and is never read by anything but Luciole.
 
 Every change must pass `make gate` (see `tests/gate.sh`):
 
-* linting, including rules that keep the pure core free of shell and UI imports;
+* linting, including rules that keep the pure core free of shell and UI imports, and a test that
+  no source file holds an invisible bidirectional or zero-width character ("Trojan Source");
 * unit tests, and **random-data tests** with fixed, replayable seeds;
 * **mutation checks**: the code is broken on purpose, one small change at a time,
   and the tests must fail each time. A mutant that survives is a hole in the tests;
@@ -90,13 +99,9 @@ Every change must pass `make gate` (see `tests/gate.sh`):
 
 ## Not covered yet
 
-* Names are shown as they are. Control characters and the bidirectional
-  override characters that can disguise a file name are not yet neutralised.
-* Opening a file does not check first that it still exists.
-* The history file is read without a size limit before its content is trimmed.
 * No test with a screen reader yet.
-* Memory is checked by resident size in the shell process, which is noisy; slow
-  leaks are only caught by the differential tests.
+* Who owns a file, and whether the user may read it, is not checked: opening is left to the
+  system, as in any file manager.
 
 ## Reporting a problem
 

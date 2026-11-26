@@ -130,6 +130,11 @@ overlay_alpha() {
     shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-overlay')) return String(a.get_theme_node().get_background_color().alpha); for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
 }
 
+# entry_text_length: the number of characters in the launcher's search field.
+entry_text_length() {
+    shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-entry') && a.get_text) return String(a.get_text().length); for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
+}
+
 rss_kb() {
     awk '/^VmRSS:/ {print $2}' "/proc/$SHELL_PID/status"
 }

@@ -7,6 +7,9 @@ import GLib from 'gi://GLib';
 import {Frecency} from '../core/frecency.js';
 
 const SAVE_DELAY_MS = 2000;
+// The history holds a few hundred short entries (see Frecency); a file far larger than that is
+// not ours, or is damaged, and is not read into memory at all.
+export const MAX_HISTORY_BYTES = 1024 * 1024;
 
 /**
  * Keeps the usage history in a private file of the user's data directory.
@@ -30,6 +33,20 @@ export class FrecencyStore {
     /** Reads the history. A missing, unreadable or corrupt file gives an empty one. */
     async load() {
         try {
+            const size = await new Promise((resolve, reject) => {
+                this.#file.query_info_async('standard::size', Gio.FileQueryInfoFlags.NONE, GLib.PRIORITY_DEFAULT, null,
+                    (file, result) => {
+                        try {
+                            resolve(file.query_info_finish(result).get_size());
+                        } catch (error) {
+                            reject(error);
+                        }
+                    });
+            });
+            if (size > MAX_HISTORY_BYTES) {
+                this.#log.warn(`history ignored: the file is ${size} bytes, more than the ${MAX_HISTORY_BYTES} allowed`);
+                return new Frecency();
+            }
             const bytes = await new Promise((resolve, reject) => {
                 this.#file.load_contents_async(null, (file, result) => {
                     try {

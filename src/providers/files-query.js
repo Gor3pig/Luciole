@@ -25,6 +25,16 @@ export function buildFtsTerms(raw) {
     return words.map(word => `${word}*`).join(' ');
 }
 
+/**
+ * Whether an address is a plain local file or folder: "file:///" and a path, nothing else. A
+ * host ("file://server/share"), another scheme, or an address with a query or fragment is not,
+ * so nothing but a path on this machine is ever handed to the system to open.
+ */
+export function isLocalFileUri(uri) {
+    // eslint-disable-next-line no-control-regex -- control characters are what is looked for
+    return typeof uri === 'string' && /^file:\/\/\/[^?#]*$/.test(uri) && !/[\u0000-\u001f\u007f]/.test(uri);
+}
+
 /** "file:///home/me/Documents/a%20b.odt" -> "/home/me/Documents/a b.odt". */
 export function pathOfUrl(url) {
     try {

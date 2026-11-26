@@ -14,6 +14,8 @@ import {ResultsView} from './results-view.js';
 const OPEN_MS = 120;
 const CLOSE_MS = 90;
 const SLIDE_PX = 8;
+// Longest text the search field takes (typed or pasted); a query is a few words.
+const MAX_QUERY_LENGTH = 256;
 
 /**
  * Keys that mean "I am going elsewhere": the Super key (Activities) and Alt+Tab
@@ -340,6 +342,7 @@ export class Launcher {
         describeWindow(overlay, _('Luciole search'));
 
         const text = entry.clutter_text;
+        text.max_length = MAX_QUERY_LENGTH;
         text.connect('text-changed', () => {
             this.#queryAt = GLib.get_monotonic_time();
             this.#doneAt = this.#queryAt;

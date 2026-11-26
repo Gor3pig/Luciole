@@ -257,6 +257,54 @@
    "label": "destroy does not wait for running searches",
    "old": "Promise.allSettled([...this.#running])",
    "new": "Promise.allSettled([])"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "a host is accepted in a file address",
+   "old": "/^file:\\/\\/\\/[^?#]*$/",
+   "new": "/^file:\\/\\/[^?#]*$/"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "a query or fragment is accepted",
+   "old": "/^file:\\/\\/\\/[^?#]*$/",
+   "new": "/^file:\\/\\/\\/.*$/"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "control characters accepted in an address",
+   "old": " && !/[\\u0000-\\u001f\\u007f]/.test(uri)",
+   "new": ""
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "any address that is text is accepted",
+   "old": "return typeof uri === 'string' && /^file",
+   "new": "return typeof uri === 'string' && true || /^file"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "existence not checked",
+   "old": "if (!await this.#exists(uri, this.#lifetime))",
+   "new": "if (false)"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "address not checked",
+   "old": "if (!isLocalFileUri(uri))",
+   "new": "if (false)"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "folder opened without checks",
+   "old": "await this.#openChecked(result.data.parentUrl);",
+   "new": "await this.#open(result.data.parentUrl, this.#lifetime);"
+  },
+  {
+   "file": "src/shell/persistence.js",
+   "label": "history size not limited",
+   "old": "if (size > MAX_HISTORY_BYTES) {",
+   "new": "if (false) {"
   }
  ]
 }

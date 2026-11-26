@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 import {
-    buildFtsTerms, displayFolder, isExcluded, isExcludedType, parentUrl, pathOfUrl, rowsToResults,
+    buildFtsTerms, displayFolder, isExcluded, isExcludedType, isLocalFileUri, parentUrl, pathOfUrl, rowsToResults,
 } from '../src/providers/files-query.js';
 import {assert, assertEquals, test} from './harness.js';
 
@@ -127,4 +127,14 @@ test('the icon comes from the given function, called with the file name', () => 
 
 test('no rows give no results', () => {
     assertEquals(rowsToResults([], {home: HOME}), []);
+});
+
+test('only a plain local path is a local file address', () => {
+    for (const ok of ['file:///home/me/a%20b.odt', 'file:///', 'file:///home/me/Documents', 'file:////odd//double'])
+        assert(isLocalFileUri(ok), `${ok} should be accepted`);
+    for (const bad of ['file://server/share/x', 'file://localhost/etc/passwd', 'http://example.org/x', 'smb://h/x', 'FILE:///a',
+        'file:///a?x=1', 'file:///a#frag', 'file:///a\nb', 'file:///a\u0000b', 'file:///a\u007fb', 'file:/a', 'file:', '', ' file:///a'])
+        assert(!isLocalFileUri(bad), `${JSON.stringify(bad)} should be refused`);
+    for (const odd of [undefined, null, 5, {}, ['file:///a']])
+        assert(!isLocalFileUri(odd), `${JSON.stringify(odd)} should be refused`);
 });

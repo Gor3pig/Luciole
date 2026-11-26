@@ -61,6 +61,12 @@
    "label": "the launcher is not destroyed on disable",
    "old": "            disposables.add(() => launcher.destroy());\n",
    "new": ""
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the search field is not capped",
+   "old": "        text.max_length = MAX_QUERY_LENGTH;\n",
+   "new": ""
   }
  ]
 }

@@ -6,7 +6,7 @@ import GLib from 'gi://GLib';
 import Tracker from 'gi://Tracker';
 
 import {Provider} from '../core/provider.js';
-import {buildFtsTerms, rowsToResults} from './files-query.js';
+import {buildFtsTerms, isLocalFileUri, rowsToResults} from './files-query.js';
 
 const LOCALSEARCH_BUS_NAME = 'org.freedesktop.LocalSearch3';
 
@@ -33,6 +33,21 @@ function openLocalSearch(cancellable) {
                     resolve(Tracker.SparqlConnection.bus_new_finish(result));
                 } catch (error) {
                     reject(error);
+                }
+            });
+    });
+}
+
+/** Whether the file or folder is still there, asked without blocking. */
+function uriExists(uri, cancellable) {
+    return new Promise(resolve => {
+        Gio.File.new_for_uri(uri).query_info_async('standard::name', Gio.FileQueryInfoFlags.NONE,
+            GLib.PRIORITY_DEFAULT, cancellable, (file, result) => {
+                try {
+                    file.query_info_finish(result);
+                    resolve(true);
+                } catch {
+                    resolve(false);
                 }
             });
     });
@@ -122,6 +137,7 @@ function iconForName(name) {
 export class FilesProvider extends Provider {
     #openConnection;
     #open;
+    #exists;
     #connection = null;
     #connecting = null;
     #destroyed = false;
@@ -138,11 +154,13 @@ export class FilesProvider extends Provider {
      * @param {object} [options]
      * @param {(cancellable: Gio.Cancellable) => Promise<object>} [options.openConnection] - for tests
      * @param {(uri: string, cancellable: Gio.Cancellable) => Promise<void>} [options.openUri] - for tests
+     * @param {(uri: string, cancellable: Gio.Cancellable) => Promise<boolean>} [options.exists] - for tests
      */
-    constructor({openConnection = openLocalSearch, openUri: open = openUri} = {}) {
+    constructor({openConnection = openLocalSearch, openUri: open = openUri, exists = uriExists} = {}) {
         super();
         this.#openConnection = openConnection;
         this.#open = open;
+        this.#exists = exists;
     }
 
     get id() {
@@ -229,8 +247,18 @@ export class FilesProvider extends Provider {
         });
     }
 
+    // Only a local file or folder that is still there is opened: the index may be out of date,
+    // and nothing but a path on this machine may be handed to the system.
+    async #openChecked(uri) {
+        if (!isLocalFileUri(uri))
+            throw new Error('refusing to open an address that is not a local file');
+        if (!await this.#exists(uri, this.#lifetime))
+            throw new Error('the file is no longer there');
+        await this.#open(uri, this.#lifetime);
+    }
+
     async activate(result) {
-        await this.#open(result.data.url, this.#lifetime);
+        await this.#openChecked(result.data.url);
     }
 
     secondaryActions(_result) {
@@ -240,7 +268,7 @@ export class FilesProvider extends Provider {
 
     async activateAction(result, action) {
         if (action.id === 'open-folder')
-            await this.#open(result.data.parentUrl, this.#lifetime);
+            await this.#openChecked(result.data.parentUrl);
     }
 
     // One connection, opened on demand and shared by searches that overlap. If it

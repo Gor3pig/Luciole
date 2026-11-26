@@ -141,6 +141,21 @@ if [ "$ENABLE" = 1 ]; then
     wait_count 'closed' $((CLOSED + 1)) || fail "click inside: Escape did not close the launcher afterwards"
     echo "clicks: outside the panel closes, inside the panel does not"
 
+    # The search field takes at most 256 characters, however much is typed or pasted.
+    OPENED=$(count opened)
+    CLOSED=$(count closed)
+    combo
+    wait_count 'opened' $((OPENED + 1)) || fail "length: the launcher did not open"
+    LONG=$(printf 'abcdefghij%.0s' $(seq 1 30))
+    typed "$LONG"
+    sleep 1
+    LENGTH=$(entry_text_length)
+    [ "$LENGTH" = 256 ] || fail "the search field took $LENGTH characters out of the 300 typed (expected 256)"
+    escape
+    escape
+    wait_count 'closed' $((CLOSED + 1)) || fail "length: the launcher did not close"
+    echo "length: the search field is capped at 256 characters"
+
     # Super and Alt+Tab mean "I am going elsewhere": the shell ignores them while the
     # launcher holds the keyboard, so the launcher closes (and the keys then work again).
     for leave in "key Super_L" "chord Alt_L+Tab"; do
