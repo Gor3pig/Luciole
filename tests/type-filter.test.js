@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Luciole contributors
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+import Gio from 'gi://Gio';
+
 import {FILE_TYPES, fileIsOfType, parseTypeQuery, typeLabels, typeNamed, typePrefix} from '../src/core/type-filter.js';
 import {assert, assertEquals, test} from './harness.js';
 
@@ -80,4 +82,26 @@ test('every type has a translated name', () => {
     const labels = typeLabels(text => `[${text}]`);
     for (const type of FILE_TYPES)
         assert(typeof labels[type.id] === 'string' && labels[type.id].startsWith('['), type.id);
+});
+
+test('each extension of a type is accepted through the MIME type the system gives it too', () => {
+    // The index names a file's type the way GIO does: an extension listed under a type whose MIME
+    // list missed its MIME type would be left out whenever the index knows the type.
+    const missing = [];
+    for (const type of FILE_TYPES) {
+        for (const extension of type.extensions) {
+            const [mime, uncertain] = Gio.content_type_guess(`file.${extension}`, null);
+            if (uncertain || mime === 'application/octet-stream')
+                continue;
+            if (!fileIsOfType(type.id, {mime, name: `file.${extension}`}))
+                missing.push(`${type.id}: .${extension} is ${mime}`);
+        }
+    }
+    // Compressed tar archives have a type of their own.
+    for (const name of ['file.tar.gz', 'file.tar.xz', 'file.tar.bz2', 'file.tar.zst', 'file.tgz']) {
+        const [mime, uncertain] = Gio.content_type_guess(name, null);
+        if (!uncertain && !fileIsOfType('archives', {mime, name}))
+            missing.push(`archives: ${name} is ${mime}`);
+    }
+    assertEquals(missing, []);
 });

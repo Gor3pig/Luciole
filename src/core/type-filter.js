@@ -18,13 +18,16 @@ export const FILE_TYPES = [
         mime: ['application/pdf', 'application/vnd.oasis.opendocument.', 'application/msword', 'application/vnd.openxmlformats-officedocument.', 'application/vnd.ms-', 'application/rtf'],
         extensions: ['pdf', 'odt', 'ods', 'odp', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'rtf']},
     {id: 'pdf', names: ['pdf'], mime: ['application/pdf'], extensions: ['pdf']},
-    {id: 'text', names: ['texte', 'text', 'textes', 'texts'], mime: ['text/'],
+    {id: 'text', names: ['texte', 'text', 'textes', 'texts'], mime: ['text/', 'application/json', 'application/xml', 'application/yaml', 'application/x-yaml'],
         extensions: ['txt', 'md', 'markdown', 'csv', 'log', 'html', 'htm', 'xml', 'json', 'yaml', 'yml', 'ini', 'conf']},
     {id: 'folders', names: ['dossiers', 'dossier', 'folders', 'folder'], mime: ['inode/directory'], extensions: []},
     {id: 'music', names: ['musique', 'music', 'audio'], mime: ['audio/'], extensions: ['mp3', 'ogg', 'oga', 'flac', 'wav', 'm4a', 'opus', 'aac']},
     {id: 'videos', names: ['videos', 'video', 'films', 'film'], mime: ['video/'], extensions: ['mp4', 'mkv', 'webm', 'avi', 'mov', 'ogv', 'm4v']},
     {id: 'archives', names: ['archives', 'archive', 'zip'],
-        mime: ['application/zip', 'application/x-tar', 'application/gzip', 'application/x-7z-compressed', 'application/x-rar', 'application/x-xz', 'application/x-bzip', 'application/zstd', 'application/x-compressed-tar'],
+        mime: ['application/zip', 'application/x-tar', 'application/gzip', 'application/x-7z-compressed', 'application/x-rar',
+            'application/vnd.rar', 'application/x-xz', 'application/x-bzip', 'application/x-bzip2', 'application/zstd',
+            'application/x-compressed-tar', 'application/x-xz-compressed-tar', 'application/x-bzip-compressed-tar',
+            'application/x-bzip2-compressed-tar', 'application/x-zstd-compressed-tar'],
         extensions: ['zip', 'tar', 'gz', 'tgz', '7z', 'rar', 'xz', 'bz2', 'zst']},
 ];
 

@@ -10,12 +10,17 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 const NAME = 'org.gnome.NautilusPreviewer';
 const PATH = '/org/gnome/NautilusPreviewer';
 const IFACE = 'org.gnome.NautilusPreviewer2';
-// If the preview has not shown up by then, it is not coming.
-const SHOW_TIMEOUT_MS = 2000;
+// If the preview has not shown up by then (and no window of it is on screen), it is not coming.
+// The previewer may take a few seconds to start the first time.
+const SHOW_TIMEOUT_MS = 5000;
 
 // The previewer's window, as the shell sees it.
 function isPreviewWindow(window) {
     return window?.get_gtk_application_id?.() === NAME || window?.get_wm_class?.() === NAME;
+}
+
+function previewWindowShown() {
+    return global.get_window_actors().some(candidate => isPreviewWindow(candidate.meta_window));
 }
 
 // The previewer is not started by the user's own click, so the shell would not give its window the
@@ -79,9 +84,7 @@ export class Previewer {
             PATH, IFACE, Gio.DBusSignalFlags.NONE, (_bus, _sender, _path, _iface, _signal, params) => {
                 const visible = params.deepUnpack()[1]?.Visible?.deepUnpack?.();
                 if (visible === true) {
-                    current.seen = true;
-                    // The window may already be there (a preview already open), or come a moment later.
-                    this.#focusSoon(current);
+                    this.#seen(current);
                 } else if (visible === false) {
                     this.#log.debug('preview closed');
                 }
@@ -95,6 +98,9 @@ export class Previewer {
         });
         current.timer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, SHOW_TIMEOUT_MS, () => {
             current.timer = 0;
+            // A window of the previewer on screen means the preview is there, whatever was heard.
+            if (!current.seen && previewWindowShown())
+                this.#seen(current);
             if (!current.seen)
                 this.#finish(current, 'timeout');
             return GLib.SOURCE_REMOVE;
@@ -106,8 +112,34 @@ export class Previewer {
                 } catch (error) {
                     this.#log.warn(`the file previewer failed: ${error.message}`);
                     this.#finish(current, 'error');
+                    return;
+                }
+                // A preview already on screen shows the new file without its Visible property
+                // changing: read it once.
+                this.#readVisible(current);
+            });
+    }
+
+    #readVisible(current) {
+        this.#bus.call(NAME, PATH, 'org.freedesktop.DBus.Properties', 'Get', new GLib.Variant('(ss)', [IFACE, 'Visible']),
+            new GLib.VariantType('(v)'), Gio.DBusCallFlags.NONE, -1, null, (bus, result) => {
+                try {
+                    const [value] = bus.call_finish(result).deepUnpack();
+                    if (value.deepUnpack() === true && this.#current === current)
+                        this.#seen(current);
+                } catch {
+                    // Not readable: the property change, or the timeout, will tell.
                 }
             });
+    }
+
+    // The preview is on screen: its end can now be noticed, and its window is given the keyboard
+    // (it may already be there, or come a moment later).
+    #seen(current) {
+        if (this.#current !== current)
+            return;
+        current.seen = true;
+        this.#focusSoon(current);
     }
 
     /** Stops following the current preview, without calling it back. The preview stays on screen. */

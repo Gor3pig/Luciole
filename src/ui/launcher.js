@@ -65,6 +65,7 @@ export class Launcher {
     // The type of file the search is restricted to, shown as a label in the field ("/pdf"), or null.
     #typeChip = null;
     #chipPending = false;
+    #idleIds = new Set();
     #typeLabel = null;
     // The field's text before the last change, and whether the window is putting it back itself.
     #lastText = '';
@@ -279,6 +280,9 @@ export class Launcher {
     }
 
     destroy() {
+        for (const id of this.#idleIds)
+            GLib.source_remove(id);
+        this.#idleIds.clear();
         this.#endSuspension();
         this.#isOpen = false;
         this.#resetMenu();
@@ -296,10 +300,15 @@ export class Launcher {
         this.#items = [];
     }
 
+    // Where the selection is in the list (-1 when nothing is selected).
+    #selectedIndex() {
+        return this.#items.findIndex(item => item.key === this.#selectedKey);
+    }
+
     #moveSelection(delta) {
         if (this.#items.length === 0)
             return;
-        const current = this.#items.findIndex(item => item.key === this.#selectedKey);
+        const current = this.#selectedIndex();
         const next = Math.min(this.#items.length - 1, Math.max(0, current + delta));
         // Noted first: what the chosen row shows ("Space: preview") depends on it.
         this.#navigated = true;
@@ -344,6 +353,7 @@ export class Launcher {
         // fighting the window for the keyboard grab.
         if (item.result.closeBeforeActivate === true)
             this.close();
+        this.#log.debug(`activating ${item.key}${this.#isOpen ? '' : ' (window closed first)'}`);
         this.#log.guard('activating a result', () => this.#onActivate(item));
         this.close();
     }
@@ -359,12 +369,15 @@ export class Launcher {
             this.#showConfirmation(text);
     }
 
-    #activateSecondary() {
+    // Ctrl+Enter: the window closes once the action ran; a result without one (a calculation, a
+    // type of file) leaves it as it is.
+    async #activateSecondary() {
         const item = this.#items.find(candidate => candidate.key === this.#selectedKey);
         if (!item)
             return;
-        this.#log.guard('running the secondary action', () => this.#onSecondary(item));
-        this.close();
+        const ran = await this.#log.guardAsync('running the secondary action', () => this.#onSecondary(item), false);
+        if (ran === true && this.#isOpen && this.#selectedKey === item.key)
+            this.close();
     }
 
     #activateSelected() {
@@ -431,6 +444,11 @@ export class Launcher {
     #setFilter(id) {
         if (id === this.#filter || !this.#isOpen)
             return;
+        // A type of file means Files: choosing another source (or All) takes the type away.
+        if (this.#typeChip !== null) {
+            this.#typeChip = null;
+            this.#typeLabel?.hide();
+        }
         this.#filter = id;
         this.#log.guard('restricting the search', () => this.#onFilter(id));
         this.#markChips();
@@ -500,6 +518,17 @@ export class Launcher {
     }
 
     // ---- The preview of a file (GNOME's previewer) ----
+
+    // Runs `callback` once the current change is over, unless the window is destroyed first.
+    #idle(callback) {
+        const id = GLib.idle_add(GLib.PRIORITY_HIGH_IDLE, () => {
+            this.#idleIds.delete(id);
+            if (this.#entry)
+                this.#log.guard('finishing a change of the field', callback);
+            return GLib.SOURCE_REMOVE;
+        });
+        this.#idleIds.add(id);
+    }
 
     #selectedItem() {
         return this.#items.find(candidate => candidate.key === this.#selectedKey) ?? null;
@@ -649,6 +678,13 @@ export class Launcher {
                 this.#showMenu();
             return;
         }
+        // Opening a result that runs once the window is gone (the system's) goes the usual way.
+        if (action.id === 'open' && item.result.closeBeforeActivate === true) {
+            this.#resetMenu();
+            this.#hideMenu();
+            this.#activate(item);
+            return;
+        }
         const outcome = await this.#log.guardAsync('running an action', () => this.#onRunAction(item, action), {ok: false, confirmation: null});
         if (stale())
             return;
@@ -765,6 +801,9 @@ export class Launcher {
             return;
         this.#recalling = true;
         try {
+            // A search brought back is read from scratch: it carries its own type, if any.
+            if (this.#typeChip !== null)
+                this.#setTypeChip(null);
             this.#entry.set_text(text);
             this.#entry.clutter_text.set_selection(0, -1);
         } finally {
@@ -913,14 +952,13 @@ export class Launcher {
                 // The space is taken back once this change is over: changing the text from inside
                 // its own signal would come back as one more change, and a new search.
                 this.#restoring = true;
-                GLib.idle_add(GLib.PRIORITY_HIGH_IDLE, () => {
+                this.#idle(() => {
                     try {
                         if (entry.get_text() === now)
                             entry.set_text(before);
                     } finally {
                         this.#restoring = false;
                     }
-                    return GLib.SOURCE_REMOVE;
                 });
                 this.#log.guardAsync('previewing', () => this.#preview(item));
                 return;
@@ -931,7 +969,7 @@ export class Launcher {
             // field keeps only the words. Done once this change is over, like the space above.
             if (this.#typeChip === null && !this.#chipPending && parseTypeQuery(now)?.type) {
                 this.#chipPending = true;
-                GLib.idle_add(GLib.PRIORITY_HIGH_IDLE, () => {
+                this.#idle(() => {
                     this.#chipPending = false;
                     // Read again: more may have been typed since.
                     const typed = this.#typeChip === null ? parseTypeQuery(entry.get_text()) : null;
@@ -946,7 +984,6 @@ export class Launcher {
                         }
                         this.#searchAgain();
                     }
-                    return GLib.SOURCE_REMOVE;
                 });
             }
             // What is typed changes the search: the menu of the old result goes away.
@@ -1017,8 +1054,9 @@ export class Launcher {
                     this.#recall(this.#history.newer(this.#queries()));
                 return Clutter.EVENT_STOP;
             case Clutter.KEY_Up:
-                // In an empty field (nothing to choose from yet) the up arrow brings a search back.
-                if (this.#history.active || entry.get_text() === '')
+                // In an empty field the up arrow brings a search back, unless the user went down the
+                // list of recent items: then it goes back up it first.
+                if (this.#history.active || (entry.get_text() === '' && this.#selectedIndex() <= 0))
                     this.#recall(this.#history.older(this.#queries()));
                 else
                     this.#moveSelection(-1);

@@ -71,14 +71,6 @@ export function backdropClass(level) {
 }
 
 /**
- * Whether the launcher animates: the user's own choice can only turn animations off, never
- * force them on when the system has them off (or asks for reduced motion).
- *
- * @param {boolean} systemAllows
- * @param {unknown} preference - the setting; anything but an explicit false counts as on
- * @returns {boolean}
- */
-/**
  * Whether the system lets the interface move: animations are on and, where the shell knows the
  * setting (GNOME 51 and later), reduced motion was not asked for. GNOME 50 has no such setting:
  * `reduceValue` is then undefined and only the animations switch counts.
@@ -92,6 +84,14 @@ export function systemMotion({enableAnimations, reducedMotion, reduceValue}) {
     return reduceValue === undefined || reducedMotion !== reduceValue;
 }
 
+/**
+ * Whether the launcher animates: the user's own choice can only turn animations off, never
+ * force them on when the system has them off (or asks for reduced motion).
+ *
+ * @param {boolean} systemAllows
+ * @param {unknown} preference - the setting; anything but an explicit false counts as on
+ * @returns {boolean}
+ */
 export function motionEnabled(systemAllows, preference) {
     return systemAllows === true && preference !== false;
 }

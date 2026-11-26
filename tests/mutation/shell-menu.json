@@ -1,5 +1,5 @@
 {
- "description": "Mutants for the menu of actions in the live launcher. Not listed because equivalent or out of reach: the staleness check of an answer (the gap between asking and the answer is too short to close the window inside it, in a test), and forgetting the menu when closing (opening forgets it too). Not listed because it cannot be provoked in a live shell: a copy that fails (the clipboard always works there); it is covered by the unit tests of the controller. Also not listed because equivalent: the guard on Enter during the confirmation (a field that is not editable does not send Enter at all). Each mutant runs only the part of tests/shell/files.sh that covers it (FILES_PARTS); the whole script runs in the gate.",
+ "description": "Mutants for the menu of actions in the live launcher. Not listed because equivalent or out of reach: the staleness check of an answer (the gap between asking and the answer is too short to close the window inside it, in a test), and forgetting the menu when closing (opening forgets it too). Not listed because it cannot be provoked in a live shell: a copy that fails (the clipboard always works there); it is covered by the unit tests of the controller. Also not listed because equivalent: the guard on Enter during the confirmation (a field that is not editable does not send Enter at all). Each mutant runs only the part of tests/shell/files.sh that covers it (FILES_PARTS); the whole script runs in the gate. A preview already on screen is noticed twice (its Visible state read after ShowFile, and its window at the timeout): the mutant removes both.",
  "slow": true,
  "timeout": 400,
  "command": [
@@ -605,6 +605,60 @@
     "FILES_PARTS=types",
     "sh",
     "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the menu's Open runs a system result with the window open",
+   "old": "        if (action.id === 'open' && item.result.closeBeforeActivate === true) {",
+   "new": "        if (false) {",
+   "command": [
+    "env",
+    "FILES_PARTS=system",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "choosing another source keeps the type of file",
+   "old": "        if (this.#typeChip !== null) {\n            this.#typeChip = null;\n            this.#typeLabel?.hide();\n        }\n        this.#filter = id;",
+   "new": "        this.#filter = id;",
+   "command": [
+    "env",
+    "FILES_PARTS=types",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "Ctrl+Enter closes even when nothing ran",
+   "old": "        if (ran === true && this.#isOpen && this.#selectedKey === item.key)",
+   "new": "        if (this.#isOpen)",
+   "command": [
+    "env",
+    "FILES_PARTS=calc",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/shell/previewer.js",
+   "label": "a preview already on screen is not noticed (neither read nor seen as a window)",
+   "old": "                this.#readVisible(current);\n",
+   "new": "",
+   "command": [
+    "env",
+    "FILES_PARTS=preview",
+    "sh",
+    "tests/shell/files.sh"
+   ],
+   "also": [
+    {
+     "old": "            if (!current.seen && previewWindowShown())\n                this.#seen(current);\n",
+     "new": ""
+    }
    ]
   }
  ]

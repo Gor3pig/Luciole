@@ -67,12 +67,61 @@ expect() {
            esac ;;
     esac
 }
+# type_label: the type of file shown in the field ("PDF"), or "hidden".
+type_label() {
+    shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-type-chip')) return a.visible ? a.get_text() : 'hidden'; for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage) || 'hidden'"
+}
+# last_query: the query of the latest results.
+last_query() { grep -F '[Luciole] results:' "$LOG" | tail -n 1 | sed 's/.* query=//'; }
 queries_in_file() {
     sleep 0.3
     sed -n 's/.*"queries":\[\([^]]*\)\].*/\1/p' "$QUERIES_FILE" 2>/dev/null
 }
 
 case "$MODE" in
+recent)
+    open_launcher
+    sleep 0.4
+    last_selected() { grep -F '[Luciole] selected: ' "$LOG" | tail -n 1 | sed 's/.*selected: //'; }
+    grep -F '[Luciole] results:' "$LOG" | tail -n 1 | grep -qE 'results: 3 first=Zquok Ant query=$' ||
+        fail "recent: the empty field should list the three recent applications ($(grep -F '[Luciole] results:' "$LOG" | tail -n 1))"
+    press Down
+    press Down
+    sleep 0.3
+    [ "$(last_selected)" = apps:luciole-test-zquok-Cat.desktop ] || fail "recent: two down arrows should reach the third ('$(last_selected)')"
+    press Up
+    sleep 0.3
+    [ "$(last_selected)" = apps:luciole-test-zquok-Bee.desktop ] || fail "recent: the up arrow should go back up the list ('$(last_selected)')"
+    [ "$(field_text)" = - ] || fail "recent: the up arrow brought a search back ('$(field_text)') instead of moving up the list"
+    press Up
+    sleep 0.3
+    [ "$(last_selected)" = apps:luciole-test-zquok-Ant.desktop ] && [ "$(field_text)" = - ] || fail "recent: the second up arrow should reach the first ('$(last_selected)', '$(field_text)')"
+    press Up
+    expect "up at the top of the list" firefox "1 3"
+    echo "history: in the list of recent items the up arrow goes up first, then brings searches back"
+    close_launcher
+    ;;
+types)
+    # A search with a type comes back as the label and the words; the next one comes back without it.
+    open_launcher
+    press Up
+    sleep 0.4
+    [ "$(type_label)" = PDF ] || fail "types: the remembered '/pdf facture' did not bring the PDF label back ('$(type_label)')"
+    [ "$(field_text)" = facture ] || fail "types: the field holds '$(field_text)', expected 'facture'"
+    press Up
+    sleep 0.4
+    [ "$(type_label)" = hidden ] || fail "types: the PDF label stayed on the next remembered search"
+    [ "$(field_text)" = notes ] || fail "types: the field holds '$(field_text)', expected 'notes'"
+    [ "$(last_query)" = notes ] || fail "types: the search sent was '$(last_query)', expected 'notes' (no type)"
+    press Down
+    sleep 0.4
+    [ "$(type_label)" = PDF ] && [ "$(field_text)" = facture ] || fail "types: going forward did not bring '/pdf facture' back ($(type_label) '$(field_text)')"
+    press Down
+    sleep 0.4
+    [ "$(type_label)" = hidden ] && [ "$(field_text)" = - ] || fail "types: back to the empty field, the label stayed ($(type_label) '$(field_text)')"
+    echo "history: a remembered search keeps its own type, and only its own"
+    close_launcher
+    ;;
 arrows)
     open_launcher
     expect "empty field on opening" '-' hidden

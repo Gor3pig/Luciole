@@ -145,3 +145,10 @@ test('a history that shrank or was cleared meanwhile never leaves the cursor out
     assertEquals(cursor.newer([]), '', 'cleared: back to the empty field');
     assert(!cursor.active, 'inactive');
 });
+
+test('the longest search the field takes is remembered, after a type of file too', () => {
+    const history = new QueryHistory();
+    const words = 'x'.repeat(256);
+    history.record(`/documents ${words}`);
+    assertEquals(history.entries, [`/documents ${words}`]);
+});

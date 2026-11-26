@@ -272,6 +272,24 @@ wait_log "[Luciole] closed" $((CLOSED_SYS + 1)) || fail "system: the window did 
 i=0; while [ ! -e "$WORK/panel-ran" ] && [ "$i" -lt 60 ]; do sleep 0.1; i=$((i + 1)); done
 [ -e "$WORK/panel-ran" ] || fail "system: opening the panel did not run its launcher"
 echo "ok: a Settings panel is found by its name, and Enter opens it after the window closes"
+# The same through the menu (Ctrl+K, then Open): the window is gone before the panel is opened.
+sleep 0.4
+reopen_launcher
+typed "panneau luciole"
+wait_last 'results: 1 first=Panneau Luciole de test query=panneau luciole' || fail "the test panel was not found again (last: $(last_results))"
+CLOSED_SYS=$(launcher_closed_count)
+ACTIVATED=$(grep -cF '[Luciole] activating ' "$LOG")
+rm -f "$WORK/panel-ran"
+chord Control_L+k
+sleep 0.5
+press Return
+wait_log "[Luciole] closed" $((CLOSED_SYS + 1)) || fail "system: the window did not close after Open in the menu"
+i=0; while [ ! -e "$WORK/panel-ran" ] && [ "$i" -lt 60 ]; do sleep 0.1; i=$((i + 1)); done
+[ -e "$WORK/panel-ran" ] || fail "system: Open in the menu did not open the panel"
+[ "$(grep -cF '[Luciole] activating ' "$LOG")" = $((ACTIVATED + 1)) ] &&
+    grep -F '[Luciole] activating ' "$LOG" | tail -n 1 | grep -qF '(window closed first)' ||
+    fail "system: Open in the menu did not run the panel the usual way, once the window was closed"
+echo "ok: Open in the menu of a panel also closes the window first"
 sleep 0.4
 reopen_launcher
 typed "wifi"
@@ -373,6 +391,32 @@ shell_eval "global.get_window_actors().filter(a => a.meta_window.get_wm_class() 
 sleep 1.5
 [ "$(grep -cF "back from the preview" "$LOG")" = "$BACK" ] || fail "preview: the old search came back after the launcher had been opened again"
 echo "ok: Ctrl+Y previews; opening Luciole during a preview starts fresh and nothing comes back afterwards"
+# A preview already on screen when another is asked for: it shows the new file without saying it
+# became visible. The window must stay out of the way until that preview is closed.
+reopen_launcher
+typed rapport
+wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
+HIDDEN=$(grep -cF "hidden for the preview" "$LOG")
+BACK=$(grep -cF "back from the preview" "$LOG")
+chord Control_L+y
+wait_log "hidden for the preview" $((HIDDEN + 1)) || fail "preview: Ctrl+Y did not show the first preview"
+sleep 1.5
+combo
+sleep 0.6
+typed rapport
+wait_last 'results: 1 first=rapport' || fail "results did not come back during the preview (last: $(last_results))"
+chord Control_L+y
+wait_log "hidden for the preview" $((HIDDEN + 2)) || fail "preview: Ctrl+Y did not step aside for the preview already shown"
+sleep 6
+[ "$(grep -cF "back from the preview" "$LOG")" = "$BACK" ] || fail "preview: the window came back while the preview was still on screen"
+shell_eval "global.get_window_actors().filter(a => a.meta_window.get_wm_class() === 'org.gnome.NautilusPreviewer').forEach(a => a.meta_window.delete(global.get_current_time())); 'closed'" >/dev/null
+wait_log "back from the preview" $((BACK + 1)) || fail "preview: the window did not come back once the preview already shown was closed"
+echo "ok: with a preview already on screen, the window waits for it to be closed"
+clear_entry 8
+CLOSED_PV=$(launcher_closed_count)
+escape
+wait_log "[Luciole] closed" $((CLOSED_PV + 1)) || fail "preview: Escape did not close the window afterwards"
+sleep 0.4
 reopen_launcher
 typed rapport
 wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
@@ -453,7 +497,18 @@ sleep 0.4
 reopen_launcher
 [ "$(type_label)" = hidden ] || fail "type filter: reopening kept the type ('$(type_label)')"
 echo "ok: reopening starts without a type"
-clear_entry 4
+# Choosing another source while a type is shown takes the type away: what the chips say is what is searched.
+typed "/pdf facture"
+wait_last 'results: 1 first=Facture mars.pdf query=/pdf facture' || fail "type filter: /pdf facture not found again (last: $(last_results))"
+chord Control_L+1
+sleep 0.6
+[ "$(type_label)" = hidden ] || fail "type filter: choosing Applications kept the PDF label"
+[ "$(chip_info)" = "5 1" ] || fail "type filter: the Applications chip is not the chosen one ('$(chip_info)')"
+wait_last 'results: 1 first=Facture Express query=facture$' || fail "type filter: Applications should search 'facture' among applications (last: $(last_results))"
+chord Control_L+0
+sleep 0.4
+echo "ok: choosing another source takes the type of file away"
+clear_entry 8
 sleep 0.3
 fi
 
@@ -472,6 +527,15 @@ wait_log "[Luciole] closed" $((CLOSED_CALC + 1)) || fail "calculator: the window
 echo "ok: a calculation is answered first; Enter copies the answer, confirms, then closes"
 sleep 0.4
 reopen_launcher
+# Ctrl+Enter on an answer (it has no other action) does nothing, and the window stays.
+typed "3*3"
+wait_last 'results: 1 first=9 query=3\*3' || fail "no answer for 3*3 (last: $(last_results))"
+CLOSED_CALC=$(launcher_closed_count)
+chord Control_L+Return
+sleep 0.6
+[ "$(launcher_closed_count)" = "$CLOSED_CALC" ] || fail "calculator: Ctrl+Enter on an answer closed the window"
+echo "ok: Ctrl+Enter on an answer leaves the window open"
+clear_entry 4
 typed "5 km en m"
 wait_last 'results: 1 first=5000 m query=5 km en m' || fail "no answer for the conversion (last: $(last_results))"
 CLOSED_CALC=$(launcher_closed_count)

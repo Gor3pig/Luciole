@@ -8,11 +8,12 @@
 // caller records it when a result is opened), never while it is being typed.
 
 import {sanitizeLabel} from './text.js';
+import {FILE_TYPES, typePrefix} from './type-filter.js';
 
 export const MAX_QUERIES = 20;
-// The search field takes at most this many characters (see the launcher); a longer text is
-// not a search the user typed, so it is not kept.
-export const MAX_QUERY_CHARS = 256;
+// The search field takes at most 256 characters (see the launcher), after a type of file
+// ("/documents ") when one is chosen; a longer text is not a search the user typed, so it is not kept.
+export const MAX_QUERY_CHARS = 256 + Math.max(...FILE_TYPES.map(type => typePrefix(type.id).length));
 
 // One text in one form: no control or bidirectional characters, single spaces, trimmed.
 function normalize(text) {

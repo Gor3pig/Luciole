@@ -10,13 +10,13 @@
   {
    "file": "src/ui/launcher.js",
    "label": "the up arrow does nothing in an empty field",
-   "old": "if (this.#history.active || entry.get_text() === '')",
+   "old": "if (this.#history.active || (entry.get_text() === '' && this.#selectedIndex() <= 0))",
    "new": "if (this.#history.active)"
   },
   {
    "file": "src/ui/launcher.js",
    "label": "the up arrow recalls even with text typed",
-   "old": "if (this.#history.active || entry.get_text() === '')",
+   "old": "if (this.#history.active || (entry.get_text() === '' && this.#selectedIndex() <= 0))",
    "new": "if (true)"
   },
   {
@@ -54,6 +54,18 @@
    "label": "turning the setting off keeps the searches",
    "old": "            if (settings.get_boolean('remember-queries'))\n                return;\n            queryHistory.clear();",
    "new": "            if (true)\n                return;\n            queryHistory.clear();"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "a remembered search keeps the type of the one before",
+   "old": "            if (this.#typeChip !== null)\n                this.#setTypeChip(null);\n            this.#entry.set_text(text);",
+   "new": "            this.#entry.set_text(text);"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "in the list of recent items the up arrow brings a search back",
+   "old": "(entry.get_text() === '' && this.#selectedIndex() <= 0)",
+   "new": "entry.get_text() === ''"
   }
  ]
 }

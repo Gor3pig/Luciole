@@ -89,17 +89,21 @@ duplicates).
   nothing else: only the shell's own eight identifiers are ever passed back to it, and the shell
   re-checks that an action is available and confirms the drastic ones with its own dialog. Actions
   that end the session are never the top hit and are never selected for the user: Enter does
-  nothing until an arrow key has chosen them. A panel is opened only if it is one of the installed
+  nothing until an arrow key has chosen them. They run only once the launcher is gone, whether
+  chosen with Enter or with Open in the menu of actions, so the shell's own dialog never has to
+  share the keyboard with it. A panel is opened only if it is one of the installed
   desktop files named `gnome-*-panel.desktop`. Luciole reads no setting.
 * **The preview shows only a local file that still exists**, through GNOME's own previewer (the
   one the Files application uses), asked over the session bus with the file's address and nothing
   else. While it is shown, Luciole lets go of the keyboard and gives it to the preview window; it
-  comes back when the previewer says the preview was closed, or after two seconds if it never
-  appeared. Without the previewer installed, no preview is offered.
+  comes back when the previewer says the preview was closed, or after five seconds if no preview
+  window ever appeared. A preview already on screen is recognised as such (its state is read, not
+  only waited for), so the launcher never comes back over it. Without the previewer installed, no preview is offered.
 * **A type of file is picked from a fixed list.** In "/pdf facture" only the words reach the
   index, as the bound full-text terms they always were; the type is one of eight known ones, and is
   applied by comparing each file's MIME type (or, when the index does not know it, its extension)
-  with that list. Anything else after "/" is searched as plain text.
+  with that list. A test checks that every extension listed for a type is accepted through the
+  MIME type the system gives it as well. Anything else after "/" is searched as plain text.
 * **No dynamic code.** No `eval`, no `Function`, no shell command built from
   text. Applications and files are opened with GIO using the entry or address
   that came from the index, not from the typed text.
@@ -163,6 +167,6 @@ cache.
 
 ## Reporting a problem
 
-Open an issue on the project's repository. For a vulnerability, please do not
-include working exploit details in a public issue; say that you have a security
-report and a maintainer will arrange a private channel.
+Open an issue on the project's repository for a bug. For a vulnerability, please use the
+repository's private vulnerability reporting (Security tab, "Report a vulnerability") instead of a
+public issue.

@@ -28,9 +28,21 @@ Name=org.freedesktop.LocalSearch3
 Exec=/usr/bin/false
 SERVICE
 
-run() { # run <mode>: a fresh shell on a fresh D-Bus session, with a prepared history
+run() { # run <mode> [queries as JSON]: a fresh shell on a fresh D-Bus session, with a prepared history
     mkdir -p "$WORK/data/luciole" "$WORK/config-$1/glib-2.0/settings"
-    printf '{"version":1,"queries":["firefox","calculatrice","notes"]}' >"$WORK/data/luciole/queries.json"
+    # Three applications of the test's own, used recently in the "recent" run: the empty field lists them.
+    mkdir -p "$WORK/data/applications"
+    for name in Ant Bee Cat; do
+        printf '[Desktop Entry]\nType=Application\nName=Zquok %s\nExec=true\n' "$name" >"$WORK/data/applications/luciole-test-zquok-$name.desktop"
+    done
+    rm -f "$WORK/data/luciole/frecency.json"
+    if [ "$1" = recent ]; then
+        now=$(($(date +%s) * 1000))
+        printf '{"version":1,"entries":{"apps:luciole-test-zquok-Ant.desktop":[%s,%s,%s],"apps:luciole-test-zquok-Bee.desktop":[%s,%s],"apps:luciole-test-zquok-Cat.desktop":[%s]}}' \
+            "$now" "$now" "$now" "$now" "$now" "$now" >"$WORK/data/luciole/frecency.json"
+        chmod 600 "$WORK/data/luciole/frecency.json"
+    fi
+    printf '{"version":1,"queries":%s}' "${2:-[\"firefox\",\"calculatrice\",\"notes\"]}" >"$WORK/data/luciole/queries.json"
     chmod 600 "$WORK/data/luciole/queries.json"
     echo "######## $1"
     SHELL_EXTRA_ARGS="--unsafe-mode" XDG_DATA_HOME="$WORK/data" XDG_CONFIG_HOME="$WORK/config-$1" \
@@ -51,4 +63,8 @@ run() { # run <mode>: a fresh shell on a fresh D-Bus session, with a prepared hi
 run arrows
 run clear
 run off
+# A remembered search with a type of file, then one without.
+run types '["/pdf facture","notes"]'
+# The empty field lists recent applications: the up arrow goes back up that list before the searches.
+run recent
 echo "PASS"

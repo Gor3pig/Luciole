@@ -1991,6 +1991,18 @@
    "label": "anything truthy turns the animations on",
    "old": "    if (enableAnimations !== true)\n        return false;\n    return reduceValue",
    "new": "    if (!enableAnimations)\n        return false;\n    return reduceValue"
+  },
+  {
+   "file": "src/core/type-filter.js",
+   "label": "compressed tar archives are not archives",
+   "old": "'application/x-xz-compressed-tar', ",
+   "new": ""
+  },
+  {
+   "file": "src/core/query-history.js",
+   "label": "a long search with a type is not remembered",
+   "old": "export const MAX_QUERY_CHARS = 256 + Math.max(...FILE_TYPES.map(type => typePrefix(type.id).length));",
+   "new": "export const MAX_QUERY_CHARS = 256;"
   }
  ]
 }
