@@ -89,21 +89,21 @@ wait_last() {
 }
 last_results() { grep -F '[Luciole] results:' "$LOG" | tail -n 1 | sed 's/.*results: //'; }
 
-[ "$(chip_info)" = "3 0" ] || fail "categories: expected 3 chips with the first checked, got '$(chip_info)'"
-echo "ok: the chips are there (All, Applications, Files), All is chosen"
+[ "$(chip_info)" = "4 0" ] || fail "categories: expected 3 chips with the first checked, got '$(chip_info)'"
+echo "ok: the chips are there (All, Applications, Files, Calculator), All is chosen"
 chord Control_L+2
 wait_last 'results: 1 first=Facture m.* query=factu' || fail "Ctrl+2 did not restrict to files (last: $(last_results))"
-[ "$(chip_info)" = "3 2" ] || fail "Ctrl+2 did not check the Files chip ('$(chip_info)')"
+[ "$(chip_info)" = "4 2" ] || fail "Ctrl+2 did not check the Files chip ('$(chip_info)')"
 chord Control_L+1
 wait_last 'results: 1 first=Facture Express query=factu' || fail "Ctrl+1 did not restrict to applications (last: $(last_results))"
-[ "$(chip_info)" = "3 1" ] || fail "Ctrl+1 did not check the Applications chip ('$(chip_info)')"
+[ "$(chip_info)" = "4 1" ] || fail "Ctrl+1 did not check the Applications chip ('$(chip_info)')"
 chord Control_L+0
 wait_last 'results: 2 first=Facture Express query=factu' || fail "Ctrl+0 did not bring everything back (last: $(last_results))"
-[ "$(chip_info)" = "3 0" ] || fail "Ctrl+0 did not check the All chip ('$(chip_info)')"
+[ "$(chip_info)" = "4 0" ] || fail "Ctrl+0 did not check the All chip ('$(chip_info)')"
 echo "ok: Ctrl+2 files only, Ctrl+1 applications only, Ctrl+0 everything"
-chord Control_L+3
+chord Control_L+4
 sleep 0.4
-[ "$(chip_info)" = "3 0" ] || fail "Ctrl+3 changed the category although there is no third source ('$(chip_info)')"
+[ "$(chip_info)" = "4 0" ] || fail "Ctrl+4 changed the category although there is no fourth source ('$(chip_info)')"
 [ "$(wc -l <"$WORK/closed-count" 2>/dev/null || echo 0)" = 0 ] || true
 echo "ok: a digit with no source behind it does nothing"
 
@@ -113,7 +113,7 @@ pointer "$1" "$2"
 sleep 0.3
 click
 wait_last 'results: 1 first=Facture m.* query=factu' || fail "a click on the Files chip did not restrict to files (last: $(last_results))"
-[ "$(chip_info)" = "3 2" ] || fail "the click did not check the Files chip ('$(chip_info)')"
+[ "$(chip_info)" = "4 2" ] || fail "the click did not check the Files chip ('$(chip_info)')"
 [ "$(grep -cF "[Luciole] closed" "$LOG")" = "$CLOSED_BEFORE" ] || fail "a click on a chip closed the launcher"
 typed ab
 sleep 0.3
@@ -141,7 +141,7 @@ sleep 0.4
 combo
 wait_log "[Luciole] opened" 2 || fail "the launcher did not reopen"
 sleep 0.4
-[ "$(chip_info)" = "3 0" ] || fail "reopening did not start on All ('$(chip_info)')"
+[ "$(chip_info)" = "4 0" ] || fail "reopening did not start on All ('$(chip_info)')"
 [ "$(empty_hint_shown)" = false ] || fail "the hint shows on a fresh opening"
 echo "ok: reopening starts on All"
 typed quok
@@ -169,10 +169,10 @@ chord Control_L+0
 sleep 0.3
 send "code Control_L+3"
 sleep 0.5
-[ "$(chip_info)" = "3 2" ] || fail "Ctrl and the key in the position of 2 did not choose Files on a French keyboard ('$(chip_info)')"
+[ "$(chip_info)" = "4 2" ] || fail "Ctrl and the key in the position of 2 did not choose Files on a French keyboard ('$(chip_info)')"
 send "code Control_L+2"
 sleep 0.5
-[ "$(chip_info)" = "3 1" ] || fail "Ctrl and the key in the position of 1 did not choose Applications on a French keyboard ('$(chip_info)')"
+[ "$(chip_info)" = "4 1" ] || fail "Ctrl and the key in the position of 1 did not choose Applications on a French keyboard ('$(chip_info)')"
 echo "ok: on a French keyboard the shortcuts are the digit-row keys, whatever they type"
 gsettings reset org.gnome.desktop.input-sources sources
 chord Control_L+0
@@ -201,6 +201,89 @@ reopen_launcher() {
     wait_log "[Luciole] opened" $((OPENED_NOW + 1)) || fail "the launcher did not reopen"
     sleep 0.4
 }
+
+# The calculator: the answer comes first, Enter copies it and says so, the menu offers the whole calculation.
+clear_entry 8
+typed "2+2*3"
+wait_last 'results: 1 first=8 query=2\+2\*3' || fail "no answer for 2+2*3 (last: $(last_results))"
+CLOSED_CALC=$(launcher_closed_count)
+press Return
+sleep 0.1
+[ "$(confirmation_shown)" = yes ] || fail "calculator: no confirmation after Enter on the answer"
+[ "$(clipboard_text)" = "8" ] || fail "calculator: the clipboard holds '$(clipboard_text)', expected 8"
+wait_log "[Luciole] closed" $((CLOSED_CALC + 1)) || fail "calculator: the window did not close after the confirmation"
+echo "ok: a calculation is answered first; Enter copies the answer, confirms, then closes"
+sleep 0.4
+reopen_launcher
+typed "5 km en m"
+wait_last 'results: 1 first=5000 m query=5 km en m' || fail "no answer for the conversion (last: $(last_results))"
+CLOSED_CALC=$(launcher_closed_count)
+chord Control_L+k
+sleep 0.5
+set -- $(menu_state)
+[ "$1" = 2 ] || fail "calculator: expected 2 actions (copy the result, copy the calculation), got '$(menu_state)'"
+press Down
+sleep 0.2
+press Return
+sleep 0.1
+[ "$(confirmation_shown)" = yes ] || fail "calculator: no confirmation after copying the whole calculation"
+[ "$(clipboard_text)" = "5 km = 5000 m" ] || fail "calculator: the clipboard holds '$(clipboard_text)', expected the whole calculation"
+wait_log "[Luciole] closed" $((CLOSED_CALC + 1)) || fail "calculator: the window did not close"
+echo "ok: a conversion is answered, and the menu copies the whole calculation"
+sleep 0.4
+# While the confirmation is shown the window ignores the keyboard: no second copy, no typing.
+reopen_launcher
+typed "3*3"
+wait_last 'results: 1 first=9 query=3\*3' || fail "no answer for 3*3 (last: $(last_results))"
+CLOSED_CALC=$(launcher_closed_count)
+COPIES=$(grep -cF "copied the answer" "$LOG")
+# Quick, all inside the 0.6 s of the confirmation (which has to be on screen first: the log says so
+# faster than a query of the shell could).
+SHOWN=$(grep -cF "confirmation shown" "$LOG")
+press Return
+wait_log "confirmation shown" $((SHOWN + 1)) || fail "calculator: no confirmation for 3*3"
+typed z
+press Return
+chord Control_L+k
+sleep 0.15
+set -- $(menu_state)
+[ "$1" = 0 ] || fail "calculator: Ctrl+K during the confirmation opened the menu ('$(menu_state)')"
+[ "$(entry_text_length)" = 3 ] || fail "calculator: typing during the confirmation reached the field ($(entry_text_length) characters, expected 3)"
+[ "$(grep -cF "copied the answer" "$LOG")" = $((COPIES + 1)) ] || fail "calculator: Enter during the confirmation copied again ($(grep -cF "copied the answer" "$LOG") copies, expected $((COPIES + 1)))"
+wait_log "[Luciole] closed" $((CLOSED_CALC + 1)) || fail "calculator: the window did not close after the confirmation"
+echo "ok: during the confirmation the keyboard does nothing"
+sleep 0.4
+# The menu's first action copies the answer, like Enter, and says so.
+reopen_launcher
+typed "6*7"
+wait_last 'results: 1 first=42 query=6\*7' || fail "no answer for 6*7 (last: $(last_results))"
+CLOSED_CALC=$(launcher_closed_count)
+chord Control_L+k
+sleep 0.5
+press Return
+sleep 0.1
+[ "$(confirmation_shown)" = yes ] || fail "calculator: no confirmation after Copy Result in the menu"
+[ "$(clipboard_text)" = "42" ] || fail "calculator: the clipboard holds '$(clipboard_text)', expected 42"
+wait_log "[Luciole] closed" $((CLOSED_CALC + 1)) || fail "calculator: the window did not close"
+echo "ok: Copy Result in the menu copies the answer and confirms"
+sleep 0.4
+reopen_launcher
+typed "2+2"
+wait_last 'results: 1 first=4 query=2\+2' || fail "no answer for 2+2 (last: $(last_results))"
+chord Control_L+3
+sleep 0.5
+wait_last 'results: 1 first=4 query=2\+2' || fail "the Calculator category lost the answer"
+[ "$(chip_info)" = "4 3" ] || fail "Ctrl+3 did not check the Calculator chip ('$(chip_info)')"
+chord Control_L+1
+sleep 0.3
+wait_last 'results: 0 first=- query=2\+2' || fail "applications only should not answer a calculation (last: $(last_results))"
+chord Control_L+0
+clear_entry 3
+typed "2026-11-26"
+wait_last 'results: 0 first=- query=2026-11-26' || fail "a date was taken for a calculation (last: $(last_results))"
+echo "ok: the Calculator category, and a date is left alone"
+clear_entry 10
+sleep 0.3
 
 clear_entry 8
 typed rapport

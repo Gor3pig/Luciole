@@ -4,6 +4,7 @@
 import {Frecency, MAX_ACTIVATIONS_PER_KEY, MAX_KEYS} from '../../src/core/frecency.js';
 import {jumpSection, mergeResults, nextSelection} from '../../src/core/merge.js';
 import {ActionMenu, cleanActions, MAX_ACTIONS, MAX_COPY_CHARS} from '../../src/core/action-menu.js';
+import {evaluateQuery, MAX_INPUT} from '../../src/core/calc.js';
 import {HistoryCursor, MAX_QUERIES, MAX_QUERY_CHARS, QueryHistory} from '../../src/core/query-history.js';
 import {
     buildFtsTerms, displayFolder, isExcluded, isExcludedType, pathOfUrl, rowsToResults,
@@ -240,5 +241,43 @@ test('fuzz: whatever is done to the menu, the highlight stays on an action of th
                 assert(menu.selected === null && menu.index === -1, 'a closed menu has no highlight');
             }
         }
+    });
+});
+
+test('fuzz: whatever is typed, the calculator never throws and only gives clean answers', () => {
+    const pieces = ['1', '2', '35', '0', '1,5', '.5', '1 000', ' ', '+', '-', '*', '/', '^', '%', '(', ')', 'pi', 'e', 'sqrt', 'abs', 'km', 'm', 'kg', '°C', 'en', 'to', 'mod', 'de', '→', '×', '÷', '−', 'foo', 'Go', 'To'];
+    forAll('evaluateQuery', random => {
+        const text = random.chance(0.3)
+            ? random.string(ALPHABETS.everything, random.int(0, 60))
+            : Array.from({length: random.int(0, 25)}, () => random.pick(pieces)).join(random.chance(0.5) ? ' ' : '');
+        const outcome = evaluateQuery(text, {decimal: random.pick(['.', ','])});
+        if (outcome === null)
+            return;
+        assert(text.length <= MAX_INPUT, 'an answer for a text that is too long');
+        assert(outcome.kind === 'calc' || outcome.kind === 'convert', `kind ${outcome.kind}`);
+        assert(typeof outcome.result === 'string' && outcome.result !== '' && !/(NaN|Infinity|undefined)/.test(outcome.result), `bad result ${JSON.stringify(outcome.result)}`);
+        assert(!/\p{Cc}/u.test(outcome.result + outcome.full + outcome.text), 'a control character in the answer');
+        assert(outcome.full.includes(outcome.result), 'the whole calculation does not hold the result');
+        assert(outcome.text === outcome.text.trim() && !/\s\s/.test(outcome.text), 'untidy text');
+    });
+});
+
+test('fuzz: deeply nested or very long input is refused or answered, never a crash', () => {
+    forAll('evaluateQuery depth', random => {
+        const open = random.pick(['(', 'sqrt(', '-', '--', '2^']);
+        const text = `${open.repeat(random.int(1, 300))}1${random.chance(0.5) ? ')'.repeat(random.int(0, 300)) : ''}`;
+        evaluateQuery(text);
+        evaluateQuery(`1${random.pick([' + 1', '*1', '^1'])}`.repeat(random.int(1, 400)));
+    });
+});
+
+test('fuzz: a number written in the usual ways is read as the number it is', () => {
+    forAll('evaluateQuery numbers', random => {
+        const whole = random.int(0, 999999);
+        const fraction = random.int(0, 999);
+        const mark = random.pick(['.', ',']);
+        const text = `${whole}${mark}${String(fraction).padStart(3, '0')} + 0`;
+        const outcome = evaluateQuery(text, {decimal: '.'});
+        assertEquals(outcome?.result, String(Number(`${whole}.${String(fraction).padStart(3, '0')}`)), text);
     });
 });

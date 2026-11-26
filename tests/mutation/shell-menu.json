@@ -1,5 +1,5 @@
 {
- "description": "Mutants for the menu of actions in the live launcher. Not listed because equivalent or out of reach: the staleness check of an answer (the gap between asking and the answer is too short to close the window inside it, in a test), and forgetting the menu when closing (opening forgets it too).",
+ "description": "Mutants for the menu of actions in the live launcher. Not listed because equivalent or out of reach: the staleness check of an answer (the gap between asking and the answer is too short to close the window inside it, in a test), and forgetting the menu when closing (opening forgets it too). Not listed because it cannot be provoked in a live shell: a copy that fails (the clipboard always works there); it is covered by the unit tests of the controller. Also not listed because equivalent: the guard on Enter during the confirmation (a field that is not editable does not send Enter at all).",
  "slow": true,
  "timeout": 400,
  "command": [
@@ -46,13 +46,13 @@
   {
    "file": "src/ui/launcher.js",
    "label": "a failed action closes the window",
-   "old": "        if (!outcome.ok)\n            return;\n        if (outcome.confirmation)",
-   "new": "        if (outcome.confirmation)"
+   "old": "        if (!outcome.ok)\n            return;\n        const own",
+   "new": "        const own"
   },
   {
    "file": "src/ui/launcher.js",
    "label": "a copy closes at once, without confirmation",
-   "old": "        if (outcome.confirmation)\n            this.#showConfirmation(outcome.confirmation);\n        else\n            this.close();",
+   "old": "        if (outcome.confirmation || own)\n            this.#showConfirmation(outcome.confirmation ?? own);\n        else\n            this.close();",
    "new": "        this.close();"
   },
   {
@@ -126,6 +126,36 @@
    "label": "the text goes to the primary selection, not the clipboard",
    "old": "St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, text);",
    "new": "St.Clipboard.get_default().set_text(St.ClipboardType.PRIMARY, text);"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "an answer is activated without saying so",
+   "old": "        const confirmation = this.#confirmationOf(item);\n        if (confirmation) {\n            this.#log.guardAsync('activating a result', () => this.#activateConfirmed(item, confirmation));\n            return;\n        }\n",
+   "new": "        const confirmation = null;\n"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "keys still act during the confirmation",
+   "old": "            if (this.#confirmTimer)\n                return Clutter.EVENT_STOP;\n            const symbol = event.get_key_symbol();",
+   "new": "            const symbol = event.get_key_symbol();"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the menu's main action of an answer does not confirm",
+   "old": "        const own = action.id === 'open' ? this.#confirmationOf(item) : null;",
+   "new": "        const own = null;"
+  },
+  {
+   "file": "src/extension.js",
+   "label": "the calculator is not registered",
+   "old": "        registry.register('calc', () => new CalcProvider({copyText: text => compat.copyText(text)}));\n",
+   "new": ""
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the field stays editable during the confirmation",
+   "old": "        this.#entry.clutter_text.editable = false;\n        this.#presentMenuBox();",
+   "new": "        this.#presentMenuBox();"
   }
  ]
 }

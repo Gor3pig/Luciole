@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 12:39+0100\n"
+"POT-Creation-Date: 2026-11-26 14:53+0100\n"
 "PO-Revision-Date: 2026-11-25 20:00+0100\n"
 "Last-Translator: Luciole contributors\n"
 "Language-Team: en <>\n"
@@ -20,7 +20,7 @@ msgstr ""
 msgid "Open"
 msgstr "Open"
 
-#: src/core/session.js
+#: src/core/session.js src/providers/calc.js
 msgid "Enter"
 msgstr "Enter"
 
@@ -31,6 +31,10 @@ msgstr "Applications"
 #: src/prefs.js src/providers/files.js
 msgid "Files"
 msgstr "Files"
+
+#: src/prefs.js src/providers/calc.js
+msgid "Calculator"
+msgstr "Calculator"
 
 #: src/prefs.js
 msgid "Backdrop"
@@ -203,6 +207,26 @@ msgstr "Remove"
 #: src/prefs.js
 msgid "Choose a Folder to Exclude"
 msgstr "Choose a Folder to Exclude"
+
+#: src/providers/calc.js
+msgid "Enter to copy"
+msgstr "Enter to copy"
+
+#: src/providers/calc.js
+msgid "Result copied"
+msgstr "Result copied"
+
+#: src/providers/calc.js
+msgid "Copy Result"
+msgstr "Copy Result"
+
+#: src/providers/calc.js
+msgid "Copy Full Calculation"
+msgstr "Copy Full Calculation"
+
+#: src/providers/calc.js
+msgid "Calculation copied"
+msgstr "Calculation copied"
 
 #: src/providers/files.js src/providers/files-query.js
 msgid "Show in Folder"

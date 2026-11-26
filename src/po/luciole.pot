@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 12:39+0100\n"
+"POT-Creation-Date: 2026-11-26 14:53+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,7 +21,7 @@ msgstr ""
 msgid "Open"
 msgstr ""
 
-#: src/core/session.js
+#: src/core/session.js src/providers/calc.js
 msgid "Enter"
 msgstr ""
 
@@ -31,6 +31,10 @@ msgstr ""
 
 #: src/prefs.js src/providers/files.js
 msgid "Files"
+msgstr ""
+
+#: src/prefs.js src/providers/calc.js
+msgid "Calculator"
 msgstr ""
 
 #: src/prefs.js
@@ -194,6 +198,26 @@ msgstr ""
 
 #: src/prefs.js
 msgid "Choose a Folder to Exclude"
+msgstr ""
+
+#: src/providers/calc.js
+msgid "Enter to copy"
+msgstr ""
+
+#: src/providers/calc.js
+msgid "Result copied"
+msgstr ""
+
+#: src/providers/calc.js
+msgid "Copy Result"
+msgstr ""
+
+#: src/providers/calc.js
+msgid "Copy Full Calculation"
+msgstr ""
+
+#: src/providers/calc.js
+msgid "Calculation copied"
 msgstr ""
 
 #: src/providers/files.js src/providers/files-query.js

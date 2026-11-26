@@ -1,5 +1,5 @@
 {
- "description": "Mutants for the core logic: each one breaks the code on purpose and the unit tests must fail. Not listed because equivalent: the session's own refusal of an empty search (QueryHistory.record refuses it too). Also not listed because equivalent: the controller keeping a filter that is not an identifier (effectiveFilter treats it as everything anyway).",
+ "description": "Mutants for the core logic: each one breaks the code on purpose and the unit tests must fail. Not listed because equivalent: the session's own refusal of an empty search (QueryHistory.record refuses it too). Also not listed because equivalent: the controller keeping a filter that is not an identifier (effectiveFilter treats it as everything anyway). Not listed because equivalent for the calculator: a text with a single piece (the 'no work' rule refuses it already), a conversion with no unit on the left (the unit lookup refuses it), a very long unit name (it is not found anyway), a zero that keeps its sign (JavaScript writes -0 as 0), and a decimal mark other than a comma (it is shown as a point).",
  "command": [
   "gjs",
   "-m",
@@ -1185,20 +1185,20 @@
   {
    "file": "src/core/session.js",
    "label": "the menu does not start with Open",
-   "old": "        return [open, ...rest];",
-   "new": "        return rest;"
+   "old": "        return [own ?? open, ...actions.filter(action => action.id !== 'open')];",
+   "new": "        return [...actions.filter(action => action.id !== 'open')];"
   },
   {
    "file": "src/core/session.js",
    "label": "a second Open is kept",
-   "old": "cleanActions(offered).filter(action => action.id !== 'open');",
-   "new": "cleanActions(offered);"
+   "old": "        const actions = cleanActions(offered);",
+   "new": "        const actions = cleanActions(offered).concat([{id: 'open', label: 'Open again'}]);"
   },
   {
    "file": "src/core/session.js",
    "label": "what a source offers is not checked",
-   "old": "        const rest = cleanActions(offered).filter(action => action.id !== 'open');",
-   "new": "        const rest = (Array.isArray(offered) ? offered : []).filter(action => action.id !== 'open');"
+   "old": "        const actions = cleanActions(offered);",
+   "new": "        const actions = Array.isArray(offered) ? offered : [];"
   },
   {
    "file": "src/core/session.js",
@@ -1247,6 +1247,300 @@
    "label": "Open does not open",
    "old": "        if (action.id === 'open')\n            return {ok: await this.activate(item), confirmation: null};",
    "new": "        if (action.id === 'open')\n            return {ok: true, confirmation: null};"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "spaces in a number are not ignored",
+   "old": "    while (SPACES.test(text[i] ?? '') && /^[\\s\\u00a0\\u202f][0-9]{3}(?![0-9])/u.test(text.slice(i, i + 5)) && !/[.,]/.test(text.slice(start, i))) {",
+   "new": "    while (false) {"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "a group of more than three digits is joined",
+   "old": "/^[\\s\\u00a0\\u202f][0-9]{3}(?![0-9])/u",
+   "new": "/^[\\s\\u00a0\\u202f][0-9]{3}/u"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "a comma is not a decimal mark",
+   "old": "    if ((text[i] === '.' || text[i] === ',') && DIGIT.test(text[i + 1] ?? '')) {",
+   "new": "    if (text[i] === '.' && DIGIT.test(text[i + 1] ?? '')) {"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "a number starting with the mark is refused",
+   "old": "DIGIT.test(c) || ((c === '.' || c === ',') && DIGIT.test(text[i + 1] ?? ''))",
+   "new": "DIGIT.test(c)"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "the number of pieces is not capped",
+   "old": "        if (tokens.length >= MAX_TOKENS)\n            return null;\n",
+   "new": "\n"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "a text that is too long is worked on",
+   "old": "query.length > MAX_INPUT || DATE_LIKE.test(query))",
+   "new": "DATE_LIKE.test(query))"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "a date is taken for a calculation",
+   "old": "query === '' || query.length > MAX_INPUT || DATE_LIKE.test(query))",
+   "new": "query === '' || query.length > MAX_INPUT)"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "nesting is not limited",
+   "old": "        if (++this.depth > MAX_DEPTH)\n            throw new Stop();",
+   "new": "        ++this.depth;"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "a lone number is a calculation",
+   "old": "    if (!read || read.work === 0 || read.pct)",
+   "new": "    if (!read || read.pct)"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "a lone percentage is a calculation",
+   "old": "    if (!read || read.work === 0 || read.pct)",
+   "new": "    if (!read || read.work === 0)"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "a percentage is not taken of the left side",
+   "old": "const amount = right.pct ? left.v * right.v : right.v;",
+   "new": "const amount = right.v;"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "a share of something is not read",
+   "old": "            if (this.isWord('de', 'of')) {",
+   "new": "            if (false) {"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "of is not read as a share",
+   "old": "if (this.isWord('de', 'of'))",
+   "new": "if (this.isWord('de'))"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "power goes left to right",
+   "old": "            const exponent = this.unary();\n            this.depth--;\n            return {v: base.v ** exponent.v, pct: false};",
+   "new": "            const exponent = this.atom();\n            this.depth--;\n            return {v: base.v ** exponent.v, pct: false};"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "a minus sign binds tighter than power",
+   "old": "        return this.power();\n    }\n\n    power() {",
+   "new": "        return this.atom();\n    }\n\n    power() {"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "subtraction goes right to left",
+   "old": "const sign = this.peek.value === '+' ? 1 : -1;\n                this.pos++;\n                this.work++;\n                const right = this.term();",
+   "new": "const sign = this.peek.value === '+' ? 1 : -1;\n                this.pos++;\n                this.work++;\n                const right = this.expression();"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "the remainder is a division",
+   "old": "left = {v: op === '/' ? left.v / right.v : left.v % right.v, pct: false};",
+   "new": "left = {v: left.v / right.v, pct: false};"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "a mod is not an operator",
+   "old": "if (this.isOp('*') || this.isOp('/') || this.isWord('mod')) {",
+   "new": "if (this.isOp('*') || this.isOp('/')) {"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "functions are not read",
+   "old": "            if (fn && next?.type === 'op' && next.value === '(') {",
+   "new": "            if (false) {"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "constants are not read",
+   "old": "            if (CONSTANTS.has(name)) {",
+   "new": "            if (false) {"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "a function needs no bracket",
+   "old": "if (fn && next?.type === 'op' && next.value === '(') {",
+   "new": "if (fn) {"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "words are not case-insensitive",
+   "old": "const name = token.value.toLowerCase();",
+   "new": "const name = token.value;"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "the answer is not rounded",
+   "old": "const rounded = Number(value.toPrecision(SIGNIFICANT_DIGITS));",
+   "new": "const rounded = value;"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "too many digits are kept",
+   "old": "const SIGNIFICANT_DIGITS = 10;",
+   "new": "const SIGNIFICANT_DIGITS = 17;"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "the decimal mark is not applied",
+   "old": "    return decimal === ',' ? text.replace('.', ',') : text;",
+   "new": "    return text;"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "only the first word for to is tried",
+   "old": "        const left = readExpression(tokens.slice(0, i), {allowUnit: true});",
+   "new": "        if (i > 1)\n            break;\n        const left = readExpression(tokens.slice(0, i), {allowUnit: true});"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "a conversion to several words is made",
+   "old": "if (!left || left.unit === null || right.length !== 1 || right[0].type !== 'word')",
+   "new": "if (!left || left.unit === null || right.length < 1)"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "the arrow is not read",
+   "old": "        } else if (c === '\u2192') {\n            tokens.push({type: 'word', value: 'to'});\n            i++;",
+   "new": "        } else if (c === '\u2192') {\n            return null;"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "vers is not read",
+   "old": "const TO_WORDS = new Set(['en', 'vers', 'to']);",
+   "new": "const TO_WORDS = new Set(['en', 'to']);"
+  },
+  {
+   "file": "src/core/units.js",
+   "label": "units of different kinds convert",
+   "old": "from.kind !== to.kind || !Number.isFinite(value))",
+   "new": "!Number.isFinite(value))"
+  },
+  {
+   "file": "src/core/units.js",
+   "label": "a mile is a different length",
+   "old": "factor: 1609.344}",
+   "new": "factor: 1600}"
+  },
+  {
+   "file": "src/core/units.js",
+   "label": "a pound is a different weight",
+   "old": "factor: 453.59237}",
+   "new": "factor: 450}"
+  },
+  {
+   "file": "src/core/units.js",
+   "label": "Fahrenheit has no offset",
+   "old": "{kind: 'temperature', symbol: '\u00b0F', names: ['\u00b0f', 'f', 'fahrenheit', '\u00b0fahrenheit'], factor: 5 / 9, offset: 459.67}",
+   "new": "{kind: 'temperature', symbol: '\u00b0F', names: ['\u00b0f', 'f', 'fahrenheit', '\u00b0fahrenheit'], factor: 5 / 9, offset: 0}"
+  },
+  {
+   "file": "src/core/units.js",
+   "label": "a kibibyte is a thousand",
+   "old": "{kind: 'data', symbol: 'Kio', names: ['kio', 'kib'], factor: 1024}",
+   "new": "{kind: 'data', symbol: 'Kio', names: ['kio', 'kib'], factor: 1000}"
+  },
+  {
+   "file": "src/core/units.js",
+   "label": "a plural is not understood",
+   "old": "    if (folded.length > 2 && folded.endsWith('s'))\n        return BY_NAME.get(folded.slice(0, -1)) ?? null;",
+   "new": "    void 0;"
+  },
+  {
+   "file": "src/core/units.js",
+   "label": "accents and case matter",
+   "old": "    const folded = fold(name);",
+   "new": "    const folded = name;"
+  },
+  {
+   "file": "src/core/units.js",
+   "label": "the noise of a temperature conversion is kept",
+   "old": "if (Math.abs(result) < Math.max(Math.abs(base / to.factor), Math.abs(to.offset)) * 1e-12)",
+   "new": "if (false)"
+  },
+  {
+   "file": "src/core/units.js",
+   "label": "an infinite conversion is accepted",
+   "old": "    if (!Number.isFinite(result))\n        return null;\n    // Converting",
+   "new": "    // Converting"
+  },
+  {
+   "file": "src/providers/calc.js",
+   "label": "the answer is not copied",
+   "old": "        this.#copyText(result.data.copy);",
+   "new": "        void result;"
+  },
+  {
+   "file": "src/providers/calc.js",
+   "label": "the whole calculation is copied by Enter",
+   "old": "        this.#copyText(result.data.copy);",
+   "new": "        this.#copyText(result.data.full);"
+  },
+  {
+   "file": "src/providers/calc.js",
+   "label": "the answer can become the top hit",
+   "old": "    get topHitEligible() {\n        return false;",
+   "new": "    get topHitEligible() {\n        return true;"
+  },
+  {
+   "file": "src/providers/calc.js",
+   "label": "the answer comes after the applications",
+   "old": "    get priority() {\n        return 5;",
+   "new": "    get priority() {\n        return 50;"
+  },
+  {
+   "file": "src/providers/calc.js",
+   "label": "a text that is not a calculation gives a result",
+   "old": "        if (!outcome)\n            return [];",
+   "new": "        if (!outcome)\n            return [{id: 'x', title: '?'}];"
+  },
+  {
+   "file": "src/providers/calc.js",
+   "label": "the answer does not say it was copied",
+   "old": "            activationConfirmation: _('Result copied'),",
+   "new": "            activationConfirmation: undefined,"
+  },
+  {
+   "file": "src/providers/calc.js",
+   "label": "the result does not match its own text",
+   "old": "            matchFields: [outcome.text],\n",
+   "new": "\n"
+  },
+  {
+   "file": "src/providers/calc.js",
+   "label": "the main action of the menu is not the copy",
+   "old": "{id: 'open', label: _('Copy Result'), hint: _('Enter')}",
+   "new": "{id: 'copy-result', label: _('Copy Result'), hint: _('Enter')}"
+  },
+  {
+   "file": "src/core/merge.js",
+   "label": "a source that wants its own section can be the top hit",
+   "old": "            if (providerOf.get(section.providerId)?.topHitEligible === false)\n                continue;\n",
+   "new": "\n"
+  },
+  {
+   "file": "src/core/merge.js",
+   "label": "every source is kept out of the top hit",
+   "old": "providerOf.get(section.providerId)?.topHitEligible === false",
+   "new": "providerOf.get(section.providerId)?.topHitEligible !== true"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "a source cannot word the main action",
+   "old": "const own = actions.find(action => action.id === 'open');",
+   "new": "const own = undefined;"
   }
  ]
 }

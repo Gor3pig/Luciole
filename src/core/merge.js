@@ -19,7 +19,7 @@ const compareItems = (a, b) =>
  * Merges what the providers returned into what the window shows: an optional
  * top hit, then one section per provider, in provider priority order.
  *
- * @param {Array<{provider: {id: string, name: string, priority: number, maxResults?: number}, scored: Array<{result: object, final: number, ranges: Array}>}>} entries
+ * @param {Array<{provider: {id: string, name: string, priority: number, maxResults?: number, topHitEligible?: boolean}, scored: Array<{result: object, final: number, ranges: Array}>}>} entries
  * @param {object} [options]
  * @param {number} [options.topHitMin] - minimum score for a top hit
  * @param {boolean} [options.topHit] - false to never pick a top hit
@@ -60,6 +60,7 @@ export function mergeResults(entries, {topHitMin = 0.55, topHit = true, maxTotal
             dropped.add(item.key);
     }
 
+    const providerOf = new Map(entries.map(({provider}) => [provider.id, provider]));
     const sections = [];
     for (const {provider} of [...entries].sort((a, b) => a.provider.priority - b.provider.priority)) {
         if (sections.some(section => section.providerId === provider.id))
@@ -75,6 +76,8 @@ export function mergeResults(entries, {topHitMin = 0.55, topHit = true, maxTotal
     if (topHit) {
         for (const section of sections) {
             const first = section.items[0];
+            if (providerOf.get(section.providerId)?.topHitEligible === false)
+                continue;
             if (first && first.final >= topHitMin && (!top || first.final > top.final))
                 top = first;
         }

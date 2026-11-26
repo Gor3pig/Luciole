@@ -49,6 +49,14 @@ export class Provider {
         return 1;
     }
 
+    /**
+     * Whether a result of this provider can be promoted to "top hit". A source that wants its own
+     * section kept (the calculator) says no.
+     */
+    get topHitEligible() {
+        return true;
+    }
+
     /** Wait this long (ms) after the last keystroke before searching; 0 for cheap sources. */
     get debounceMs() {
         return 0;

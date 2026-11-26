@@ -210,8 +210,10 @@ export class SearchController {
             return [open];
         const offered = await this.#log.guardAsync(`listing the actions of ${item.key}`,
             () => provider.actions(item.result), []);
-        const rest = cleanActions(offered).filter(action => action.id !== 'open');
-        return [open, ...rest];
+        const actions = cleanActions(offered);
+        // A source may word the main action its own way ("Copy Result"); it stays first.
+        const own = actions.find(action => action.id === 'open');
+        return [own ?? open, ...actions.filter(action => action.id !== 'open')];
     }
 
     /** What a submenu action ("Open With") leads to. An empty list when there is nothing. */

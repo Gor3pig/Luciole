@@ -47,6 +47,27 @@ test('the top hit can come from any provider', () => {
     assertEquals(merged.topHit.result.title, 'Doc');
 });
 
+test('a source that wants its own section never gives the top hit, and keeps its place', () => {
+    const merged = mergeResults([
+        {provider: provider('calc', 0, {topHitEligible: false}), scored: [scored('1', '56', 1)]},
+        {provider: provider('apps', 1), scored: [scored('2', 'Firefox', 0.8)]},
+    ]);
+    assertEquals(merged.topHit.result.title, 'Firefox', 'the next best result is the top hit');
+    assertEquals(merged.sections.map(section => section.providerId), ['calc'], 'the result stays in its own section');
+    assertEquals(titles(merged.items), ['Firefox', '56']);
+});
+
+test('a source that wants its own section with the only result: no top hit at all', () => {
+    const merged = mergeResults([{provider: provider('calc', 0, {topHitEligible: false}), scored: [scored('1', '56', 1)]}]);
+    assertEquals(merged.topHit, null);
+    assertEquals(titles(merged.sections[0].items), ['56']);
+});
+
+test('only an explicit false takes a source out of the top hit', () => {
+    for (const eligible of [undefined, true, null, 0])
+        assertEquals(mergeResults([{provider: provider('apps', 1, {topHitEligible: eligible}), scored: [scored('1', 'Firefox', 0.9)]}]).topHit?.result.title, 'Firefox', String(eligible));
+});
+
 test('no top hit below the threshold, or when disabled', () => {
     const entries = [{provider: provider('apps', 1), scored: [scored('1', 'Weak', 0.4)]}];
     assertEquals(mergeResults(entries).topHit, null);

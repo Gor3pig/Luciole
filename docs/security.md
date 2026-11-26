@@ -37,7 +37,8 @@ duplicates).
 ## Where untrusted data comes from
 
 1. **What the user types.** Not trusted: it can contain anything, including
-   characters that mean something to a query language.
+   characters that mean something to a query language, or that look like a
+   calculation.
 2. **The file index.** File names and paths are chosen by whoever created the
    files (a downloaded archive, another user of the machine).
 3. **The history files.** Another program running as the same user could edit it,
@@ -75,6 +76,14 @@ duplicates).
   identifier it did not offer: an application action must be one the application declares, an
   "Open With" application one of those listed for that file, and the file must still exist and be
   local. Nothing typed by the user is part of an action.
+* **The calculator reads text, it never runs it.** A calculation or conversion typed in the field
+  is read by a small parser of our own (`src/core/calc.js`), not by `eval` or `Function`. It
+  accepts digits, a few operators, brackets, a short list of named functions and unit names, and
+  nothing else: any other character, an unknown word or an incomplete expression gives no result
+  at all. Its work is bounded: a text of at most 200 characters and 100 pieces, brackets and signs
+  nested at most 16 deep, and no loop of any kind, so no input can make it run long. A result that
+  is not a finite number (division by zero, overflow) is dropped. It uses no network: there are
+  no currencies.
 * **No dynamic code.** No `eval`, no `Function`, no shell command built from
   text. Applications and files are opened with GIO using the entry or address
   that came from the index, not from the typed text.

@@ -20,6 +20,7 @@ const SHORTCUT_SCHEMAS = [
 const PROVIDERS = [
     {id: 'apps', title: () => _('Applications')},
     {id: 'files', title: () => _('Files')},
+    {id: 'calc', title: () => _('Calculator')},
 ];
 
 /** Which GNOME shortcut already uses this accelerator, if any ("schema key"). */

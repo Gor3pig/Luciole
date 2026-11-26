@@ -301,9 +301,31 @@ export class Launcher {
         this.#navigated = true;
     }
 
+    // What the window says once a result whose activation is a copy (a calculation) has been run, or null.
+    #confirmationOf(item) {
+        const text = item?.result?.activationConfirmation;
+        return typeof text === 'string' && text !== '' ? text : null;
+    }
+
     #activate(item) {
+        const confirmation = this.#confirmationOf(item);
+        if (confirmation) {
+            this.#log.guardAsync('activating a result', () => this.#activateConfirmed(item, confirmation));
+            return;
+        }
         this.#log.guard('activating a result', () => this.#onActivate(item));
         this.close();
+    }
+
+    // Runs the result, then says so for a moment before the window closes. A failure is logged and
+    // leaves the window as it is.
+    async #activateConfirmed(item, text) {
+        const token = ++this.#menuToken;
+        const ok = await this.#log.guardAsync('activating a result', () => this.#onActivate(item), false);
+        if (token !== this.#menuToken || !this.#isOpen)
+            return;
+        if (ok)
+            this.#showConfirmation(text);
     }
 
     #activateSecondary() {
@@ -487,13 +509,18 @@ export class Launcher {
         // A failed action (it is logged) leaves the window open, so the user can try another.
         if (!outcome.ok)
             return;
-        if (outcome.confirmation)
-            this.#showConfirmation(outcome.confirmation);
+        const own = action.id === 'open' ? this.#confirmationOf(item) : null;
+        if (outcome.confirmation || own)
+            this.#showConfirmation(outcome.confirmation ?? own);
         else
             this.close();
     }
 
     #showConfirmation(text) {
+        this.#log.debug('confirmation shown');
+        // The window is about to close: what is typed meanwhile must not change the search.
+        this.#entry.clutter_text.editable = false;
+        this.#presentMenuBox();
         this.#menuRows.destroy_all_children();
         const row = new St.BoxLayout({style_class: 'luciole-menu-confirmation'});
         row.add_child(new St.Icon({icon_name: 'object-select-symbolic', style_class: 'luciole-menu-check'}));
@@ -541,6 +568,11 @@ export class Launcher {
             });
             this.#menuRows.add_child(row);
         });
+        this.#presentMenuBox();
+    }
+
+    // The menu box in place of the chips and the results.
+    #presentMenuBox() {
         this.#chipBox.hide();
         this.#emptyHint.hide();
         this.#view.actor.hide();
@@ -570,6 +602,8 @@ export class Launcher {
             GLib.source_remove(this.#confirmTimer);
             this.#confirmTimer = 0;
         }
+        if (this.#entry)
+            this.#entry.clutter_text.editable = true;
     }
 
     // The remembered searches, read at each use (the setting may have changed).
@@ -728,6 +762,8 @@ export class Launcher {
             this.#log.guard('searching', () => this.#onQuery(entry.get_text()));
         });
         text.connect('activate', () => {
+            if (this.#confirmTimer)
+                return Clutter.EVENT_STOP;
             if (this.#menu.isOpen) {
                 if (!this.#confirmTimer)
                     this.#log.guardAsync('running an action', () => this.#runMenuAction());
@@ -741,6 +777,9 @@ export class Launcher {
                 this.close();
                 return Clutter.EVENT_PROPAGATE;
             }
+            // While a confirmation is shown the window is about to close: keys do nothing.
+            if (this.#confirmTimer)
+                return Clutter.EVENT_STOP;
             const symbol = event.get_key_symbol();
             const control = (event.get_state() & Clutter.ModifierType.CONTROL_MASK) !== 0;
             if (control && (symbol === Clutter.KEY_k || symbol === Clutter.KEY_K)) {

@@ -667,10 +667,17 @@ test('a source with no actions, or one that fails, offers only Open', async () =
     assert(broken.log.lines.some(l => l.includes('desktop file unreadable')), 'logged');
 });
 
-test('what a source offers is checked: malformed actions are dropped, and a second Open is not kept', async () => {
-    const t = menuSetup({actions: async () => [{id: 'open', label: 'Open again'}, null, {id: 'x'}, {id: 'ok', label: 'Fine'}]});
+test('what a source offers is checked: malformed actions are dropped', async () => {
+    const t = menuSetup({actions: async () => [null, {id: 'x'}, {id: 'ok', label: 'Fine'}, {id: 'ok', label: 'Twice'}]});
     assertEquals((await t.controller.actionsFor(t.item)).map(action => action.id), ['open', 'ok']);
-    assertEquals((await t.controller.actionsFor(t.item))[0].label, '[Open]', 'the controller\'s own Open stays first');
+    assertEquals((await t.controller.actionsFor(t.item))[0].label, '[Open]', 'the controller\'s own Open comes first');
+});
+
+test('a source may word the main action its own way, and it stays first and alone', async () => {
+    const t = menuSetup({actions: async () => [{id: 'other', label: 'Other'}, {id: 'open', label: 'Copy Result'}, {id: 'open', label: 'Again'}]});
+    const actions = await t.controller.actionsFor(t.item);
+    assertEquals(actions.map(action => action.id), ['open', 'other']);
+    assertEquals(actions[0].label, 'Copy Result');
 });
 
 test('the actions of a result of an unknown source are just Open', async () => {
