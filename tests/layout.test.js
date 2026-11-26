@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Luciole contributors
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-import {backdropClass, chooseMonitorIndex, TOP_FRACTION, verticalLayout} from '../src/core/layout.js';
+import {backdropClass, chooseMonitorIndex, motionEnabled, needsHeightEase, TOP_FRACTION, verticalLayout} from '../src/core/layout.js';
 import {assert, assertEquals, test} from './harness.js';
 
 test('the monitor of the focused window wins over the pointer and the primary one', () => {
@@ -57,4 +57,30 @@ test('the backdrop setting gives a style class, and nothing for none or anything
     assertEquals(backdropClass('none'), null);
     for (const odd of ['', 'LIGHT', 'dark', 'standard ', undefined, null, 3, {}, ['light']])
         assertEquals(backdropClass(odd), null, `for ${JSON.stringify(odd)}`);
+});
+
+test('the animations setting can switch animations off but never force them on', () => {
+    assertEquals(motionEnabled(true, true), true);
+    assertEquals(motionEnabled(true, false), false);
+    assertEquals(motionEnabled(false, true), false);
+    assertEquals(motionEnabled(false, false), false);
+});
+
+test('an unreadable animations setting counts as on, an unreadable system answer as off', () => {
+    for (const odd of [undefined, null, 0, 'false', {}])
+        assertEquals(motionEnabled(true, odd), true, `setting ${JSON.stringify(odd)}`);
+    for (const odd of [undefined, null, 1, 'true', {}])
+        assertEquals(motionEnabled(odd, true), false, `system ${JSON.stringify(odd)}`);
+});
+
+test('a list changing height is eased only between two real, different heights', () => {
+    assertEquals(needsHeightEase(100, 200), true);
+    assertEquals(needsHeightEase(200, 100), true);
+    assertEquals(needsHeightEase(100, 100), false);
+    assertEquals(needsHeightEase(100, 100.5), false);
+    assertEquals(needsHeightEase(100, 101), true);
+    assertEquals(needsHeightEase(0, 200), false, 'the first appearance is not eased');
+    assertEquals(needsHeightEase(200, 0), false);
+    for (const odd of [NaN, Infinity, -5, undefined, null, '100'])
+        assertEquals(needsHeightEase(odd, 200), false, `from ${String(odd)}`);
 });

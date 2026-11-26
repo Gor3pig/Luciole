@@ -69,3 +69,27 @@ const BACKDROPS = ['light', 'standard'];
 export function backdropClass(level) {
     return BACKDROPS.includes(level) ? `luciole-backdrop-${level}` : null;
 }
+
+/**
+ * Whether the launcher animates: the user's own choice can only turn animations off, never
+ * force them on when the system has them off (or asks for reduced motion).
+ *
+ * @param {boolean} systemAllows
+ * @param {unknown} preference - the setting; anything but an explicit false counts as on
+ * @returns {boolean}
+ */
+export function motionEnabled(systemAllows, preference) {
+    return systemAllows === true && preference !== false;
+}
+
+/**
+ * Whether a list changing from one height to another is worth an animation: both heights
+ * are real (not the first appearance from nothing) and they differ by at least a pixel.
+ *
+ * @param {number} from
+ * @param {number} to
+ * @returns {boolean}
+ */
+export function needsHeightEase(from, to) {
+    return Number.isFinite(from) && Number.isFinite(to) && from > 0 && to > 0 && Math.abs(to - from) >= 1;
+}

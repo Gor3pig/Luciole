@@ -773,6 +773,30 @@
    "label": "an emptied matched text is kept",
    "old": ".filter(field => (typeof field === 'string' ? field : field?.text) !== '')",
    "new": ""
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "the system can be overridden by the setting",
+   "old": "return systemAllows === true && preference !== false;",
+   "new": "return systemAllows === true || preference === true;"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "a list is eased from nothing",
+   "old": "from > 0 && to > 0 && Math.abs(to - from) >= 1",
+   "new": "to > 0 && Math.abs(to - from) >= 1"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "a one-pixel change is not eased",
+   "old": "Math.abs(to - from) >= 1",
+   "new": "Math.abs(to - from) > 1"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "an unreadable height is eased",
+   "old": "return Number.isFinite(from) && Number.isFinite(to) && from > 0",
+   "new": "return from > 0"
   }
  ]
 }

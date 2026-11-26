@@ -24,6 +24,36 @@
    "label": "a faded-out window is never hidden",
    "old": "                    if (!this.#isOpen && this.#overlay === overlay)\n                        overlay.hide();",
    "new": "                    if (!this.#isOpen && this.#overlay === overlay)\n                        overlay.opacity = 0;"
+  },
+  {
+   "file": "src/ui/results-view.js",
+   "label": "the eased height keeps a fixed height at the end",
+   "old": "                if (isFinished)\n                    actor.set_height(-1);",
+   "new": "                if (isFinished)\n                    actor.set_height(actor.height);"
+  },
+  {
+   "file": "src/ui/results-view.js",
+   "label": "the list never eases",
+   "old": "        if (!needsHeightEase(from, natural))\n            return;",
+   "new": "        if (true)\n            return;"
+  },
+  {
+   "file": "src/ui/results-view.js",
+   "label": "the list eases from the wrong height",
+   "old": "        actor.set_height(from);\n        actor.ease({",
+   "new": "        actor.set_height(natural);\n        actor.ease({"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "the animations setting is ignored",
+   "old": "return systemAllows === true && preference !== false;",
+   "new": "return systemAllows === true;"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the setting is read once instead of at each use",
+   "old": "        const preference = this.#log.guard('reading the animations setting', () => this.#getAnimations(), true);",
+   "new": "        const preference = true;"
   }
  ]
 }

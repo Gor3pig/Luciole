@@ -5,7 +5,7 @@ import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 
-import {backdropClass, verticalLayout} from '../core/layout.js';
+import {backdropClass, motionEnabled, verticalLayout} from '../core/layout.js';
 import {jumpSection, nextSelection} from '../core/merge.js';
 import * as compat from '../shell/compat.js';
 import {describeWindow} from './a11y.js';
@@ -46,6 +46,7 @@ export class Launcher {
     #onActivate;
     #onSecondary;
     #getBackdrop;
+    #getAnimations;
     #overlay = null;
     #panel = null;
     #entry = null;
@@ -57,6 +58,7 @@ export class Launcher {
     #merged = null;
     #selectedKey = null;
     #navigated = false;
+    #settled = false;
     #queryAt = 0;
     #doneAt = 0;
 
@@ -68,14 +70,22 @@ export class Launcher {
      * @param {(item: object) => void} options.onActivate - the user chose a result
      * @param {(item: object) => void} options.onSecondary - the user asked for the other action (Ctrl+Enter)
      * @param {() => string} options.getBackdrop - the dimming setting: 'none', 'light' or 'standard'
+     * @param {() => boolean} options.getAnimations - the animations setting
      */
-    constructor({log, gettext, onQuery, onActivate, onSecondary, getBackdrop}) {
+    constructor({log, gettext, onQuery, onActivate, onSecondary, getBackdrop, getAnimations}) {
         this.#log = log;
         this.#gettext = gettext;
         this.#onQuery = onQuery;
         this.#onActivate = onActivate;
         this.#onSecondary = onSecondary;
         this.#getBackdrop = getBackdrop;
+        this.#getAnimations = getAnimations;
+    }
+
+    // Read at every use, so a change in the preferences applies at once.
+    #motion() {
+        const preference = this.#log.guard('reading the animations setting', () => this.#getAnimations(), true);
+        return motionEnabled(compat.useMotion(), preference);
     }
 
     get isOpen() {
@@ -103,6 +113,9 @@ export class Launcher {
         this.#entry.set_text('');
         this.#overlay.remove_all_transitions();
         this.#panel.remove_all_transitions();
+        this.#view.resetHeight();
+        // What the first search puts in the list while opening appears with the window.
+        this.#settled = false;
         this.#overlay.show();
 
         try {
@@ -120,8 +133,9 @@ export class Launcher {
         this.#stopFocusWatch = compat.connectKeyFocus(() => this.#checkFocus());
         this.#log.debug('opened');
         this.#log.guard('searching the recent items', () => this.#onQuery(''));
+        this.#settled = true;
 
-        if (compat.useMotion()) {
+        if (this.#motion()) {
             this.#overlay.opacity = 0;
             this.#panel.translation_y = -SLIDE_PX;
             this.#overlay.ease({
@@ -147,10 +161,11 @@ export class Launcher {
         this.#unwatchFocus();
         this.#releaseGrab();
         this.#view.clear();
+        this.#view.resetHeight();
         this.#log.debug('closed');
 
         const overlay = this.#overlay;
-        if (compat.useMotion()) {
+        if (this.#motion()) {
             overlay.ease({
                 opacity: 0,
                 duration: CLOSE_MS,
@@ -178,7 +193,7 @@ export class Launcher {
         this.#merged = merged;
         this.#items = merged.items;
         this.#selectedKey = nextSelection(this.#selectedKey, this.#items, this.#navigated);
-        this.#view.update(merged, this.#selectedKey);
+        this.#view.update(merged, this.#selectedKey, this.#settled && this.#motion());
         if (this.#queryAt) {
             const ms = (GLib.get_monotonic_time() - this.#queryAt) / 1000;
             this.#log.debug(`perf query to results: ${ms.toFixed(2)} ms`);

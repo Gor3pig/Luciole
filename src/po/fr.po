@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 00:38+0100\n"
+"POT-Creation-Date: 2026-11-26 08:31+0100\n"
 "PO-Revision-Date: 2026-11-25 20:00+0100\n"
 "Last-Translator: Luciole contributors\n"
 "Language-Team: fr <>\n"
@@ -43,6 +43,16 @@ msgstr "Léger"
 #: src/prefs.js
 msgid "Standard"
 msgstr "Standard"
+
+#: src/prefs.js
+msgid "Animations"
+msgstr "Animations"
+
+#: src/prefs.js
+msgid ""
+"Opening, closing and the list growing. No effect when animations are off in "
+"GNOME"
+msgstr "Ouverture, fermeture et allongement de la liste. Sans effet si les animations sont coupées dans GNOME"
 
 #: src/prefs.js
 msgid "General"

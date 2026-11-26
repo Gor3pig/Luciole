@@ -54,6 +54,7 @@ export default class LucioleExtension extends Extension {
                 onActivate: item => backend.controller?.activate(item),
                 onSecondary: item => backend.controller?.activateSecondary(item),
                 getBackdrop: () => settings.get_string('backdrop'),
+                getAnimations: () => settings.get_boolean('animations'),
             });
             disposables.add(() => launcher.destroy());
 

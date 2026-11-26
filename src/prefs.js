@@ -76,6 +76,15 @@ export default class LucioleExtensionPreferences extends ExtensionPreferences {
         return row;
     }
 
+    _animationsRow(settings) {
+        const row = new Adw.SwitchRow({
+            title: _('Animations'),
+            subtitle: _('Opening, closing and the list growing. No effect when animations are off in GNOME'),
+        });
+        settings.bind('animations', row, 'active', Gio.SettingsBindFlags.DEFAULT);
+        return row;
+    }
+
     _generalPage(window, settings) {
         const page = new Adw.PreferencesPage({title: _('General'), icon_name: 'preferences-system-symbolic'});
 
@@ -85,6 +94,7 @@ export default class LucioleExtensionPreferences extends ExtensionPreferences {
 
         const appearanceGroup = new Adw.PreferencesGroup({title: _('Appearance')});
         appearanceGroup.add(this._backdropRow(settings));
+        appearanceGroup.add(this._animationsRow(settings));
         page.add(appearanceGroup);
 
         const resultsGroup = new Adw.PreferencesGroup({title: _('Results')});

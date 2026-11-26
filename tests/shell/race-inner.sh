@@ -45,6 +45,19 @@ grab_state() {
     shell_eval "(function() { const g = global.stage.get_grab_actor(); return (!g || g === global.stage) ? 'none' : (g.style_class || g.constructor.name); })()"
 }
 
+# The height of the results list, sampled inside the shell every 8 ms (a call from here is too slow
+# to see a 120 ms animation). start_sampler, then do things, then read_samples.
+start_sampler() {
+    shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-results-view')) return a; for (const c of a.get_children()) { const r = find(c); if (r) return r; } return null; })(global.stage) && (function() { const find = a => (a.style_class || '').includes('luciole-results-view') ? a : a.get_children().map(find).find(Boolean); const view = find(global.stage); globalThis.heightSamples = []; globalThis.sampling = true; imports.gi.GLib.timeout_add(imports.gi.GLib.PRIORITY_DEFAULT, 8, () => { globalThis.heightSamples.push(Math.round(view.height)); return globalThis.sampling; }); return 'started'; })()" >/dev/null
+}
+read_samples() {
+    shell_eval "globalThis.sampling = false; globalThis.heightSamples.join(' ')"
+}
+# list_state: "<height> <natural height> <has a fixed height>" of the results list.
+list_state() {
+    shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-results-view')) return Math.round(a.height) + ' ' + Math.round(a.get_preferred_height(-1)[1]) + ' ' + a.natural_height_set; for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
+}
+
 # settle: lets every animation end.
 settle() { sleep 1.2; }
 
@@ -116,6 +129,50 @@ combo
 sleep 0.6
 consistent "reopened while closing, final"
 keyboard_ok "after reopening while closing"
+
+# 6. The list changes height: it eases when animations are on, and jumps when the setting is off.
+# Queries chosen for their number of rows in the test shell: "f" 326 px, "fi" 282, "fir" 238.
+open_and_type() {
+    OPENED=$(count opened)
+    combo
+    i=0; while [ "$(count opened)" -le "$OPENED" ] && [ "$i" -lt 100 ]; do sleep 0.05; i=$((i + 1)); done
+    sleep 0.4
+    typed f
+    sleep 0.6
+}
+open_and_type
+set -- $(list_state)
+[ "$1" = 326 ] || fail "height: expected 326 px for 'f', got '$1'"
+start_sampler
+typed ir
+sleep 0.6
+SAMPLES=$(read_samples)
+set -- $(list_state)
+[ "$1" = 238 ] && [ "$2" = 238 ] && [ "$3" = false ] || fail "height: after easing the list is '$*', expected 238 238 false (exactly natural, no fixed height)"
+BETWEEN=0
+for h in $SAMPLES; do
+    [ "$h" -ge 238 ] && [ "$h" -le 326 ] || fail "height: a sample ($h) is outside 238-326 (overshoot) in: $SAMPLES"
+    [ "$h" != 238 ] && [ "$h" != 326 ] && [ "$h" != 282 ] && BETWEEN=$((BETWEEN + 1))
+done
+[ "$BETWEEN" -ge 2 ] || fail "height: the list did not ease (only $BETWEEN in-between heights) in: $SAMPLES"
+echo "race: height eased from 326 to 238 px through $BETWEEN in-between heights, ends exactly natural"
+escape; escape; settle
+
+gsettings set org.gnome.shell.extensions.luciole animations false || fail "could not turn the animations setting off"
+open_and_type
+start_sampler
+typed ir
+sleep 0.6
+SAMPLES=$(read_samples)
+for h in $SAMPLES; do
+    [ "$h" = 326 ] || [ "$h" = 282 ] || [ "$h" = 238 ] || fail "height: with the setting off, the list passed through $h px in: $SAMPLES"
+done
+set -- $(list_state)
+[ "$1" = 238 ] && [ "$3" = false ] || fail "height: with the setting off the list is '$*'"
+echo "race: with the setting off, the height jumps (no in-between height)"
+escape; escape; settle
+gsettings set org.gnome.shell.extensions.luciole animations true || fail "could not turn the animations setting on"
+consistent "after the height tests"
 
 # 5. The extension disabled while the window animates, then enabled again.
 OPENED=$(count opened)

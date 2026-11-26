@@ -5,10 +5,12 @@ import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import St from 'gi://St';
 
+import {needsHeightEase} from '../core/layout.js';
 import {splitByRanges} from '../core/text.js';
 import * as compat from '../shell/compat.js';
 import {describeList, describeResult, setSelected} from './a11y.js';
 
+const HEIGHT_MS = 120;
 const FALLBACK_ICON = 'application-x-executable-symbolic';
 
 /**
@@ -33,6 +35,7 @@ export class ResultsView {
         });
         // The list scrolls when it is taller than the room the window leaves it.
         this.#actor = new St.ScrollView({
+            style_class: 'luciole-results-view',
             hscrollbar_policy: St.PolicyType.NEVER,
             vscrollbar_policy: St.PolicyType.AUTOMATIC,
             overlay_scrollbars: true,
@@ -55,7 +58,9 @@ export class ResultsView {
      * @param {{topHit: object | null, sections: Array<{title: string, items: object[]}>}} merged
      * @param {string | null} selectedKey
      */
-    update(merged, selectedKey) {
+    update(merged, selectedKey, animate = false) {
+        // The height on screen right now (mid-animation included), before the rows change.
+        const from = this.#actor.mapped ? this.#actor.height : 0;
         this.clear();
         if (merged.topHit) {
             const _ = this.#gettext;
@@ -68,6 +73,38 @@ export class ResultsView {
                 this.#addRow(item);
         }
         this.select(selectedKey);
+        if (animate)
+            this.#easeHeight(from);
+        else
+            this.resetHeight();
+    }
+
+    /** Back to the natural height, whatever animation was running. */
+    resetHeight() {
+        this.#actor.remove_all_transitions();
+        this.#actor.set_height(-1);
+    }
+
+    // The list grows or shrinks from what it showed to what it needs, instead of jumping; the
+    // search field above does not move. Ends with no fixed height at all, so it is exactly the
+    // natural one.
+    #easeHeight(from) {
+        const actor = this.#actor;
+        actor.remove_all_transitions();
+        actor.set_height(-1);
+        const [, natural] = actor.get_preferred_height(actor.width > 0 ? actor.width : -1);
+        if (!needsHeightEase(from, natural))
+            return;
+        actor.set_height(from);
+        actor.ease({
+            height: natural,
+            duration: HEIGHT_MS,
+            mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            onStopped: isFinished => {
+                if (isFinished)
+                    actor.set_height(-1);
+            },
+        });
     }
 
     select(key) {
