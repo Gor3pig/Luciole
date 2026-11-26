@@ -5,6 +5,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
 import {Frecency} from '../core/frecency.js';
+import {QueryHistory} from '../core/query-history.js';
 
 const SAVE_DELAY_MS = 2000;
 // The history holds a few hundred short entries (see Frecency); a file far larger than that is
@@ -12,22 +13,29 @@ const SAVE_DELAY_MS = 2000;
 export const MAX_HISTORY_BYTES = 1024 * 1024;
 
 /**
- * Keeps the usage history in a private file of the user's data directory.
+ * Keeps one kind of history in a private file of the user's data directory.
  * Nothing here blocks the main loop: reading and writing are asynchronous, and
- * a burst of activations is written once, a moment later.
+ * a burst of changes is written once, a moment later.
+ *
+ * The history object has dirty, markSaved() and serialize(); `revive` rebuilds one from
+ * parsed JSON (anything malformed gives an empty one) and `empty` makes a new one.
  */
-export class FrecencyStore {
+class HistoryFile {
     #file;
     #directory;
     #log;
     #scheduler;
+    #revive;
+    #empty;
     #pending = null;
 
-    constructor({log, scheduler, directory = GLib.build_filenamev([GLib.get_user_data_dir(), 'luciole'])}) {
+    constructor({log, scheduler, directory, fileName, revive, empty}) {
         this.#log = log;
         this.#scheduler = scheduler;
         this.#directory = Gio.File.new_for_path(directory);
-        this.#file = this.#directory.get_child('frecency.json');
+        this.#file = this.#directory.get_child(fileName);
+        this.#revive = revive;
+        this.#empty = empty;
     }
 
     /** Reads the history. A missing, unreadable or corrupt file gives an empty one. */
@@ -45,7 +53,7 @@ export class FrecencyStore {
             });
             if (size > MAX_HISTORY_BYTES) {
                 this.#log.warn(`history ignored: the file is ${size} bytes, more than the ${MAX_HISTORY_BYTES} allowed`);
-                return new Frecency();
+                return this.#empty();
             }
             const bytes = await new Promise((resolve, reject) => {
                 this.#file.load_contents_async(null, (file, result) => {
@@ -56,16 +64,16 @@ export class FrecencyStore {
                     }
                 });
             });
-            return Frecency.from(JSON.parse(new TextDecoder().decode(bytes)));
+            return this.#revive(JSON.parse(new TextDecoder().decode(bytes)));
         } catch (error) {
             if (!error.matches?.(Gio.IOErrorEnum, Gio.IOErrorEnum.NOT_FOUND))
                 this.#log.warn(`history ignored: ${error.message}`);
-            return new Frecency();
+            return this.#empty();
         }
     }
 
     /** Writes the history in a moment; calls made in the meantime share that write. */
-    scheduleSave(frecency) {
+    scheduleSave(history) {
         if (this.#pending)
             return;
         this.#pending = this.#scheduler.timeout(SAVE_DELAY_MS);
@@ -73,19 +81,19 @@ export class FrecencyStore {
         pending.promise.then(() => {
             if (this.#pending === pending) {
                 this.#pending = null;
-                this.save(frecency);
+                this.save(history);
             }
         });
     }
 
     /** Writes now (asynchronously). Does nothing when nothing changed. */
-    save(frecency) {
+    save(history) {
         this.#pending?.cancel();
         this.#pending = null;
-        if (!frecency.dirty)
+        if (!history.dirty)
             return;
-        const bytes = new TextEncoder().encode(JSON.stringify(frecency.serialize()));
-        frecency.markSaved();
+        const bytes = new TextEncoder().encode(JSON.stringify(history.serialize()));
+        history.markSaved();
         this.#write(bytes).catch(error => {
             this.#log.error('could not save the history', error);
         });
@@ -103,7 +111,7 @@ export class FrecencyStore {
                         return;
                     }
                 }
-                // PRIVATE: the file records which applications the user opens.
+                // PRIVATE: the file records what the user opens and searches for.
                 this.#file.replace_contents_bytes_async(
                     new GLib.Bytes(bytes), null, false,
                     Gio.FileCreateFlags.PRIVATE | Gio.FileCreateFlags.REPLACE_DESTINATION,
@@ -117,5 +125,21 @@ export class FrecencyStore {
                     });
             });
         });
+    }
+}
+
+const defaultDirectory = () => GLib.build_filenamev([GLib.get_user_data_dir(), 'luciole']);
+
+/** The usage history (which results were opened, how often and when). */
+export class FrecencyStore extends HistoryFile {
+    constructor({log, scheduler, directory = defaultDirectory()}) {
+        super({log, scheduler, directory, fileName: 'frecency.json', revive: Frecency.from, empty: () => new Frecency()});
+    }
+}
+
+/** The searches that led to a result being opened. */
+export class QueryHistoryStore extends HistoryFile {
+    constructor({log, scheduler, directory = defaultDirectory()}) {
+        super({log, scheduler, directory, fileName: 'queries.json', revive: QueryHistory.from, empty: () => new QueryHistory()});
     }
 }

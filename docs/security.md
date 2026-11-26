@@ -16,8 +16,8 @@ source is handled. It also lists what is *not* covered yet.
 | Area | Behaviour |
 |---|---|
 | Network | None. Nothing is sent anywhere: no telemetry, no web search, no update check. |
-| Reads | The installed applications (through GIO), the file index of the desktop search service (read-only queries), its own settings (GSettings) and its own history file. |
-| Writes | Its settings, and one history file in the user's data directory (`luciole/frecency.json`), created readable by the user only. |
+| Reads | The installed applications (through GIO), the file index of the desktop search service (read-only queries), its own settings (GSettings) and its own history files. |
+| Writes | Its settings, and two history files in the user's data directory (`luciole/frecency.json` and `luciole/queries.json`), created readable by the user only. |
 | Runs | Applications the user chooses, through GIO. Files and folders the user chooses, through the default handler for their address. Nothing else is ever executed. |
 | Other processes | None started by the extension itself. |
 
@@ -26,13 +26,20 @@ dates. It is capped in size (a few hundred entries, ten dates each), a file over
 1 MB is not read at all, it can be cleared from the preferences, and it is never read by
 anything but Luciole.
 
+The searches file (`queries.json`) records the text of the last 20 searches that led to a result
+being opened, so the up arrow can bring one back. A search that led nowhere is never written. It
+is on by default, can be switched off in the preferences (which erases it at once) or cleared
+there, is capped at 1 MB like the other file, and what is read from it goes through the same
+cleaning as a result name (no control or bidirectional characters, at most 256 characters, no
+duplicates).
+
 ## Where untrusted data comes from
 
 1. **What the user types.** Not trusted: it can contain anything, including
    characters that mean something to a query language.
 2. **The file index.** File names and paths are chosen by whoever created the
    files (a downloaded archive, another user of the machine).
-3. **The history file.** Another program running as the same user could edit it,
+3. **The history files.** Another program running as the same user could edit it,
    and it can be corrupted by a crash or a full disk.
 4. **Application entries** (`.desktop` files). Names and keywords are written by
    package authors and may be odd or malformed.
@@ -55,7 +62,7 @@ anything but Luciole.
   characters and line breaks are removed, and so are the bidirectional override and isolate
   characters that can make a file name read as a harmless one; a very long name is cut. A result
   left with no title is dropped.
-* **A broken history is ignored.** Unreadable, corrupt or hostile content (wrong
+* **A broken history is ignored** (both files). Unreadable, corrupt or hostile content (wrong
   types, non-finite numbers, too many entries) gives an empty history, with a
   warning in the log, and never an exception.
 * **Only existing local files are opened.** An address must be `file:///` and a path (no host, no

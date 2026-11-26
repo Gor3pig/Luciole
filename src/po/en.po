@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 08:31+0100\n"
+"POT-Creation-Date: 2026-11-26 10:13+0100\n"
 "PO-Revision-Date: 2026-11-25 20:00+0100\n"
 "Last-Translator: Luciole contributors\n"
 "Language-Team: en <>\n"
@@ -52,7 +52,9 @@ msgstr "Animations"
 msgid ""
 "Opening, closing and the list growing. No effect when animations are off in "
 "GNOME"
-msgstr "Opening, closing and the list growing. No effect when animations are off in GNOME"
+msgstr ""
+"Opening, closing and the list growing. No effect when animations are off in "
+"GNOME"
 
 #: src/prefs.js
 msgid "General"
@@ -84,11 +86,18 @@ msgstr "History"
 
 #: src/prefs.js
 msgid ""
-"Luciole remembers which results you open, only on this computer, to rank "
-"them better."
-msgstr ""
-"Luciole remembers which results you open, only on this computer, to rank "
-"them better."
+"Luciole remembers which results you open and the searches that led to them, "
+"only on this computer."
+msgstr "Luciole remembers which results you open and the searches that led to them, only on this computer."
+
+#: src/prefs.js
+msgid "Remember Searches"
+msgstr "Remember Searches"
+
+#: src/prefs.js
+msgid ""
+"Lets the up arrow bring back a previous search. Turning this off erases them"
+msgstr "Lets the up arrow bring back a previous search. Turning this off erases them"
 
 #: src/prefs.js
 msgid "Clear History"
@@ -187,6 +196,11 @@ msgstr "Choose a Folder to Exclude"
 #: src/providers/files.js
 msgid "Show in Folder"
 msgstr "Show in Folder"
+
+#: src/ui/launcher.js
+#, javascript-format
+msgid "Previous search %d of %d"
+msgstr "Previous search %d of %d"
 
 #: src/ui/launcher.js
 msgid "Search applications and files"

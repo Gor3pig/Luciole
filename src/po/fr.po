@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 08:31+0100\n"
+"POT-Creation-Date: 2026-11-26 10:13+0100\n"
 "PO-Revision-Date: 2026-11-25 20:00+0100\n"
 "Last-Translator: Luciole contributors\n"
 "Language-Team: fr <>\n"
@@ -52,7 +52,9 @@ msgstr "Animations"
 msgid ""
 "Opening, closing and the list growing. No effect when animations are off in "
 "GNOME"
-msgstr "Ouverture, fermeture et allongement de la liste. Sans effet si les animations sont coupées dans GNOME"
+msgstr ""
+"Ouverture, fermeture et allongement de la liste. Sans effet si les "
+"animations sont coupées dans GNOME"
 
 #: src/prefs.js
 msgid "General"
@@ -84,11 +86,18 @@ msgstr "Historique"
 
 #: src/prefs.js
 msgid ""
-"Luciole remembers which results you open, only on this computer, to rank "
-"them better."
-msgstr ""
-"Luciole retient les résultats que vous ouvrez, uniquement sur cet "
-"ordinateur, pour mieux les classer."
+"Luciole remembers which results you open and the searches that led to them, "
+"only on this computer."
+msgstr "Luciole retient les résultats que vous ouvrez et les recherches qui y ont mené, uniquement sur cet ordinateur."
+
+#: src/prefs.js
+msgid "Remember Searches"
+msgstr "Retenir les recherches"
+
+#: src/prefs.js
+msgid ""
+"Lets the up arrow bring back a previous search. Turning this off erases them"
+msgstr "Permet de rappeler une recherche avec la flèche haut. Désactiver efface les recherches retenues"
 
 #: src/prefs.js
 msgid "Clear History"
@@ -192,6 +201,11 @@ msgstr "Choisir un dossier à exclure"
 #: src/providers/files.js
 msgid "Show in Folder"
 msgstr "Afficher dans le dossier"
+
+#: src/ui/launcher.js
+#, javascript-format
+msgid "Previous search %d of %d"
+msgstr "Recherche précédente %d sur %d"
 
 #: src/ui/launcher.js
 msgid "Search applications and files"

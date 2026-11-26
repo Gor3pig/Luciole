@@ -7,7 +7,8 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
 import {Frecency} from '../src/core/frecency.js';
-import {FrecencyStore, MAX_HISTORY_BYTES} from '../src/shell/persistence.js';
+import {QueryHistory} from '../src/core/query-history.js';
+import {FrecencyStore, MAX_HISTORY_BYTES, QueryHistoryStore} from '../src/shell/persistence.js';
 import {FakeScheduler} from './fakes/scheduler.js';
 import {recordingLog} from './fakes/provider.js';
 import {assert, assertEquals, test} from './harness.js';
@@ -90,4 +91,60 @@ test('a history file just under the limit is still read', async () => {
     const frecency = await t.store.load();
     assertEquals(frecency.size, 1);
     t.cleanup();
+});
+
+// The searches file: same machinery, its own file.
+function setupQueries() {
+    const directory = GLib.dir_make_tmp('luciole-queries-XXXXXX');
+    const log = recordingLog();
+    const store = new QueryHistoryStore({log, scheduler: new FakeScheduler(), directory});
+    const file = Gio.File.new_for_path(GLib.build_filenamev([directory, 'queries.json']));
+    const cleanup = () => {
+        try {
+            file.delete(null);
+        } catch {
+            // Never written.
+        }
+        Gio.File.new_for_path(directory).delete(null);
+    };
+    return {log, store, file, cleanup};
+}
+
+test('remembered searches are saved to their own private file and read back', async () => {
+    const t = setupQueries();
+    const history = new QueryHistory();
+    history.record('firefox');
+    history.record('notes');
+    t.store.save(history);
+    await untilExists(t.file);
+    const mode = t.file.query_info('unix::mode', Gio.FileQueryInfoFlags.NONE, null).get_attribute_uint32('unix::mode');
+    assertEquals(mode & 0o777, 0o600, 'the searches file must be readable by its owner only');
+    assertEquals((await t.store.load()).entries, ['notes', 'firefox']);
+    t.cleanup();
+});
+
+test('no searches file, or a corrupt one, gives an empty history', async () => {
+    const t = setupQueries();
+    assertEquals((await t.store.load()).entries, []);
+    assertEquals(t.log.lines, []);
+    t.file.replace_contents(new TextEncoder().encode('{"queries": [oops'), null, false, Gio.FileCreateFlags.NONE, null);
+    assertEquals((await t.store.load()).entries, []);
+    assert(t.log.lines.some(line => line.startsWith('warn: history ignored')), 'no warning');
+    t.cleanup();
+});
+
+test('a searches file larger than the limit is not read at all', async () => {
+    const t = setupQueries();
+    t.file.replace_contents(new Uint8Array(MAX_HISTORY_BYTES + 1).fill(0x20), null, false, Gio.FileCreateFlags.NONE, null);
+    assertEquals((await t.store.load()).entries, []);
+    assert(t.log.lines.some(line => line.includes('history ignored') && line.includes('allowed')), 'no warning');
+    t.cleanup();
+});
+
+test('nothing changed, nothing written', async () => {
+    const t = setupQueries();
+    t.store.save(new QueryHistory());
+    await sleep(100);
+    assert(!t.file.query_exists(null), 'an unchanged history must not create a file');
+    Gio.File.new_for_path(t.file.get_parent().get_path()).delete(null);
 });

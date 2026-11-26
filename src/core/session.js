@@ -71,12 +71,16 @@ export class SearchController {
     #log;
     #onUpdate;
     #onFrecencyChange;
+    #queryHistory;
+    #rememberQueries;
+    #onQueryHistoryChange;
     #mergeOptions;
 
     #cancellable = null;
     #cancelFrame = null;
     #scored = new Map();
     #emptyQuery = true;
+    #query = '';
 
     /**
      * @param {object} options
@@ -86,15 +90,21 @@ export class SearchController {
      * @param {object} options.log
      * @param {(merged: ReturnType<typeof mergeResults>, state: {done: boolean}) => void} options.onUpdate
      * @param {() => void} [options.onFrecencyChange]
+     * @param {import('./query-history.js').QueryHistory} [options.queryHistory] - where useful searches are remembered
+     * @param {() => boolean} [options.rememberQueries] - asked at each use: whether searches may be remembered now
+     * @param {() => void} [options.onQueryHistoryChange]
      * @param {object} [options.mergeOptions]
      */
-    constructor({getProviders, frecency, scheduler, log, onUpdate, onFrecencyChange = () => {}, mergeOptions = {}}) {
+    constructor({getProviders, frecency, scheduler, log, onUpdate, onFrecencyChange = () => {}, queryHistory = null, rememberQueries = () => false, onQueryHistoryChange = () => {}, mergeOptions = {}}) {
         this.#getProviders = getProviders;
         this.#frecency = frecency;
         this.#scheduler = scheduler;
         this.#log = log;
         this.#onUpdate = onUpdate;
         this.#onFrecencyChange = onFrecencyChange;
+        this.#queryHistory = queryHistory;
+        this.#rememberQueries = rememberQueries;
+        this.#onQueryHistoryChange = onQueryHistoryChange;
         this.#mergeOptions = mergeOptions;
     }
 
@@ -112,6 +122,7 @@ export class SearchController {
         this.#scored = new Map();
 
         const query = rawQuery.trim();
+        this.#query = query;
         const matcher = createMatcher(query);
         this.#emptyQuery = matcher.isEmpty;
         const alive = () => !cancellable.is_cancelled();
@@ -131,6 +142,7 @@ export class SearchController {
         const provider = this.#getProviders().find(p => p.id === item.providerId);
         if (!provider)
             return false;
+        const query = this.#query;
         const done = await this.#log.guardAsync(`activating ${item.key}`, async () => {
             await provider.activate(item.result, options);
             return true;
@@ -139,7 +151,20 @@ export class SearchController {
             this.#frecency.record(item.result.frecencyKey, this.#scheduler.now());
             this.#onFrecencyChange();
         }
+        if (done)
+            this.#rememberQuery(query);
         return done;
+    }
+
+    // A search is kept only once it led somewhere, and only while the user allows it.
+    #rememberQuery(query) {
+        if (!this.#queryHistory || query === '')
+            return;
+        const allowed = this.#log.guard('reading the remember-searches setting', () => this.#rememberQueries(), false);
+        if (!allowed)
+            return;
+        this.#queryHistory.record(query);
+        this.#onQueryHistoryChange();
     }
 
     /**
@@ -151,10 +176,14 @@ export class SearchController {
         const [action] = provider?.secondaryActions?.(item.result) ?? [];
         if (!action)
             return false;
-        return this.#log.guardAsync(`action ${action.id} on ${item.key}`, async () => {
+        const query = this.#query;
+        const done = await this.#log.guardAsync(`action ${action.id} on ${item.key}`, async () => {
             await provider.activateAction(item.result, action);
             return true;
         }, false);
+        if (done)
+            this.#rememberQuery(query);
+        return done;
     }
 
     /** Cancels everything in flight. Results that arrive afterwards are ignored. */

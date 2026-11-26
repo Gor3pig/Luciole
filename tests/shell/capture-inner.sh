@@ -66,6 +66,14 @@ if [ "$STATE" = open ]; then
         done
     fi
 fi
+if [ -n "${CAPTURE_UP:-}" ]; then
+    n=$CAPTURE_UP
+    while [ "$n" -gt 0 ]; do
+        press Up
+        n=$((n - 1))
+    done
+    sleep 1
+fi
 if [ -n "${CAPTURE_DOWN:-}" ]; then
     n=$CAPTURE_DOWN
     while [ "$n" -gt 0 ]; do

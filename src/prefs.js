@@ -109,8 +109,14 @@ export default class LucioleExtensionPreferences extends ExtensionPreferences {
 
         const historyGroup = new Adw.PreferencesGroup({
             title: _('History'),
-            description: _('Luciole remembers which results you open, only on this computer, to rank them better.'),
+            description: _('Luciole remembers which results you open and the searches that led to them, only on this computer.'),
         });
+        const remember = new Adw.SwitchRow({
+            title: _('Remember Searches'),
+            subtitle: _('Lets the up arrow bring back a previous search. Turning this off erases them'),
+        });
+        settings.bind('remember-queries', remember, 'active', Gio.SettingsBindFlags.DEFAULT);
+        historyGroup.add(remember);
         const clear = new Adw.ButtonRow({title: _('Clear History'), css_classes: ['destructive-action']});
         clear.connect('activated', () => {
             settings.set_int('history-generation', settings.get_int('history-generation') + 1);

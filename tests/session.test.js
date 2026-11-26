@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 import {Frecency} from '../src/core/frecency.js';
+import {QueryHistory} from '../src/core/query-history.js';
 import {SearchController} from '../src/core/session.js';
 import {FakeScheduler} from './fakes/scheduler.js';
 import {cancelledError, fakeProvider, recordingLog, result} from './fakes/provider.js';
@@ -463,4 +464,97 @@ test('a clean result is shown as it is, without being copied', async () => {
 test('when every matched text is emptied by the cleaning, the result is still found by its title', async () => {
     const {items} = await shown([result('1', 'Report', {matchFields: [{text: RLO}, RLO]})]);
     assertEquals(items.map(i => i.title), ['Report']);
+});
+
+// Searches that led to opening a result.
+function historySetup({remember = () => true, secondary = false} = {}) {
+    const scheduler = new FakeScheduler();
+    const apps = fakeProvider(scheduler, {id: 'apps', results: [result('1', 'Firefox', {frecencyKey: 'apps:1'})]});
+    if (secondary) {
+        apps.secondaryActions = () => [{id: 'folder'}];
+    }
+    const queryHistory = new QueryHistory();
+    const changes = [];
+    const log = recordingLog();
+    const controller = new SearchController({
+        getProviders: () => [apps], frecency: new Frecency(), scheduler, log, onUpdate() {},
+        queryHistory, rememberQueries: remember, onQueryHistoryChange: () => changes.push(1),
+    });
+    const item = {key: 'apps:1', providerId: 'apps', result: result('1', 'Firefox', {frecencyKey: 'apps:1'})};
+    return {apps, queryHistory, changes, log, controller, item};
+}
+
+test('a search that led to opening a result is remembered', async () => {
+    const t = historySetup();
+    await t.controller.search('  fire ');
+    assert(await t.controller.activate(t.item), 'activated');
+    assertEquals(t.queryHistory.entries, ['fire']);
+    assertEquals(t.changes.length, 1);
+});
+
+test('the secondary action (show in folder) remembers the search too', async () => {
+    const t = historySetup({secondary: true});
+    await t.controller.search('notes');
+    assert(await t.controller.activateSecondary(t.item), 'action done');
+    assertEquals(t.queryHistory.entries, ['notes']);
+});
+
+test('a search that was typed but led nowhere is not remembered', async () => {
+    const t = historySetup();
+    await t.controller.search('fire');
+    await t.controller.search('firef');
+    assertEquals(t.queryHistory.entries, []);
+    assertEquals(t.changes.length, 0);
+});
+
+test('opening a result from the empty field remembers nothing', async () => {
+    const t = historySetup();
+    await t.controller.search('');
+    await t.controller.activate(t.item);
+    assertEquals(t.queryHistory.entries, []);
+});
+
+test('a failed activation does not remember the search', async () => {
+    const t = historySetup();
+    t.apps.activate = async () => {
+        throw new Error('cannot launch');
+    };
+    await t.controller.search('fire');
+    assertEquals(await t.controller.activate(t.item), false);
+    assertEquals(t.queryHistory.entries, []);
+});
+
+test('with the setting off nothing is remembered', async () => {
+    const t = historySetup({remember: () => false});
+    await t.controller.search('fire');
+    await t.controller.activate(t.item);
+    assertEquals(t.queryHistory.entries, []);
+    assertEquals(t.changes.length, 0);
+});
+
+test('a setting that cannot be read counts as off, and is logged', async () => {
+    const t = historySetup({remember: () => {
+        throw new Error('settings gone');
+    }});
+    await t.controller.search('fire');
+    await t.controller.activate(t.item);
+    assertEquals(t.queryHistory.entries, []);
+    assert(t.log.lines.some(l => l.includes('settings gone')), 'logged');
+});
+
+test('the search remembered is the one of the moment the result was chosen', async () => {
+    const t = historySetup();
+    await t.controller.search('fire');
+    const pending = t.controller.activate(t.item);
+    await t.controller.search('something else typed meanwhile');
+    await pending;
+    assertEquals(t.queryHistory.entries, ['fire']);
+});
+
+test('without a history object the controller still works', async () => {
+    const scheduler = new FakeScheduler();
+    const apps = fakeProvider(scheduler, {id: 'apps'});
+    const c = new SearchController({getProviders: () => [apps], frecency: new Frecency(), scheduler, log: recordingLog(), onUpdate() {}});
+    await c.search('fire');
+    assert(await c.activate({key: 'apps:1', providerId: 'apps', result: result('1', 'Firefox')}), 'activated');
 });

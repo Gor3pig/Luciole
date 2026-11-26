@@ -7,6 +7,7 @@ import St from 'gi://St';
 
 import {backdropClass, motionEnabled, verticalLayout} from '../core/layout.js';
 import {jumpSection, nextSelection} from '../core/merge.js';
+import {HistoryCursor} from '../core/query-history.js';
 import * as compat from '../shell/compat.js';
 import {describeWindow} from './a11y.js';
 import {ResultsView} from './results-view.js';
@@ -47,6 +48,10 @@ export class Launcher {
     #onSecondary;
     #getBackdrop;
     #getAnimations;
+    #getQueries;
+    #history = new HistoryCursor();
+    #recalling = false;
+    #hint = null;
     #overlay = null;
     #panel = null;
     #entry = null;
@@ -71,8 +76,9 @@ export class Launcher {
      * @param {(item: object) => void} options.onSecondary - the user asked for the other action (Ctrl+Enter)
      * @param {() => string} options.getBackdrop - the dimming setting: 'none', 'light' or 'standard'
      * @param {() => boolean} options.getAnimations - the animations setting
+     * @param {() => string[]} options.getQueries - the remembered searches, newest first
      */
-    constructor({log, gettext, onQuery, onActivate, onSecondary, getBackdrop, getAnimations}) {
+    constructor({log, gettext, onQuery, onActivate, onSecondary, getBackdrop, getAnimations, getQueries = () => []}) {
         this.#log = log;
         this.#gettext = gettext;
         this.#onQuery = onQuery;
@@ -80,6 +86,7 @@ export class Launcher {
         this.#onSecondary = onSecondary;
         this.#getBackdrop = getBackdrop;
         this.#getAnimations = getAnimations;
+        this.#getQueries = getQueries;
     }
 
     // Read at every use, so a change in the preferences applies at once.
@@ -110,7 +117,9 @@ export class Launcher {
         this.#merged = null;
         this.#selectedKey = null;
         this.#navigated = false;
+        this.#history.reset();
         this.#entry.set_text('');
+        this.#showHint();
         this.#overlay.remove_all_transitions();
         this.#panel.remove_all_transitions();
         this.#view.resetHeight();
@@ -267,6 +276,40 @@ export class Launcher {
             this.#activate(item);
     }
 
+    // The remembered searches, read at each use (the setting may have changed).
+    #queries() {
+        const list = this.#log.guard('reading the remembered searches', () => this.#getQueries(), []);
+        return Array.isArray(list) ? list : [];
+    }
+
+    // Puts a remembered search in the field (selected, so typing replaces it) and searches for it.
+    // null means there was nothing to bring back; '' means back to the empty field.
+    #recall(text) {
+        if (text === null)
+            return;
+        this.#recalling = true;
+        try {
+            this.#entry.set_text(text);
+            this.#entry.clutter_text.set_selection(0, -1);
+        } finally {
+            this.#recalling = false;
+        }
+        this.#showHint();
+    }
+
+    #showHint() {
+        if (!this.#hint)
+            return;
+        const where = this.#history.where(this.#queries());
+        if (!where) {
+            this.#hint.hide();
+            return;
+        }
+        const _ = this.#gettext;
+        this.#hint.set_text(_('Previous search %d of %d').format(where.position, where.total));
+        this.#hint.show();
+    }
+
     #checkFocus() {
         if (!this.#isOpen || !this.#overlay)
             return;
@@ -330,6 +373,10 @@ export class Launcher {
             icon_name: 'edit-find-symbolic',
         }));
         entry.accessible_name = _('Search');
+        // Shown while a remembered search is on screen (see #recall).
+        const hint = new St.Label({style_class: 'luciole-history-hint', y_align: Clutter.ActorAlign.CENTER, visible: false});
+        entry.set_secondary_icon(hint);
+        this.#hint = hint;
 
         const view = new ResultsView({
             gettext: this.#gettext,
@@ -359,6 +406,11 @@ export class Launcher {
         const text = entry.clutter_text;
         text.max_length = MAX_QUERY_LENGTH;
         text.connect('text-changed', () => {
+            // Typing, or Escape, leaves the remembered searches; bringing one back does not.
+            if (!this.#recalling) {
+                this.#history.reset();
+                this.#showHint();
+            }
             this.#queryAt = GLib.get_monotonic_time();
             this.#doneAt = this.#queryAt;
             this.#navigated = false;
@@ -381,10 +433,18 @@ export class Launcher {
             }
             switch (symbol) {
             case Clutter.KEY_Down:
-                this.#moveSelection(1);
+                // While going through the remembered searches, the arrows keep going through them.
+                if (!this.#history.active)
+                    this.#moveSelection(1);
+                else
+                    this.#recall(this.#history.newer(this.#queries()));
                 return Clutter.EVENT_STOP;
             case Clutter.KEY_Up:
-                this.#moveSelection(-1);
+                // In an empty field (nothing to choose from yet) the up arrow brings a search back.
+                if (this.#history.active || entry.get_text() === '')
+                    this.#recall(this.#history.older(this.#queries()));
+                else
+                    this.#moveSelection(-1);
                 return Clutter.EVENT_STOP;
             case Clutter.KEY_Tab:
                 this.#jumpSection(1);

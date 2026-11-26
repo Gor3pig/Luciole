@@ -1,0 +1,59 @@
+{
+ "description": "Mutants for the remembered searches in the live launcher: arrows, typing, erasing. Not listed because equivalent: the cursor reset when opening (emptying the field resets it too) and the setting check when reading the searches (turning the setting off already erases them).",
+ "slow": true,
+ "timeout": 400,
+ "command": [
+  "sh",
+  "tests/shell/history.sh"
+ ],
+ "mutants": [
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the up arrow does nothing in an empty field",
+   "old": "if (this.#history.active || entry.get_text() === '')",
+   "new": "if (this.#history.active)"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the up arrow recalls even with text typed",
+   "old": "if (this.#history.active || entry.get_text() === '')",
+   "new": "if (true)"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the down arrow ignores the history",
+   "old": "                if (!this.#history.active)\n                    this.#moveSelection(1);\n                else\n                    this.#recall(this.#history.newer(this.#queries()));",
+   "new": "                this.#moveSelection(1);"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "typing does not leave the remembered searches",
+   "old": "            if (!this.#recalling) {\n                this.#history.reset();",
+   "new": "            if (false) {\n                this.#history.reset();"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "bringing a search back leaves the history at once",
+   "old": "            if (!this.#recalling) {\n                this.#history.reset();",
+   "new": "            if (true) {\n                this.#history.reset();"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the hint never shows",
+   "old": "        this.#hint.set_text(_('Previous search %d of %d').format(where.position, where.total));\n        this.#hint.show();",
+   "new": "        this.#hint.hide();"
+  },
+  {
+   "file": "src/extension.js",
+   "label": "Clear History keeps the searches",
+   "old": "            queryHistory.clear();\n            queryStore.save(queryHistory);\n            log.debug('usage and search history erased');",
+   "new": "            log.debug('usage and search history erased');"
+  },
+  {
+   "file": "src/extension.js",
+   "label": "turning the setting off keeps the searches",
+   "old": "            if (settings.get_boolean('remember-queries'))\n                return;\n            queryHistory.clear();",
+   "new": "            if (true)\n                return;\n            queryHistory.clear();"
+  }
+ ]
+}

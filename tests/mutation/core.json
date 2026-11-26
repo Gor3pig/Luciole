@@ -1,5 +1,5 @@
 {
- "description": "Mutants for the core logic: each one breaks the code on purpose and the unit tests must fail.",
+ "description": "Mutants for the core logic: each one breaks the code on purpose and the unit tests must fail. Not listed because equivalent: the session's own refusal of an empty search (QueryHistory.record refuses it too).",
  "command": [
   "gjs",
   "-m",
@@ -549,14 +549,14 @@
   {
    "file": "src/core/session.js",
    "label": "secondary needs no action",
-   "old": "        if (!action)\n            return false;\n        return this.#log.guardAsync(`action",
-   "new": "        return this.#log.guardAsync(`action"
+   "old": "        if (!action)\n            return false;\n        const query = this.#query;",
+   "new": "        const query = this.#query;"
   },
   {
    "file": "src/core/session.js",
    "label": "secondary failure thrown",
-   "old": "        return this.#log.guardAsync(`action ${action.id} on ${item.key}`, async () => {\n            await provider.activateAction(item.result, action);\n            return true;\n        }, false);",
-   "new": "        await provider.activateAction(item.result, action);\n        return true;"
+   "old": "        const done = await this.#log.guardAsync(`action ${action.id} on ${item.key}`, async () => {\n            await provider.activateAction(item.result, action);\n            return true;\n        }, false);",
+   "new": "        await provider.activateAction(item.result, action);\n        const done = true;"
   },
   {
    "file": "src/core/provider.js",
@@ -797,6 +797,132 @@
    "label": "an unreadable height is eased",
    "old": "return Number.isFinite(from) && Number.isFinite(to) && from > 0",
    "new": "return from > 0"
+  },
+  {
+   "file": "src/core/query-history.js",
+   "label": "the history grows without limit",
+   "old": "[text, ...this.#entries.filter(entry => !sameQuery(entry, text))].slice(0, MAX_QUERIES)",
+   "new": "[text, ...this.#entries.filter(entry => !sameQuery(entry, text))]"
+  },
+  {
+   "file": "src/core/query-history.js",
+   "label": "searches differing by case are kept twice",
+   "old": "const sameQuery = (a, b) => a.toLowerCase() === b.toLowerCase();",
+   "new": "const sameQuery = (a, b) => a === b;"
+  },
+  {
+   "file": "src/core/query-history.js",
+   "label": "a search longer than the field is kept",
+   "old": "text.length > MAX_QUERY_CHARS)",
+   "new": "false)"
+  },
+  {
+   "file": "src/core/query-history.js",
+   "label": "the longest search the field takes is refused",
+   "old": "text.length > MAX_QUERY_CHARS)",
+   "new": "text.length >= MAX_QUERY_CHARS)"
+  },
+  {
+   "file": "src/core/query-history.js",
+   "label": "an empty search is remembered",
+   "old": "        if (text === '')\n            return;\n        if (this.#entries[0] === text)",
+   "new": "        if (this.#entries[0] === text)"
+  },
+  {
+   "file": "src/core/query-history.js",
+   "label": "the same search first is recorded again",
+   "old": "        if (this.#entries[0] === text)\n            return;\n",
+   "new": "\n"
+  },
+  {
+   "file": "src/core/query-history.js",
+   "label": "a loaded file keeps duplicates",
+   "old": "if (text !== '' && !history.#entries.some(entry => sameQuery(entry, text)))",
+   "new": "if (text !== '')"
+  },
+  {
+   "file": "src/core/query-history.js",
+   "label": "a loaded file keeps too many searches",
+   "old": "            if (history.#entries.length >= MAX_QUERIES)\n                break;\n",
+   "new": "\n"
+  },
+  {
+   "file": "src/core/query-history.js",
+   "label": "a loaded file with the wrong shape is read anyway",
+   "old": "Array.isArray(data.queries) ? data.queries : []",
+   "new": "data.queries ?? []"
+  },
+  {
+   "file": "src/core/query-history.js",
+   "label": "entries hands out the real list",
+   "old": "        return [...this.#entries];\n    }\n\n    get size",
+   "new": "        return this.#entries;\n    }\n\n    get size"
+  },
+  {
+   "file": "src/core/query-history.js",
+   "label": "clearing is not a change",
+   "old": "        if (this.#entries.length > 0)\n            this.#dirty = true;\n        this.#entries = [];",
+   "new": "        this.#entries = [];"
+  },
+  {
+   "file": "src/core/query-history.js",
+   "label": "recording is not a change",
+   "old": "        this.#entries = [text, ...this.#entries.filter(entry => !sameQuery(entry, text))].slice(0, MAX_QUERIES);\n        this.#dirty = true;",
+   "new": "        this.#entries = [text, ...this.#entries.filter(entry => !sameQuery(entry, text))].slice(0, MAX_QUERIES);"
+  },
+  {
+   "file": "src/core/query-history.js",
+   "label": "the cursor goes past the oldest search",
+   "old": "this.#index = Math.min(this.#index + 1, entries.length - 1);",
+   "new": "this.#index = this.#index + 1;"
+  },
+  {
+   "file": "src/core/query-history.js",
+   "label": "the cursor does not come back to the empty field",
+   "old": "this.#index = Math.min(this.#index, entries.length) - 1;",
+   "new": "this.#index = this.#index - 1;"
+  },
+  {
+   "file": "src/core/query-history.js",
+   "label": "the cursor does not follow a shrunk history",
+   "old": "this.#index = Math.min(this.#index, entries.length) - 1;",
+   "new": "this.#index = Math.min(this.#index, entries.length + 5) - 1;"
+  },
+  {
+   "file": "src/core/query-history.js",
+   "label": "the position is not kept inside the history",
+   "old": "position: Math.min(this.#index, entries.length - 1) + 1",
+   "new": "position: this.#index + 1"
+  },
+  {
+   "file": "src/core/query-history.js",
+   "label": "going forward from nowhere shows something",
+   "old": "        if (this.#index < 0)\n            return null;\n        this.#index = Math.min",
+   "new": "        this.#index = Math.min"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "a failed activation is remembered",
+   "old": "        if (done)\n            this.#rememberQuery(query);\n        return done;\n    }\n\n    // A search is kept",
+   "new": "        this.#rememberQuery(query);\n        return done;\n    }\n\n    // A search is kept"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "the setting is not asked",
+   "old": "        if (!allowed)\n            return;\n        this.#queryHistory.record(query);",
+   "new": "        this.#queryHistory.record(query);"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "the search remembered is the current one, not the one chosen",
+   "old": "        const query = this.#query;\n        const done = await this.#log.guardAsync(`activating",
+   "new": "        const done = await this.#log.guardAsync(`activating"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "the secondary action does not remember the search",
+   "old": "        if (done)\n            this.#rememberQuery(query);\n        return done;\n    }\n\n    /** Cancels",
+   "new": "        return done;\n    }\n\n    /** Cancels"
   }
  ]
 }

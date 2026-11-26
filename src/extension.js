@@ -10,7 +10,7 @@ import {SearchController} from './core/session.js';
 import {AppsProvider} from './providers/apps.js';
 import {FilesProvider} from './providers/files.js';
 import * as compat from './shell/compat.js';
-import {FrecencyStore} from './shell/persistence.js';
+import {FrecencyStore, QueryHistoryStore} from './shell/persistence.js';
 import {measure} from './shell/perf.js';
 import {GLibScheduler} from './shell/scheduler.js';
 import {Launcher} from './ui/launcher.js';
@@ -44,7 +44,7 @@ export default class LucioleExtension extends Extension {
             disposables.add(() => scheduler.destroy());
 
             // Set once the history is loaded and the providers have started.
-            const backend = {controller: null};
+            const backend = {controller: null, queryHistory: null};
 
             // Registered early, so it is destroyed late (reverse order).
             const launcher = new Launcher({
@@ -55,6 +55,7 @@ export default class LucioleExtension extends Extension {
                 onSecondary: item => backend.controller?.activateSecondary(item),
                 getBackdrop: () => settings.get_string('backdrop'),
                 getAnimations: () => settings.get_boolean('animations'),
+                getQueries: () => (settings.get_boolean('remember-queries') ? backend.queryHistory?.entries ?? [] : []),
             });
             disposables.add(() => launcher.destroy());
 
@@ -90,18 +91,38 @@ export default class LucioleExtension extends Extension {
     // enable() returned; if the extension is disabled meanwhile, it stops at once.
     async _startSearch({settings, log, scheduler, launcher, backend, disposables}) {
         const store = new FrecencyStore({log, scheduler});
-        const frecency = await store.load();
+        const queryStore = new QueryHistoryStore({log, scheduler});
+        const [frecency, queryHistory] = await Promise.all([store.load(), queryStore.load()]);
         if (disposables.disposed)
             return;
-        // Last in, first out: the history is saved after everything else stopped.
+        // Last in, first out: the histories are saved after everything else stopped.
         disposables.add(() => store.save(frecency));
+        disposables.add(() => queryStore.save(queryHistory));
+        backend.queryHistory = queryHistory;
+        disposables.add(() => {
+            backend.queryHistory = null;
+        });
 
         // The preferences ask for the history to be erased by changing this counter.
         disposables.connect(settings, 'changed::history-generation', () => {
             frecency.clear();
             store.save(frecency);
-            log.debug('usage history erased');
+            queryHistory.clear();
+            queryStore.save(queryHistory);
+            log.debug('usage and search history erased');
         });
+        // Turning the remembering off also forgets what was remembered.
+        disposables.connect(settings, 'changed::remember-queries', () => {
+            if (settings.get_boolean('remember-queries'))
+                return;
+            queryHistory.clear();
+            queryStore.save(queryHistory);
+            log.debug('remembered searches erased');
+        });
+        if (!settings.get_boolean('remember-queries')) {
+            queryHistory.clear();
+            queryStore.save(queryHistory);
+        }
 
         const registry = new ProviderRegistry({log});
         registry.register('apps', () => new AppsProvider());
@@ -115,6 +136,9 @@ export default class LucioleExtension extends Extension {
             log,
             onUpdate: (merged, state) => measure(log, 'show results', () => launcher.showResults(merged, state)),
             onFrecencyChange: () => store.scheduleSave(frecency),
+            queryHistory,
+            rememberQueries: () => settings.get_boolean('remember-queries'),
+            onQueryHistoryChange: () => queryStore.scheduleSave(queryHistory),
             mergeOptions: {maxTotal: MAX_TOTAL_RESULTS},
         });
         disposables.add(() => controller.dispose());

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 08:31+0100\n"
+"POT-Creation-Date: 2026-11-26 10:13+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -85,8 +85,17 @@ msgstr ""
 
 #: src/prefs.js
 msgid ""
-"Luciole remembers which results you open, only on this computer, to rank "
-"them better."
+"Luciole remembers which results you open and the searches that led to them, "
+"only on this computer."
+msgstr ""
+
+#: src/prefs.js
+msgid "Remember Searches"
+msgstr ""
+
+#: src/prefs.js
+msgid ""
+"Lets the up arrow bring back a previous search. Turning this off erases them"
 msgstr ""
 
 #: src/prefs.js
@@ -181,6 +190,11 @@ msgstr ""
 
 #: src/providers/files.js
 msgid "Show in Folder"
+msgstr ""
+
+#: src/ui/launcher.js
+#, javascript-format
+msgid "Previous search %d of %d"
 msgstr ""
 
 #: src/ui/launcher.js

@@ -52,9 +52,15 @@
       <summary>File types excluded from file results</summary>
     </key>
 
+    <key name="remember-queries" type="b">
+      <default>true</default>
+      <summary>Remember the searches that led to opening a result</summary>
+      <description>Lets the up arrow bring back a previous search. They stay on this computer. Turning it off erases the remembered searches.</description>
+    </key>
+
     <key name="history-generation" type="i">
       <default>0</default>
-      <summary>Incremented by the preferences to ask for the usage history to be erased</summary>
+      <summary>Incremented by the preferences to ask for the history (usage and searches) to be erased</summary>
     </key>
 
     <key name="debug-timings" type="b">

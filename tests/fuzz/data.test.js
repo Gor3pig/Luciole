@@ -3,6 +3,7 @@
 
 import {Frecency, MAX_ACTIVATIONS_PER_KEY, MAX_KEYS} from '../../src/core/frecency.js';
 import {jumpSection, mergeResults, nextSelection} from '../../src/core/merge.js';
+import {HistoryCursor, MAX_QUERIES, MAX_QUERY_CHARS, QueryHistory} from '../../src/core/query-history.js';
 import {
     buildFtsTerms, displayFolder, isExcluded, isExcludedType, pathOfUrl, rowsToResults,
 } from '../../src/providers/files-query.js';
@@ -129,5 +130,63 @@ test('fuzz: merging results keeps its promises for any mix of providers and scor
         assert(chosen === null || keys.includes(chosen), 'selection outside the list');
         const jumped = jumpSection(merged, random.pick([null, 'gone', keys[0] ?? null]), random.pick([1, -1]));
         assert(jumped === null || keys.includes(jumped), 'a section jump outside the list');
+    });
+});
+
+test('fuzz: a corrupt or hostile searches file never breaks loading', () => {
+    forAll('QueryHistory.from', random => {
+        const data = random.chance(0.5)
+            ? randomJson(random)
+            : {queries: Array.from({length: random.int(0, 40)}, () => (random.chance(0.8)
+                ? random.string(ALPHABETS.everything, random.chance(0.05) ? 300 : 12)
+                : randomJson(random)))};
+        const entries = QueryHistory.from(data).entries;
+        assert(entries.length <= MAX_QUERIES, 'too many searches');
+        const seen = new Set();
+        for (const entry of entries) {
+            assert(typeof entry === 'string' && entry !== '' && entry.length <= MAX_QUERY_CHARS, `bad entry ${JSON.stringify(entry)}`);
+            assert(!/\p{Cc}/u.test(entry), `control character kept in ${JSON.stringify(entry)}`);
+            for (const code of [0x2028, 0x2029, 0x202a, 0x202b, 0x202c, 0x202d, 0x202e, 0x2066, 0x2067, 0x2068, 0x2069])
+                assert(!entry.includes(String.fromCodePoint(code)), `U+${code.toString(16)} kept in ${JSON.stringify(entry)}`);
+            assert(entry === entry.trim() && !/\s\s/.test(entry), `untidy spacing in ${JSON.stringify(entry)}`);
+            assert(!seen.has(entry.toLowerCase()), `duplicate ${JSON.stringify(entry)}`);
+            seen.add(entry.toLowerCase());
+        }
+    });
+});
+
+test('fuzz: the searches stay bounded, unique, and survive a save and a reload', () => {
+    forAll('QueryHistory.record', random => {
+        const history = new QueryHistory();
+        for (let n = random.int(0, 80); n > 0; n--)
+            history.record(random.chance(0.2) ? random.string(ALPHABETS.everything, 20) : `q${random.int(0, 30)}`);
+        assert(history.size <= MAX_QUERIES, 'too many searches');
+        const copy = QueryHistory.from(JSON.parse(JSON.stringify(history.serialize())));
+        assertEquals(copy.entries, history.entries);
+    });
+});
+
+test('fuzz: whatever the arrows do, the cursor stays inside the searches', () => {
+    forAll('HistoryCursor', random => {
+        const cursor = new HistoryCursor();
+        let entries = Array.from({length: random.int(0, 6)}, (_, n) => `e${n}`);
+        for (let step = random.int(1, 30); step > 0; step--) {
+            const action = random.int(0, 4);
+            if (action === 0) {
+                const text = cursor.older(entries);
+                assert(text === null ? entries.length === 0 : entries.includes(text), `older gave ${text}`);
+            } else if (action === 1) {
+                const text = cursor.newer(entries);
+                assert(text === null || text === '' || entries.includes(text), `newer gave ${text}`);
+            } else if (action === 2) {
+                cursor.reset();
+            } else if (action === 3) {
+                entries = entries.slice(0, random.int(0, entries.length));
+            }
+            const where = cursor.where(entries);
+            assert(where === null || (where.position >= 1 && where.position <= where.total && where.total === entries.length),
+                `position ${JSON.stringify(where)} outside ${entries.length} entries`);
+            assert(where === null || cursor.active, 'a position with an inactive cursor');
+        }
     });
 });
