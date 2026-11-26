@@ -299,6 +299,14 @@ export class FilesProvider extends Provider {
         return [{id: 'open-folder', label: _('Show in Folder')}];
     }
 
+    /** The file to show in the previewer: a local file that is still there, or null. */
+    async previewUri(result) {
+        const url = result.data?.url;
+        if (!isLocalFileUri(url) || !await this.#exists(url, this.#lifetime))
+            return null;
+        return url;
+    }
+
     /** The menu actions of a file, besides Open. */
     async actions(result) {
         return fileActionList(result.data?.url, this.#gettext);

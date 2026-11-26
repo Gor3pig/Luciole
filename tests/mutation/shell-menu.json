@@ -168,6 +168,96 @@
    "label": "Enter acts on a result that was not chosen",
    "old": "        const item = this.#items.find(candidate => candidate.key === this.#selectedKey);\n        if (item)\n            this.#activate(item);",
    "new": "        const item = this.#items.find(candidate => candidate.key === this.#selectedKey) ?? this.#items[0];\n        if (item)\n            this.#activate(item);"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "Space types a space even on a chosen file",
+   "old": "if (!this.#restoring && now === `${before} ` && this.#navigated && this.#canPreview(this.#selectedItem())) {",
+   "new": "if (false) {"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "Space previews before any arrow",
+   "old": "if (!this.#restoring && now === `${before} ` && this.#navigated && this.#canPreview(this.#selectedItem())) {",
+   "new": "if (!this.#restoring && now === `${before} ` && this.#canPreview(this.#selectedItem())) {"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the space is left in the field",
+   "old": "                        if (entry.get_text() === now)\n                            entry.set_text(before);",
+   "new": "                        void before;"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "Ctrl+Y does nothing",
+   "old": "            if (control && (symbol === Clutter.KEY_y || symbol === Clutter.KEY_Y)) {",
+   "new": "            if (false) {"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the window does not come back after the preview",
+   "old": "        this.#previewer.show(uri, reason => this.#log.guard('coming back from the preview', () => this.#resume(reason)));",
+   "new": "        this.#previewer.show(uri, () => {});"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the window does not step aside for the preview",
+   "old": "        this.#suspend();\n        this.#previewer.show(",
+   "new": "        this.#previewer.show("
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "opening during a preview keeps the old one coming back",
+   "old": "        // Opened again while a preview is shown: a fresh start, and no coming back from that preview.\n        this.#endSuspension();\n",
+   "new": ""
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the search is not kept when coming back",
+   "old": "        this.#overlay.opacity = 255;\n        this.#panel.translation_y = 0;\n        this.#overlay.show();\n        try {",
+   "new": "        this.#entry.set_text('');\n        this.#overlay.opacity = 255;\n        this.#panel.translation_y = 0;\n        this.#overlay.show();\n        try {"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the menu's Preview is an ordinary action",
+   "old": "        if (action.id === 'preview') {",
+   "new": "        if (false) {"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the keyboard is not taken back after the preview",
+   "old": "        this.#isOpen = true;\n        this.#entry.grab_key_focus();\n        this.#stopFocusWatch = compat.connectKeyFocus(() => this.#checkFocus());\n        // The same search",
+   "new": "        this.#isOpen = true;\n        // The same search"
+  },
+  {
+   "file": "src/shell/previewer.js",
+   "label": "the preview window is not given the keyboard",
+   "old": "    if (actor)\n        Main.activateWindow(actor.meta_window);",
+   "new": "    void Main;"
+  },
+  {
+   "file": "src/shell/previewer.js",
+   "label": "the end of the preview is not noticed",
+   "old": "                if (visible === false && current.seen)\n                    this.#finish(current, 'closed');",
+   "new": ""
+  },
+  {
+   "file": "src/shell/previewer.js",
+   "label": "the previewer is never found",
+   "old": "        this.#available = activatable.includes(NAME) || running.includes(NAME);",
+   "new": "        this.#available = false;"
+  },
+  {
+   "file": "src/extension.js",
+   "label": "the launcher gets no previewer",
+   "old": "                previewer,\n                getPreviewUri:",
+   "new": "                getPreviewUri:"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the chosen row is drawn before the arrows are noted",
+   "old": "        // Noted first: what the chosen row shows (\"Space: preview\") depends on it.\n        this.#navigated = true;\n        this.#choose(this.#items[next].key);",
+   "new": "        this.#choose(this.#items[next].key);\n        this.#navigated = true;"
   }
  ]
 }

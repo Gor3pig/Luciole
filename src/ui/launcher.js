@@ -58,6 +58,12 @@ export class Launcher {
     #getActions;
     #getSubActions;
     #onRunAction;
+    #previewer;
+    #getPreviewUri;
+    #suspended = false;
+    // The field's text before the last change, and whether the window is putting it back itself.
+    #lastText = '';
+    #restoring = false;
     #menu = new ActionMenu();
     #menuToken = 0;
     #menuItem = null;
@@ -103,9 +109,12 @@ export class Launcher {
      * @param {(item: object) => Promise<object[]>} options.getActions - the actions of a result, for its menu
      * @param {(item: object, action: object) => Promise<object[]>} options.getSubActions - what a submenu action leads to
      * @param {(item: object, action: object) => Promise<{ok: boolean, confirmation: string | null}>} options.onRunAction - runs an action
+     * @param {{available: boolean, show: Function, cancel: Function}} [options.previewer] - GNOME's file previewer
+     * @param {(item: object) => Promise<string | null>} [options.getPreviewUri] - the file to preview for a result, checked
      */
     constructor({log, gettext, onQuery, onActivate, onSecondary, getBackdrop, getAnimations, getQueries = () => [], getCategories = () => [], onFilter = () => {},
-        getActions = async () => [], getSubActions = async () => [], onRunAction = async () => ({ok: false, confirmation: null})}) {
+        getActions = async () => [], getSubActions = async () => [], onRunAction = async () => ({ok: false, confirmation: null}),
+        previewer = null, getPreviewUri = async () => null}) {
         this.#log = log;
         this.#gettext = gettext;
         this.#onQuery = onQuery;
@@ -119,6 +128,8 @@ export class Launcher {
         this.#getActions = getActions;
         this.#getSubActions = getSubActions;
         this.#onRunAction = onRunAction;
+        this.#previewer = previewer;
+        this.#getPreviewUri = getPreviewUri;
     }
 
     // Read at every use, so a change in the preferences applies at once.
@@ -141,6 +152,8 @@ export class Launcher {
     open() {
         if (this.#isOpen || compat.isScreenLocked())
             return;
+        // Opened again while a preview is shown: a fresh start, and no coming back from that preview.
+        this.#endSuspension();
 
         this.#ensureBuilt();
         this.#place();
@@ -260,6 +273,7 @@ export class Launcher {
     }
 
     destroy() {
+        this.#endSuspension();
         this.#isOpen = false;
         this.#resetMenu();
         this.#unwatchFocus();
@@ -281,8 +295,9 @@ export class Launcher {
             return;
         const current = this.#items.findIndex(item => item.key === this.#selectedKey);
         const next = Math.min(this.#items.length - 1, Math.max(0, current + delta));
-        this.#choose(this.#items[next].key);
+        // Noted first: what the chosen row shows ("Space: preview") depends on it.
         this.#navigated = true;
+        this.#choose(this.#items[next].key);
     }
 
     #choose(key) {
@@ -297,8 +312,8 @@ export class Launcher {
         const key = jumpSection(this.#merged, this.#selectedKey, direction);
         if (key === null)
             return;
-        this.#choose(key);
         this.#navigated = true;
+        this.#choose(key);
     }
 
     // What the window says once a result whose activation is a copy (a calculation) has been run, or null.
@@ -437,6 +452,78 @@ export class Launcher {
         this.#emptyHint.visible = show;
     }
 
+    // ---- The preview of a file (GNOME's previewer) ----
+
+    #selectedItem() {
+        return this.#items.find(candidate => candidate.key === this.#selectedKey) ?? null;
+    }
+
+    #canPreview(item) {
+        return Boolean(this.#previewer?.available && item?.result?.previewable === true);
+    }
+
+    // What the selected row says it can do with Space: only once the user chose it with the arrows.
+    #rowHint(item) {
+        if (!this.#navigated || !this.#canPreview(item))
+            return null;
+        return this.#gettext('Space: preview');
+    }
+
+    // The window steps aside (the preview needs the keyboard), keeping the search, and comes back
+    // as it was when the preview is closed.
+    async #preview(item) {
+        const uri = await this.#log.guardAsync('checking the file to preview', () => this.#getPreviewUri(item), null);
+        // The window may have closed, or another result been chosen, while the file was checked.
+        if (!uri || !this.#isOpen || this.#selectedKey !== item.key)
+            return;
+        this.#suspend();
+        this.#previewer.show(uri, reason => this.#log.guard('coming back from the preview', () => this.#resume(reason)));
+    }
+
+    #suspend() {
+        this.#resetMenu();
+        this.#hideMenu();
+        this.#isOpen = false;
+        this.#suspended = true;
+        this.#unwatchFocus();
+        this.#releaseGrab();
+        this.#overlay.remove_all_transitions();
+        this.#overlay.hide();
+        this.#log.debug('hidden for the preview');
+    }
+
+    #resume(reason) {
+        if (!this.#suspended)
+            return;
+        this.#suspended = false;
+        this.#log.debug(`back from the preview (${reason})`);
+        if (this.#isOpen || !this.#overlay || compat.isScreenLocked())
+            return;
+        this.#overlay.opacity = 255;
+        this.#panel.translation_y = 0;
+        this.#overlay.show();
+        try {
+            this.#grab = compat.pushModal(this.#overlay);
+        } catch (error) {
+            this.#log.error('could not grab the keyboard', error);
+            this.#overlay.hide();
+            return;
+        }
+        this.#isOpen = true;
+        this.#entry.grab_key_focus();
+        this.#stopFocusWatch = compat.connectKeyFocus(() => this.#checkFocus());
+        // The same search, the same file chosen.
+        this.#view.select(this.#selectedKey);
+    }
+
+    // Forgets a preview in progress: the window will not come back by itself.
+    #endSuspension() {
+        if (!this.#suspended)
+            return;
+        this.#suspended = false;
+        this.#previewer?.cancel();
+    }
+
     // ---- The menu of actions of the selected result (Ctrl+K) ----
 
     async #openMenu() {
@@ -449,7 +536,9 @@ export class Launcher {
         if (token !== this.#menuToken || !this.#isOpen)
             return;
         this.#menuItem = item;
-        this.#menu.open(item.result.title, actions);
+        // "Preview" is the window's own business, and only when there is a previewer.
+        const usable = this.#canPreview(item) ? actions : actions.filter(action => action.id !== 'preview');
+        this.#menu.open(item.result.title, usable);
         this.#showMenu();
     }
 
@@ -499,6 +588,12 @@ export class Launcher {
             return;
         const token = ++this.#menuToken;
         const stale = () => token !== this.#menuToken || !this.#isOpen || !this.#menu.isOpen;
+        if (action.id === 'preview') {
+            this.#resetMenu();
+            this.#hideMenu();
+            await this.#preview(item);
+            return;
+        }
         if (action.submenu) {
             const choices = await this.#log.guardAsync('listing the choices', () => this.#getSubActions(item, action), []);
             if (stale())
@@ -715,6 +810,7 @@ export class Launcher {
         const view = new ResultsView({
             gettext: this.#gettext,
             onActivate: item => this.#activate(item),
+            hintFor: item => this.#rowHint(item),
         });
 
         const panel = new St.BoxLayout({
@@ -753,6 +849,31 @@ export class Launcher {
         const text = entry.clutter_text;
         text.max_length = MAX_QUERY_LENGTH;
         text.connect('text-changed', () => {
+            // Characters reach the field through the input method, not as key presses, so Space is
+            // caught here: once a file was chosen with the arrows, a space just added shows the
+            // preview instead (and is taken back); before that it is part of what is typed.
+            const now = entry.get_text();
+            const before = this.#lastText;
+            this.#lastText = now;
+            if (!this.#restoring && now === `${before} ` && this.#navigated && this.#canPreview(this.#selectedItem())) {
+                const item = this.#selectedItem();
+                // The space is taken back once this change is over: changing the text from inside
+                // its own signal would come back as one more change, and a new search.
+                this.#restoring = true;
+                GLib.idle_add(GLib.PRIORITY_HIGH_IDLE, () => {
+                    try {
+                        if (entry.get_text() === now)
+                            entry.set_text(before);
+                    } finally {
+                        this.#restoring = false;
+                    }
+                    return GLib.SOURCE_REMOVE;
+                });
+                this.#log.guardAsync('previewing', () => this.#preview(item));
+                return;
+            }
+            if (this.#restoring)
+                return;
             // What is typed changes the search: the menu of the old result goes away.
             this.#closeMenu();
             // Typing, or Escape, leaves the remembered searches; bringing one back does not.
@@ -804,6 +925,14 @@ export class Launcher {
             }
             if (control && this.#categoryShortcut(event))
                 return Clutter.EVENT_STOP;
+            // Ctrl+Y previews the chosen file (Space too: see the "insert-text" handler).
+            if (control && (symbol === Clutter.KEY_y || symbol === Clutter.KEY_Y)) {
+                const item = this.#selectedItem();
+                if (this.#canPreview(item)) {
+                    this.#log.guardAsync('previewing', () => this.#preview(item));
+                    return Clutter.EVENT_STOP;
+                }
+            }
             switch (symbol) {
             case Clutter.KEY_Down:
                 // While going through the remembered searches, the arrows keep going through them.

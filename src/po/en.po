@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 17:22+0100\n"
+"POT-Creation-Date: 2026-11-26 18:37+0100\n"
 "PO-Revision-Date: 2026-11-25 20:00+0100\n"
 "Last-Translator: Luciole contributors\n"
 "Language-Team: en <>\n"
@@ -261,6 +261,14 @@ msgid "Ctrl+Enter"
 msgstr "Ctrl+Enter"
 
 #: src/providers/files-query.js
+msgid "Preview"
+msgstr "Preview"
+
+#: src/providers/files-query.js
+msgid "Space"
+msgstr "Space"
+
+#: src/providers/files-query.js
 msgid "Copy Path"
 msgstr "Copy Path"
 
@@ -316,6 +324,10 @@ msgstr "Type to search your files"
 #: src/ui/launcher.js
 msgid "Type to search in this category"
 msgstr "Type to search in this category"
+
+#: src/ui/launcher.js
+msgid "Space: preview"
+msgstr "Space: preview"
 
 #: src/ui/launcher.js
 #, javascript-format

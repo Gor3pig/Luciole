@@ -20,7 +20,7 @@ source is handled. It also lists what is *not* covered yet.
 | Writes | Its settings, and two history files in the user's data directory (`luciole/frecency.json` and `luciole/queries.json`), created readable by the user only. |
 | Runs | Applications the user chooses, through GIO, and the actions such an application declares itself in its desktop file. Files and folders the user chooses, through the default handler for their address, or through an application the user picked in "Open With" among those that can open the file. Nothing else is ever executed. |
 | Clipboard | Written to when the user chooses "Copy Path" or "Copy Name" (the path or name of a local file). Never read. |
-| Other processes | None started by the extension itself. |
+| Other processes | None started by the extension itself. GNOME's file previewer is started by the session bus when the user asks for a preview. |
 
 The history file records which applications and files were opened, with
 dates. It is capped in size (a few hundred entries, ten dates each), a file over
@@ -91,6 +91,11 @@ duplicates).
   that end the session are never the top hit and are never selected for the user: Enter does
   nothing until an arrow key has chosen them. A panel is opened only if it is one of the installed
   desktop files named `gnome-*-panel.desktop`. Luciole reads no setting.
+* **The preview shows only a local file that still exists**, through GNOME's own previewer (the
+  one the Files application uses), asked over the session bus with the file's address and nothing
+  else. While it is shown, Luciole lets go of the keyboard and gives it to the preview window; it
+  comes back when the previewer says the preview was closed, or after two seconds if it never
+  appeared. Without the previewer installed, no preview is offered.
 * **No dynamic code.** No `eval`, no `Function`, no shell command built from
   text. Applications and files are opened with GIO using the entry or address
   that came from the index, not from the typed text.

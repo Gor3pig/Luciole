@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 17:22+0100\n"
+"POT-Creation-Date: 2026-11-26 18:37+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -253,6 +253,14 @@ msgid "Ctrl+Enter"
 msgstr ""
 
 #: src/providers/files-query.js
+msgid "Preview"
+msgstr ""
+
+#: src/providers/files-query.js
+msgid "Space"
+msgstr ""
+
+#: src/providers/files-query.js
 msgid "Copy Path"
 msgstr ""
 
@@ -307,6 +315,10 @@ msgstr ""
 
 #: src/ui/launcher.js
 msgid "Type to search in this category"
+msgstr ""
+
+#: src/ui/launcher.js
+msgid "Space: preview"
 msgstr ""
 
 #: src/ui/launcher.js

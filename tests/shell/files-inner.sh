@@ -256,6 +256,84 @@ echo "ok: locking the screen is chosen like an ordinary result"
 clear_entry 12
 sleep 0.3
 
+# The preview: Space on a file chosen with the arrows steps aside for GNOME's previewer (the real
+# one, on this private bus), and the window comes back as it was when the preview is closed.
+clear_entry 8
+typed rapport
+wait_last 'results: 1 first=rapport' || fail "the real file was not found (last: $(last_results))"
+typed " "
+sleep 0.3
+[ "$(entry_text_length)" = 8 ] || fail "preview: Space before any arrow should type a space ($(entry_text_length) characters, expected 8)"
+press BackSpace
+wait_last 'results: 1 first=rapport.* query=rapport$' || fail "results did not come back (last: $(last_results))"
+press Down
+sleep 0.3
+HINTS=$(shell_eval "(function count(a) { return ((a.style_class || '').includes('luciole-row-hint') && a.visible ? 1 : 0) + a.get_children().reduce((n, c) => n + count(c), 0); })(global.stage)")
+[ "$HINTS" = 1 ] || fail "preview: the chosen file does not say that Space previews it ($HINTS hints shown)"
+HIDDEN=$(grep -cF "hidden for the preview" "$LOG")
+BACK=$(grep -cF "back from the preview" "$LOG")
+typed " "
+wait_log "hidden for the preview" $((HIDDEN + 1)) || fail "preview: Space on a chosen file did not step aside"
+echo "preview: $(grep -F 'previewer' "$LOG" | tail -n 1 | sed 's/.*\[Luciole\] //')"
+i=0
+while [ "$i" -lt 50 ]; do
+    shell_eval "global.get_window_actors().map(a => a.meta_window.get_wm_class()).join(',')" | grep -qi previewer && break
+    sleep 0.2
+    i=$((i + 1))
+done
+echo "preview: windows now: $(shell_eval "global.get_window_actors().map(a => a.meta_window.get_wm_class()).join(',')")"
+sleep 0.5
+FOCUSED=$(shell_eval "String(global.display.focus_window?.get_wm_class() ?? 'none')")
+echo "preview: keyboard focus on $FOCUSED"
+[ "$FOCUSED" = org.gnome.NautilusPreviewer ] || fail "preview: the preview window did not get the keyboard"
+sleep 0.5
+escape
+wait_log "back from the preview" $((BACK + 1)) || fail "preview: the window did not come back after the preview"
+grep -F "back from the preview" "$LOG" | tail -n 1 | sed 's/.*\[Luciole\] /preview: /'
+sleep 0.4
+[ "$(entry_text_length)" = 7 ] || fail "preview: the search was not kept ($(entry_text_length) characters, expected 7)"
+echo "ok: Space on a file chosen with the arrows shows the preview; the window comes back with the same search"
+
+# Ctrl+Y works without the arrows; the shortcut of Luciole during a preview opens it fresh, and the
+# end of that preview does not bring the old search back.
+HIDDEN=$(grep -cF "hidden for the preview" "$LOG")
+BACK=$(grep -cF "back from the preview" "$LOG")
+OPENED_NOW=$(grep -cF "[Luciole] opened" "$LOG")
+chord Control_L+y
+wait_log "hidden for the preview" $((HIDDEN + 1)) || fail "preview: Ctrl+Y did not show the preview"
+sleep 1
+combo
+wait_log "[Luciole] opened" $((OPENED_NOW + 1)) || fail "preview: the shortcut did not open the launcher during the preview"
+sleep 0.4
+[ "$(entry_text_length)" = 0 ] || fail "preview: the launcher opened during a preview should start empty"
+escape
+sleep 0.5
+shell_eval "global.get_window_actors().filter(a => a.meta_window.get_wm_class() === 'org.gnome.NautilusPreviewer').forEach(a => a.meta_window.delete(global.get_current_time())); 'closed'" >/dev/null
+sleep 1.5
+[ "$(grep -cF "back from the preview" "$LOG")" = "$BACK" ] || fail "preview: the old search came back after the launcher had been opened again"
+echo "ok: Ctrl+Y previews; opening Luciole during a preview starts fresh and nothing comes back afterwards"
+reopen_launcher
+typed rapport
+wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
+HIDDEN=$(grep -cF "hidden for the preview" "$LOG")
+BACK=$(grep -cF "back from the preview" "$LOG")
+chord Control_L+k
+sleep 0.5
+press Down
+press Down
+sleep 0.2
+press Return
+wait_log "hidden for the preview" $((HIDDEN + 1)) || fail "preview: the menu's Preview did not show the preview"
+sleep 1
+escape
+wait_log "back from the preview" $((BACK + 1)) || fail "preview: the window did not come back after a preview from the menu"
+sleep 0.4
+[ "$(menu_state)" = hidden ] || fail "preview: the menu was still shown after coming back"
+[ "$(entry_text_length)" = 7 ] || fail "preview: the search was not kept after a preview from the menu"
+echo "ok: Preview in the menu works the same way"
+clear_entry 8
+sleep 0.3
+
 # The calculator: the answer comes first, Enter copies it and says so, the menu offers the whole calculation.
 clear_entry 8
 typed "2+2*3"
@@ -346,9 +424,9 @@ CLOSED_BEFORE=$(launcher_closed_count)
 chord Control_L+k
 sleep 0.5
 set -- $(menu_state)
-[ "$1" = 5 ] && [ "$2" = 0 ] || fail "menu: expected 5 actions with the first highlighted, got '$(menu_state)'"
+[ "$1" = 6 ] && [ "$2" = 0 ] || fail "menu: expected 6 actions with the first highlighted, got '$(menu_state)'"
 [ "$(results_visible)" = false ] || fail "menu: the results are still shown behind the menu"
-echo "ok: Ctrl+K shows the 5 actions of a file in place of the results"
+echo "ok: Ctrl+K shows the 6 actions of a file in place of the results"
 press Down
 sleep 0.3
 set -- $(menu_state)
@@ -357,7 +435,7 @@ press Up
 press Up
 sleep 0.3
 set -- $(menu_state)
-[ "$2" = 4 ] || fail "menu: the up arrow did not wrap to the last action ('$(menu_state)')"
+[ "$2" = 5 ] || fail "menu: the up arrow did not wrap to the last action ('$(menu_state)')"
 echo "ok: the arrows move the highlight and wrap around"
 escape
 sleep 0.3
@@ -385,6 +463,7 @@ chord Control_L+k
 sleep 0.4
 press Down
 press Down
+press Down
 sleep 0.2
 press Return
 sleep 0.1
@@ -398,6 +477,7 @@ typed rapport
 wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
 chord Control_L+k
 sleep 0.4
+press Down
 press Down
 press Down
 press Down
@@ -421,12 +501,12 @@ sleep 0.2
 press Return
 sleep 1
 set -- $(menu_state)
-[ "$1" -ge 1 ] && [ "$1" != 5 ] || fail "menu: Open With did not list applications ('$(menu_state)')"
+[ "$1" -ge 1 ] && [ "$1" != 6 ] || fail "menu: Open With did not list applications ('$(menu_state)')"
 echo "ok: Open With lists the applications that open the file ($1 here)"
 escape
 sleep 0.3
 set -- $(menu_state)
-[ "$1" = 5 ] && [ "$2" = 4 ] || fail "menu: Escape from the submenu did not come back to the actions with Open With highlighted ('$(menu_state)')"
+[ "$1" = 6 ] && [ "$2" = 5 ] || fail "menu: Escape from the submenu did not come back to the actions with Open With highlighted ('$(menu_state)')"
 escape
 sleep 0.3
 [ "$(menu_state)" = hidden ] || fail "menu: a second Escape did not close the menu"
@@ -477,7 +557,7 @@ wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $
 CLOSED_NOW=$(launcher_closed_count)
 chord Control_L+k
 sleep 0.5
-set -- $(menu_row_center 3)
+set -- $(menu_row_center 4)
 pointer "$1" "$2"
 sleep 0.3
 click

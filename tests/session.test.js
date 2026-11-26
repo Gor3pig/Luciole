@@ -754,3 +754,25 @@ test('nothing runs for a missing action, an action without an id, or a source th
     assertEquals(t.apps.actions, []);
     assertEquals(t.apps.activated, []);
 });
+
+test('the file to preview comes from the source, and only a local file address is passed on', async () => {
+    const make = previewUri => {
+        const scheduler = new FakeScheduler();
+        const files = fakeProvider(scheduler, {id: 'files'});
+        if (previewUri)
+            files.previewUri = previewUri;
+        const log = recordingLog();
+        return {log, controller: new SearchController({getProviders: () => [files], frecency: new Frecency(), scheduler, log, onUpdate() {}})};
+    };
+    const item = {key: 'files:1', providerId: 'files', result: result('1', 'a.txt')};
+    assertEquals(await make(async () => 'file:///home/me/a.txt').controller.previewUriFor(item), 'file:///home/me/a.txt');
+    for (const odd of ['https://example.org/a', 'file://host/a', 'smb://x', '', null, 5])
+        assertEquals(await make(async () => odd).controller.previewUriFor(item), null, String(odd));
+    assertEquals(await make(null).controller.previewUriFor(item), null, 'a source that cannot preview');
+    const failing = make(async () => {
+        throw new Error('disk gone');
+    });
+    assertEquals(await failing.controller.previewUriFor(item), null);
+    assert(failing.log.lines.some(line => line.includes('disk gone')), 'logged');
+    assertEquals(await make(async () => 'file:///a').controller.previewUriFor({key: 'x', providerId: 'gone', result: result('1', 'x')}), null);
+});

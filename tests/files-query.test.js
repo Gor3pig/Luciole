@@ -103,6 +103,7 @@ test('rows become results with a relevance rescaled to the best row', () => {
         providerScore: 1, frecencyKey: 'files:file:///home/me/Documents/a.odt',
         dedupeKey: 'file:///home/me/Documents/a.odt',
         data: {url: 'file:///home/me/Documents/a.odt', parentUrl: 'file:///home/me/Documents'},
+        previewable: true,
     });
 });
 
@@ -149,19 +150,20 @@ test('the name of a file is the last part of its address, decoded', () => {
 
 test('a local file has the file actions, in this order, each with what it needs', () => {
     const actions = fileActionList('file:///home/me/Documents/Facture%20mars.pdf', echo);
-    assertEquals(actions.map(action => action.id), ['open-folder', 'copy-path', 'copy-name', 'open-with']);
-    assertEquals(actions[1].copy, '/home/me/Documents/Facture mars.pdf');
-    assertEquals(actions[2].copy, 'Facture mars.pdf');
-    assertEquals(actions[1].confirmation, 'Path copied');
-    assertEquals(actions[2].confirmation, 'Name copied');
-    assert(actions[3].submenu === true, 'Open With leads to a submenu');
-    assert(!('copy' in actions[0]) && !('copy' in actions[3]), 'only the two copy actions copy');
+    assertEquals(actions.map(action => action.id), ['open-folder', 'preview', 'copy-path', 'copy-name', 'open-with']);
+    assertEquals(actions[1].hint, 'Space');
+    assertEquals(actions[2].copy, '/home/me/Documents/Facture mars.pdf');
+    assertEquals(actions[3].copy, 'Facture mars.pdf');
+    assertEquals(actions[2].confirmation, 'Path copied');
+    assertEquals(actions[3].confirmation, 'Name copied');
+    assert(actions[4].submenu === true, 'Open With leads to a submenu');
+    assert(!('copy' in actions[0]) && !('copy' in actions[1]) && !('copy' in actions[4]), 'only the two copy actions copy');
 });
 
 test('the labels are translated', () => {
     const actions = fileActionList('file:///a/b.txt', text => `[${text}]`);
     assertEquals(actions[0].label, '[Show in Folder]');
-    assertEquals(actions[1].confirmation, '[Path copied]');
+    assertEquals(actions[2].confirmation, '[Path copied]');
 });
 
 test('what is not a local file has no file actions', () => {

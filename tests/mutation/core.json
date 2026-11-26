@@ -1727,6 +1727,36 @@
    "label": "a soft hyphen stays in a name",
    "old": "\\u2066-\\u2069\\u00ad]/gu",
    "new": "\\u2066-\\u2069]/gu"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "a file that is gone can be previewed",
+   "old": "        if (!isLocalFileUri(url) || !await this.#exists(url, this.#lifetime))\n            return null;\n        return url;",
+   "new": "        if (!isLocalFileUri(url))\n            return null;\n        return url;"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "any address can be previewed",
+   "old": "        if (!isLocalFileUri(url) || !await this.#exists(url, this.#lifetime))\n            return null;\n        return url;",
+   "new": "        if (!await this.#exists(url, this.#lifetime))\n            return null;\n        return url;"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "found files cannot be previewed",
+   "old": "            previewable: isLocalFileUri(row.url),",
+   "new": "            previewable: false,"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "the menu has no preview",
+   "old": "        {id: 'preview', label: _('Preview'), hint: _('Space')},\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "any address is passed on for a preview",
+   "old": "return typeof uri === 'string' && uri.startsWith('file:///') ? uri : null;",
+   "new": "return typeof uri === 'string' ? uri : null;"
   }
  ]
 }

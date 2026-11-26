@@ -14,6 +14,7 @@ import {SystemProvider} from './providers/system.js';
 import * as compat from './shell/compat.js';
 import {FrecencyStore, QueryHistoryStore} from './shell/persistence.js';
 import {measure} from './shell/perf.js';
+import {Previewer} from './shell/previewer.js';
 import {GLibScheduler} from './shell/scheduler.js';
 import {Launcher} from './ui/launcher.js';
 
@@ -48,6 +49,10 @@ export default class LucioleExtension extends Extension {
             // Set once the history is loaded and the providers have started.
             const backend = {controller: null, queryHistory: null};
 
+            const previewer = new Previewer({log});
+            disposables.add(() => previewer.destroy());
+            log.guardAsync('looking for the file previewer', () => previewer.init());
+
             // Registered early, so it is destroyed late (reverse order).
             const launcher = new Launcher({
                 log,
@@ -60,6 +65,8 @@ export default class LucioleExtension extends Extension {
                 getActions: item => backend.controller?.actionsFor(item) ?? Promise.resolve([]),
                 getSubActions: (item, action) => backend.controller?.subActionsFor(item, action) ?? Promise.resolve([]),
                 onRunAction: (item, action) => backend.controller?.runAction(item, action) ?? Promise.resolve({ok: false, confirmation: null}),
+                previewer,
+                getPreviewUri: item => backend.controller?.previewUriFor(item) ?? Promise.resolve(null),
                 getCategories: () => backend.controller?.categories() ?? [],
                 onFilter: id => backend.controller?.setFilter(id),
                 getQueries: () => (settings.get_boolean('remember-queries') ? backend.queryHistory?.entries ?? [] : []),

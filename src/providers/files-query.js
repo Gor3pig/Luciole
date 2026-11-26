@@ -139,6 +139,8 @@ export function rowsToResults(rows, {home, excludedFolders = [], excludedTypes =
             frecencyKey: `files:${row.url}`,
             dedupeKey: row.url,
             data: {url: row.url, parentUrl: parentUrl(row.url)},
+            // A local file can be shown in GNOME's previewer.
+            previewable: isLocalFileUri(row.url),
         });
     }
     return results;
@@ -166,6 +168,7 @@ export function fileActionList(url, gettext) {
     const _ = gettext;
     return [
         {id: 'open-folder', label: _('Show in Folder'), hint: _('Ctrl+Enter')},
+        {id: 'preview', label: _('Preview'), hint: _('Space')},
         {id: 'copy-path', label: _('Copy Path'), copy: pathOfUrl(url), confirmation: _('Path copied')},
         {id: 'copy-name', label: _('Copy Name'), copy: baseName(url), confirmation: _('Name copied')},
         {id: 'open-with', label: _('Open With…'), submenu: true},

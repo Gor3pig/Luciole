@@ -299,7 +299,7 @@ const FILE = {data: {url: 'file:///home/me/Documents/Facture%20mars.pdf', parent
 test('a file offers its menu actions, and a result that is not a local file offers none', async () => {
     const t = setupProvider();
     await t.ready;
-    assertEquals((await t.provider.actions(FILE)).map(action => action.id), ['open-folder', 'copy-path', 'copy-name', 'open-with']);
+    assertEquals((await t.provider.actions(FILE)).map(action => action.id), ['open-folder', 'preview', 'copy-path', 'copy-name', 'open-with']);
     assertEquals(await t.provider.actions({data: {url: 'https://example.org/x'}}), []);
     assertEquals(await t.provider.actions({}), []);
     t.provider.destroy();
@@ -339,5 +339,24 @@ test('an action the provider does not know is refused and launches nothing', asy
     await t.ready;
     assert((await failureOf(t.provider.activateAction(FILE, {id: 'format-disk'})))?.includes('unknown action'), 'accepted');
     assertEquals(t.launched, []);
+    t.provider.destroy();
+});
+
+test('a local file that is still there can be previewed; anything else cannot', async () => {
+    const t = setupProvider({missing: ['file:///home/me/gone.txt']});
+    await t.ready;
+    assertEquals(await t.provider.previewUri(FILE), 'file:///home/me/Documents/Facture%20mars.pdf');
+    assertEquals(await t.provider.previewUri({data: {url: 'file:///home/me/gone.txt'}}), null, 'a missing file');
+    for (const url of ['https://example.org/x', 'file://server/share/x', 'smb://host/x', '', undefined])
+        assertEquals(await t.provider.previewUri({data: {url}}), null, String(url));
+    assertEquals(await t.provider.previewUri({}), null);
+    t.provider.destroy();
+});
+
+test('found files say they can be previewed', async () => {
+    const t = setupProvider();
+    await t.ready;
+    const [first] = await t.search('facture');
+    assertEquals(first.previewable, true);
     t.provider.destroy();
 });

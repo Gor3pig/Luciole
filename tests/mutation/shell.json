@@ -23,8 +23,8 @@
   {
    "file": "src/ui/launcher.js",
    "label": "keyboard focus not watched",
-   "old": "this.#stopFocusWatch = compat.connectKeyFocus(() => this.#checkFocus());",
-   "new": "this.#stopFocusWatch = null;"
+   "old": "        this.#stopFocusWatch = compat.connectKeyFocus(() => this.#checkFocus());\n        this.#log.debug('opened');",
+   "new": "        this.#log.debug('opened');"
   },
   {
    "file": "src/ui/launcher.js",

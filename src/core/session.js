@@ -216,6 +216,16 @@ export class SearchController {
         return [own ?? open, ...actions.filter(action => action.id !== 'open')];
     }
 
+    /** The local file to preview for a result, as its source checked it, or null. */
+    async previewUriFor(item) {
+        const provider = this.#getProviders().find(p => p.id === item.providerId);
+        if (!provider?.previewUri)
+            return null;
+        const uri = await this.#log.guardAsync(`finding the file to preview for ${item.key}`,
+            () => provider.previewUri(item.result), null);
+        return typeof uri === 'string' && uri.startsWith('file:///') ? uri : null;
+    }
+
     /** What a submenu action ("Open With") leads to. An empty list when there is nothing. */
     async subActionsFor(item, action) {
         const provider = this.#getProviders().find(p => p.id === item.providerId);

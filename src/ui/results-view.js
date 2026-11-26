@@ -23,11 +23,15 @@ export class ResultsView {
     #box;
     #gettext;
     #onActivate;
+    #hintFor;
+    // A short note at the end of the selected row ("Space: preview"), by key.
+    #hints = new Map();
     #rows = new Map();
 
-    constructor({gettext, onActivate}) {
+    constructor({gettext, onActivate, hintFor = () => null}) {
         this.#gettext = gettext;
         this.#onActivate = onActivate;
+        this.#hintFor = hintFor;
         this.#box = new St.BoxLayout({
             style_class: 'luciole-results',
             orientation: Clutter.Orientation.VERTICAL,
@@ -109,19 +113,28 @@ export class ResultsView {
 
     select(key) {
         for (const [rowKey, row] of this.#rows) {
+            const hint = this.#hints.get(rowKey);
             if (rowKey === key) {
                 row.add_style_pseudo_class('selected');
                 setSelected(row, true);
                 compat.ensureVisible(this.#actor, row);
+                const text = hint ? this.#hintFor(hint.item) : null;
+                if (hint) {
+                    hint.label.text = text ?? '';
+                    hint.label.visible = Boolean(text);
+                }
             } else {
                 row.remove_style_pseudo_class('selected');
                 setSelected(row, false);
+                if (hint)
+                    hint.label.visible = false;
             }
         }
     }
 
     clear() {
         this.#rows.clear();
+        this.#hints.clear();
         this.#box.destroy_all_children();
     }
 
@@ -162,6 +175,8 @@ export class ResultsView {
                 : {icon_name: typeof result.icon === 'string' ? result.icon : FALLBACK_ICON}),
         }));
         content.add_child(text);
+        const hint = new St.Label({style_class: 'luciole-row-hint', y_align: Clutter.ActorAlign.CENTER, visible: false});
+        content.add_child(hint);
 
         const row = new St.Button({
             style_class: 'luciole-row',
@@ -173,6 +188,7 @@ export class ResultsView {
         row.connect('clicked', () => this.#onActivate(item));
 
         this.#rows.set(item.key, row);
+        this.#hints.set(item.key, {label: hint, item});
         this.#box.add_child(row);
     }
 }
