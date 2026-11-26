@@ -20,7 +20,7 @@ FILES=$(unzip -Z1 "$ZIP" | grep -v '/$' | sort)
 
 fail=0
 for needed in metadata.json extension.js prefs.js stylesheet.css stylesheet-dark.css \
-    schemas/org.gnome.shell.extensions.luciole.gschema.xml locale/fr/LC_MESSAGES/luciole.mo \
+    luciole-128x128.png schemas/org.gnome.shell.extensions.luciole.gschema.xml locale/fr/LC_MESSAGES/luciole.mo \
     locale/en/LC_MESSAGES/luciole.mo core/session.js ui/launcher.js providers/files.js shell/compat.js; do
     echo "$FILES" | grep -qx "$needed" || { echo "FAIL: $needed is missing from the package"; fail=1; }
 done
@@ -30,7 +30,8 @@ for source in $(cd src && find . -name '*.js' -not -path './locale/*' | sed 's#^
     echo "$FILES" | grep -qx "$source" || { echo "FAIL: $source is not in the package"; fail=1; }
 done
 
-# Nothing that must not ship.
+# Nothing that must not ship. (Only the 128 px icon goes in: the other sizes stay in the repository.)
+echo "$FILES" | grep -E 'luciole-[0-9]+x[0-9]+\.png' | grep -vx 'luciole-128x128.png' && { echo "FAIL: an icon size that should not ship is in the package"; fail=1; }
 echo "$FILES" | grep -E 'gschemas\.compiled|\.pot$|\.po$|node_modules|\.git' && { echo "FAIL: unexpected files in the package"; fail=1; }
 
 # No private detail of the build machine: user name and host name. (Forbidden words are

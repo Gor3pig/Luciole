@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="data/icons/luciole-128x128.png" width="128" height="128" alt="Luciole icon: a firefly glowing in a jar">
+</p>
+
 # Luciole
 
 A Spotlight-style launcher for GNOME Shell: press a shortcut, type, and open

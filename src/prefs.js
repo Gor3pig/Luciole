@@ -9,6 +9,9 @@ import Gtk from 'gi://Gtk';
 
 import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
+// The icon shipped next to the code (see `make icon`).
+const ICON_FILE = 'luciole-128x128.png';
+
 // Schemas whose shortcuts could collide with ours.
 const SHORTCUT_SCHEMAS = [
     'org.gnome.desktop.wm.keybindings',
@@ -63,6 +66,28 @@ export default class LucioleExtensionPreferences extends ExtensionPreferences {
         window.add(this._sourcesPage(window, settings));
     }
 
+    // The icon, the name and one line, centred above the settings. Without the icon file (a local
+    // run that did not copy it) the name and the line are shown alone.
+    _headerGroup() {
+        const box = new Gtk.Box({orientation: Gtk.Orientation.VERTICAL, spacing: 6, halign: Gtk.Align.CENTER, margin_top: 6, margin_bottom: 6});
+        const file = Gio.File.new_for_path(GLib.build_filenamev([this.path, ICON_FILE]));
+        if (file.query_exists(null)) {
+            const picture = Gtk.Picture.new_for_file(file);
+            picture.set_can_shrink(true);
+            picture.set_content_fit(Gtk.ContentFit.CONTAIN);
+            picture.set_size_request(96, 96);
+            picture.set_halign(Gtk.Align.CENTER);
+            picture.set_accessible_role?.(Gtk.AccessibleRole.IMG);
+            picture.set_alternative_text(_('Luciole icon: a firefly glowing in a jar'));
+            box.append(picture);
+        }
+        box.append(new Gtk.Label({label: 'Luciole', css_classes: ['title-1']}));
+        box.append(new Gtk.Label({label: _('A search launcher for GNOME'), css_classes: ['dim-label']}));
+        const group = new Adw.PreferencesGroup();
+        group.add(box);
+        return group;
+    }
+
     _backdropRow(settings) {
         const levels = ['none', 'light', 'standard'];
         const row = new Adw.ComboRow({
@@ -88,6 +113,8 @@ export default class LucioleExtensionPreferences extends ExtensionPreferences {
 
     _generalPage(window, settings) {
         const page = new Adw.PreferencesPage({title: _('General'), icon_name: 'preferences-system-symbolic'});
+
+        page.add(this._headerGroup());
 
         const shortcutGroup = new Adw.PreferencesGroup({title: _('Shortcut')});
         shortcutGroup.add(this._shortcutRow(window, settings));

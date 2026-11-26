@@ -3,3 +3,4 @@ dist/
 *.zip
 gschemas.compiled
 src/locale/
+src/luciole-128x128.png
