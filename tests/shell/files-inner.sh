@@ -135,6 +135,10 @@ if grep -E "results: [4-9] .*query=quok" "$LOG" >/dev/null; then
     fail "hidden or excluded files were shown"
 fi
 echo "ok: files are found, hidden and excluded folders are left out"
+# The icon of a row and its text are apart (measured on screen: the space is the box's, not the button's).
+GAP=$(shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-row-content') && a.visible) { const [icon, text] = a.get_children(); return String(Math.round(text.x - (icon.x + icon.width))); } for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage) || 'none'")
+[ "$GAP" = 12 ] || fail "a row's icon and text should be 12 px apart, they are $GAP"
+echo "ok: a row's icon and text are 12 px apart"
 clear_entry 4
 
 # Applications and files side by side, applications first.

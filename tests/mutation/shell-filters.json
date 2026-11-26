@@ -150,6 +150,18 @@
     "sh",
     "tests/shell/files.sh"
    ]
+  },
+  {
+   "file": "src/stylesheet-dark.css",
+   "label": "a row's icon touches its text",
+   "old": ".luciole-row-content {\n    spacing: 12px;",
+   "new": ".luciole-row-content {\n    spacing: 0;",
+   "command": [
+    "env",
+    "FILES_PARTS=basics",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   }
  ]
 }

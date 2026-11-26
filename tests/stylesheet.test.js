@@ -44,6 +44,41 @@ test('both stylesheets set the same properties in each rule', () => {
         assertEquals(dark[selector], light[selector], selector);
 });
 
+/** Returns {selector: {property: value}} for a simple flat stylesheet. */
+function parseValues(css) {
+    const text = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    const rules = {};
+    for (const match of text.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+        const values = {};
+        for (const declaration of match[2].split(';')) {
+            const [name, ...value] = declaration.split(':');
+            if (name.trim() !== '')
+                values[name.trim()] = value.join(':').trim().replace(/\s+/g, ' ');
+        }
+        rules[match[1].trim().replace(/\s+/g, ' ')] = values;
+    }
+    return rules;
+}
+
+// Only colours may differ between the themes: a property about colour or shadow by its name, or a
+// value that holds one. Everything else (sizes, spacing, padding, radius, fonts) is the same.
+const isColour = (property, value) => /color|shadow|gradient/.test(property) || /#[0-9a-f]{3,8}\b|rgba?\(/i.test(value);
+
+test('both stylesheets give the same sizes, spacing and fonts: only colours differ', () => {
+    const light = parseValues(readSource('stylesheet.css'));
+    const dark = parseValues(readSource('stylesheet-dark.css'));
+    let compared = 0;
+    for (const [selector, values] of Object.entries(light)) {
+        for (const [property, value] of Object.entries(values)) {
+            if (isColour(property, value) || isColour(property, dark[selector]?.[property] ?? ''))
+                continue;
+            assertEquals(dark[selector]?.[property], value, `${selector} ${property}`);
+            compared++;
+        }
+    }
+    assert(compared > 20, `only ${compared} properties compared`);
+});
+
 test('every rule is scoped to the luciole- class prefix', () => {
     const light = parse(readSource('stylesheet.css'));
     for (const selector of Object.keys(light))

@@ -167,7 +167,7 @@ export class ResultsView {
             }));
         }
 
-        const content = new St.BoxLayout({x_expand: true});
+        const content = new St.BoxLayout({style_class: 'luciole-row-content', x_expand: true});
         content.add_child(new St.Icon({
             style_class: 'luciole-row-icon',
             ...(result.icon instanceof Gio.Icon

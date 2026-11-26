@@ -1967,6 +1967,12 @@
    "label": "the cache ignores the test",
    "old": ", mutant.also ?? null, command, versions",
    "new": ", mutant.also ?? null, versions"
+  },
+  {
+   "file": "src/stylesheet.css",
+   "label": "in the light theme a row's icon touches its text",
+   "old": ".luciole-row-content {\n    spacing: 12px;",
+   "new": ".luciole-row-content {\n    spacing: 0;"
   }
  ]
 }

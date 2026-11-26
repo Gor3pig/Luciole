@@ -135,6 +135,10 @@
     min-height: 44px;
     padding: 0 10px;
     border-radius: 10px;
+}
+
+/* The button of a row does not space its content: the box inside it does. */
+.luciole-row-content {
     spacing: 12px;
 }
 
