@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Luciole contributors
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-import {fold, mergeRanges, splitByRanges, wordStarts} from '../../src/core/text.js';
+import {fold, mergeRanges, sanitizeLabel, splitByRanges, wordStarts} from '../../src/core/text.js';
 import {assert, assertEquals, test} from '../harness.js';
 import {ALPHABETS, forAll} from './random.js';
 
@@ -61,5 +61,18 @@ test('fuzz: splitByRanges always rebuilds the text, even with absurd ranges', ()
         assertEquals(parts.map(part => part.text).join(''), text, `ranges ${JSON.stringify(ranges)}`);
         for (const part of parts)
             assert(part.text.length > 0, 'empty part');
+    });
+});
+
+test('fuzz: a sanitized label is safe, short, tidy and stable', () => {
+    forAll('sanitizeLabel', random => {
+        const clean = sanitizeLabel(random.string(ALPHABETS.everything, 400));
+        assert(clean.length <= 300, `length ${clean.length}`);
+        // eslint-disable-next-line no-control-regex -- control characters are what is looked for
+        assert(!/[\u0000-\u001f\u007f-\u009f]/.test(clean), 'a control character survived');
+        for (const code of [0x2028, 0x2029, 0x202a, 0x202b, 0x202c, 0x202d, 0x202e, 0x2066, 0x2067, 0x2068, 0x2069])
+            assert(!clean.includes(String.fromCodePoint(code)), `U+${code.toString(16)} survived`);
+        assert(!/ {2}/.test(clean) && clean === clean.trim(), 'untidy spaces');
+        assertEquals(sanitizeLabel(clean), clean, 'not stable when applied twice');
     });
 });

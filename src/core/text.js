@@ -82,3 +82,36 @@ export function splitByRanges(text, ranges) {
         parts.push({text: text.slice(at), match: false});
     return parts;
 }
+
+// Characters that must never reach the screen from a name written by someone else:
+//  - control characters (line breaks, tabs, escape, NUL, the C1 range) and the line and
+//    paragraph separators, which break a one-line row or hide text;
+//  - the bidirectional overrides, embeddings and isolates, which reverse the display order of
+//    what follows, so a file name can be made to read as a harmless one.
+// eslint-disable-next-line no-control-regex -- matching control characters is the whole point
+const CONTROL_OR_BIDI = /[\u0000-\u001f\u007f-\u009f\u2028\u2029\u202a-\u202e\u2066-\u2069]/gu;
+const MAX_LABEL_LENGTH = 300;
+
+/**
+ * Makes a name safe to show in one row: unsafe characters are dropped (line breaks and
+ * tabs become a space), runs of spaces collapse, and a very long name is cut with "…".
+ * Applying it twice gives the same text as applying it once.
+ *
+ * @param {unknown} text
+ * @returns {string} empty when there is nothing left to show
+ */
+export function sanitizeLabel(text) {
+    if (typeof text !== 'string')
+        return '';
+    let clean = text.replace(/[\t\n\r\u2028\u2029\u0085]/gu, ' ').replace(CONTROL_OR_BIDI, '');
+    clean = clean.replace(/ {2,}/g, ' ').trim();
+    if (clean.length > MAX_LABEL_LENGTH) {
+        // Do not cut in the middle of a surrogate pair.
+        let end = MAX_LABEL_LENGTH - 1;
+        const last = clean.charCodeAt(end - 1);
+        if (last >= 0xd800 && last <= 0xdbff)
+            end--;
+        clean = `${clean.slice(0, end).trimEnd()}…`;
+    }
+    return clean;
+}

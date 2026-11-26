@@ -6,6 +6,7 @@ import Gio from 'gi://Gio';
 import {createMatcher} from './matching.js';
 import {mergeResults} from './merge.js';
 import {scoreForEmptyQuery, scoreResult} from './scoring.js';
+import {sanitizeLabel} from './text.js';
 
 const TIMED_OUT = Symbol('timed out');
 
@@ -15,6 +16,34 @@ function isCancelledError(error) {
     } catch {
         return false;
     }
+}
+
+/**
+ * What a provider returned, made safe to show: unsafe characters out of every text the user can
+ * see or that is matched (see sanitizeLabel). A result that is already clean comes back as it
+ * is, with no copy; one left with no title is dropped (null).
+ */
+function cleanResult(result) {
+    const title = sanitizeLabel(result.title);
+    if (title === '')
+        return null;
+    const subtitle = typeof result.subtitle === 'string' ? sanitizeLabel(result.subtitle) : result.subtitle;
+    let fields = result.matchFields;
+    let fieldsChanged = false;
+    if (Array.isArray(fields)) {
+        fields = fields.map(field => {
+            const raw = typeof field === 'string' ? field : field?.text;
+            const text = sanitizeLabel(raw);
+            if (text === raw)
+                return field;
+            fieldsChanged = true;
+            // A text that changed no longer matches the folded form computed for the old one.
+            return typeof field === 'string' ? text : {...field, text, folded: undefined};
+        }).filter(field => (typeof field === 'string' ? field : field?.text) !== '');
+    }
+    if (title === result.title && subtitle === result.subtitle && !fieldsChanged)
+        return result;
+    return {...result, title, subtitle, matchFields: fields};
 }
 
 function isUsableResult(result) {
@@ -187,9 +216,14 @@ export class SearchController {
             store = new Map();
             this.#scored.set(provider.id, store);
         }
-        for (const result of batch) {
-            if (!isUsableResult(result)) {
+        for (const received of batch) {
+            if (!isUsableResult(received)) {
                 this.#log.warn(`provider "${provider.id}" returned a result without id or title`);
+                continue;
+            }
+            const result = cleanResult(received);
+            if (!result) {
+                this.#log.warn(`provider "${provider.id}" returned a result with nothing to show as its title`);
                 continue;
             }
             const scored = matcher.isEmpty

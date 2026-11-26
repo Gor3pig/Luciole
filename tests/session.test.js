@@ -414,3 +414,53 @@ test('a provider\'s weight lowers its scores against the others', async () => {
     assertEquals(last.titles[0], 'Facture Express', 'the application first despite the file coming first in priority');
     assert(Math.abs(last.finals[1] - 0.9 * 0.96) < 1e-9, `file score is weighted: ${last.finals[1]}`);
 });
+
+const RLO = String.fromCodePoint(0x202e);
+
+async function shown(results, query = 'rep') {
+    const scheduler = new FakeScheduler();
+    const provider = fakeProvider(scheduler, {id: 'files', results});
+    const items = [];
+    const log = recordingLog();
+    const controller = new SearchController({
+        getProviders: () => [provider], frecency: new Frecency(), scheduler, log,
+        onUpdate: merged => {
+            items.length = 0;
+            items.push(...merged.items.map(i => i.result));
+        },
+    });
+    await controller.search(query);
+    return {items, log};
+}
+
+test('what providers return is cleaned before it is shown: spoofing characters and line breaks', async () => {
+    const {items} = await shown([result('1', `report${RLO}fdp.exe`, {subtitle: 'in\nfolder'})]);
+    assertEquals(items.length, 1);
+    assertEquals(items[0].title, 'reportfdp.exe');
+    assertEquals(items[0].subtitle, 'in folder');
+    assertEquals(items[0].id, '1', 'the identity is never touched');
+});
+
+test('the texts that are matched are cleaned too, so the highlight stays on the shown title', async () => {
+    const dirty = `Rep${RLO}ort`;
+    const {items} = await shown([result('1', dirty, {matchFields: [{text: dirty}, {text: 'zzz', weight: 0.5}]})]);
+    assertEquals(items[0].title, 'Report');
+    assertEquals(items[0].matchFields[0].text, 'Report');
+});
+
+test('a result with nothing left to show as a title is dropped, with a warning', async () => {
+    const {items, log} = await shown([result('1', `${RLO}\n `), result('2', 'Report')]);
+    assertEquals(items.map(i => i.id), ['2']);
+    assert(log.lines.some(line => line.startsWith('warn:') && line.includes('nothing to show')), 'no warning');
+});
+
+test('a clean result is shown as it is, without being copied', async () => {
+    const original = result('1', 'Report', {subtitle: 'Documents', matchFields: ['Report']});
+    const {items} = await shown([original]);
+    assert(items[0] === original, 'a clean result was needlessly copied');
+});
+
+test('when every matched text is emptied by the cleaning, the result is still found by its title', async () => {
+    const {items} = await shown([result('1', 'Report', {matchFields: [{text: RLO}, RLO]})]);
+    assertEquals(items.map(i => i.title), ['Report']);
+});

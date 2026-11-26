@@ -689,6 +689,90 @@
    "label": "light backdrop too strong",
    "old": "rgba(0, 0, 0, 0.22)",
    "new": "rgba(0, 0, 0, 0.4)"
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "bidi characters kept",
+   "old": "\\u2028\\u2029\\u202a-\\u202e\\u2066-\\u2069]/gu;",
+   "new": "\\u2028\\u2029]/gu;"
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "control characters kept",
+   "old": "[\\u0000-\\u001f\\u007f-\\u009f",
+   "new": "["
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "line breaks dropped instead of becoming a space",
+   "old": ".replace(/[\\t\\n\\r\\u2028\\u2029\\u0085]/gu, ' ')",
+   "new": ""
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "spaces not collapsed",
+   "old": ".replace(/ {2,}/g, ' ')",
+   "new": ""
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "label not trimmed",
+   "old": ".trim();\n    if (clean.length",
+   "new": ";\n    if (clean.length"
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "long names not cut",
+   "old": "if (clean.length > MAX_LABEL_LENGTH) {",
+   "new": "if (false) {"
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "cut inside a surrogate pair",
+   "old": "            end--;\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/text.js",
+   "label": "a non-text label kept as text",
+   "old": "if (typeof text !== 'string')\n        return '';",
+   "new": "if (typeof text !== 'string')\n        return String(text);"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "providers results shown uncleaned",
+   "old": "const result = cleanResult(received);",
+   "new": "const result = received;"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "a result without a title is kept",
+   "old": "if (title === '')\n        return null;",
+   "new": ""
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "a clean result is copied",
+   "old": "if (title === result.title && subtitle === result.subtitle && !fieldsChanged)\n        return result;",
+   "new": ""
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "matched texts not cleaned",
+   "old": "const text = sanitizeLabel(raw);",
+   "new": "const text = raw;"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "subtitle not cleaned",
+   "old": "typeof result.subtitle === 'string' ? sanitizeLabel(result.subtitle) : result.subtitle",
+   "new": "result.subtitle"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "an emptied matched text is kept",
+   "old": ".filter(field => (typeof field === 'string' ? field : field?.text) !== '')",
+   "new": ""
   }
  ]
 }

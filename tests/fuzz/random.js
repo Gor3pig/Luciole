@@ -38,9 +38,9 @@ const ACCENTED = 'éèêëàâäîïôöùûüçñÉÈÀÇÑœæßİıŁł';
 const SEPARATORS = ' -_./\\:;,';
 // Things that have broken query parsers, markup renderers and file managers.
 const HOSTILE = '"\'*()<>{}[]^~|&%$#@!?=+`\\\n\t\r\0;';
-const COMBINING = '̧́̈‍️';
-const SPOOFING = '‪‫‬‭‮⁦⁧⁨⁩‎‏';
-const WIDE = '日本語中文한국어🙂🦊𝒳𝔸\u{1F468}‍\u{1F469}';
+const COMBINING = '̧́̈\u200d️';
+const SPOOFING = '\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068\u2069\u200e\u200f';
+const WIDE = '日本語中文한국어🙂🦊𝒳𝔸\u{1F468}\u200d\u{1F469}';
 const LONE_SURROGATES = '𐀀􏿿';
 
 export const ALPHABETS = {

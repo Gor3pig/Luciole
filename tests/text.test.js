@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Luciole contributors
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-import {fold, foldChar, isWordChar, mergeRanges, splitByRanges, wordStarts} from '../src/core/text.js';
+import {fold, foldChar, isWordChar, mergeRanges, sanitizeLabel, splitByRanges, wordStarts} from '../src/core/text.js';
 import {assert, assertEquals, test} from './harness.js';
 
 test('fold lower-cases and strips accents', () => {
@@ -73,4 +73,42 @@ test('splitByRanges parts always add up to the original text', () => {
     const text = 'Éditeur de texte';
     const joined = splitByRanges(text, [[0, 3], [9, 11]]).map(part => part.text).join('');
     assertEquals(joined, text);
+});
+
+const RLO = String.fromCodePoint(0x202e);
+const LRI = String.fromCodePoint(0x2066);
+const PDI = String.fromCodePoint(0x2069);
+const LINE_SEP = String.fromCodePoint(0x2028);
+
+test('sanitizeLabel leaves an ordinary name alone, accents and scripts included', () => {
+    for (const name of ['Firefox', 'Rapport annuel.odt', 'Écran partagé', '日本語のファイル.txt', 'a b c'])
+        assertEquals(sanitizeLabel(name), name);
+});
+
+test('sanitizeLabel drops the characters that reverse the display order', () => {
+    assertEquals(sanitizeLabel(`report${RLO}fdp.exe`), 'reportfdp.exe');
+    assertEquals(sanitizeLabel(`${LRI}hidden${PDI} name`), 'hidden name');
+});
+
+test('sanitizeLabel turns line breaks and tabs into one space and drops other control characters', () => {
+    assertEquals(sanitizeLabel('a\nb\r\nc\td'), 'a b c d');
+    assertEquals(sanitizeLabel(`one${LINE_SEP}two`), 'one two');
+    assertEquals(sanitizeLabel('x\u0000y\u001bz\u007f'), 'xyz');
+});
+
+test('sanitizeLabel collapses spaces, trims, and gives an empty text for nothing to show', () => {
+    assertEquals(sanitizeLabel('  a    b  '), 'a b');
+    assertEquals(sanitizeLabel(`${RLO}\n\t `), '');
+    for (const odd of [undefined, null, 5, {}, ['a']])
+        assertEquals(sanitizeLabel(odd), '');
+});
+
+test('sanitizeLabel cuts a very long name with an ellipsis, never inside a character', () => {
+    const cut = sanitizeLabel('a'.repeat(1000));
+    assertEquals(cut.length, 300);
+    assert(cut.endsWith('…'), 'no ellipsis');
+    const emoji = sanitizeLabel('🙂'.repeat(500));
+    assert(emoji.length <= 300, `too long: ${emoji.length}`);
+    assert(!/[\ud800-\udbff]…$/.test(emoji), 'cut inside a surrogate pair');
+    assertEquals(sanitizeLabel('b'.repeat(300)), 'b'.repeat(300));
 });
