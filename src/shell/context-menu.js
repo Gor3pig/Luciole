@@ -108,12 +108,13 @@ export class ContextMenu {
             this.#menu.actor.navigate_focus(null, St.DirectionType.TAB_FORWARD, false);
     }
 
-    // Puts the menu where it is seen whole, for its size now (see menuAnchor).
-    #place() {
+    // Puts the menu where it is seen whole (see menuAnchor), for its size now plus `growing`: what a
+    // submenu about to unfold will add (it unfolds from no height, so it is not counted yet).
+    #place(growing = 0) {
         const {x, y, height, floor} = this.#anchor;
         const [, natural] = this.#menu.actor.get_preferred_height(-1);
         const area = Main.layoutManager.getWorkAreaForMonitor(monitorAt(x, y));
-        const anchor = menuAnchor({y, height}, natural, floor, {top: area.y, bottom: area.y + area.height});
+        const anchor = menuAnchor({y, height}, natural + growing, floor, {top: area.y, bottom: area.y + area.height});
         Main.layoutManager.setDummyCursorGeometry(x, anchor.y, 0, anchor.height);
         this.#menu.actor.queue_relayout();
     }
@@ -139,9 +140,9 @@ export class ContextMenu {
         });
         this.#menu.addMenuItem(submenu);
         // Unfolded or folded, the menu changes height: placed again so it stays on screen.
-        submenu.menu.connect('open-state-changed', () => {
+        submenu.menu.connect('open-state-changed', (_submenu, open) => {
             if (this.#menu?.isOpen)
-                this.#place();
+                this.#place(open ? submenu.menu.box.get_preferred_height(-1)[1] : 0);
         });
     }
 

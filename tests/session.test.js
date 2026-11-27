@@ -820,6 +820,21 @@ test('"/" lists the types to choose, and searches nothing', async () => {
     assertEquals(t.files.searches, []);
 });
 
+test('"/folders" goes to the Folders source when there is one, else to the files', async () => {
+    const t = typeSetup();
+    const folders = fakeProvider(new FakeScheduler(), {id: 'folders', results: [result('d', 'Compta')]});
+    const withFolders = new SearchController({
+        getProviders: () => [t.apps, t.files, folders], frecency: new Frecency(), scheduler: new FakeScheduler(), log: recordingLog(), gettext: text => text,
+        onUpdate: () => {},
+    });
+    await withFolders.search('/folders compta');
+    assertEquals(folders.searches, ['compta']);
+    assertEquals(t.files.searches, [], 'not the files');
+    await t.controller.search('/folders compta');
+    assertEquals(t.files.searches, ['compta'], 'without a Folders source, the files');
+    assertEquals(t.options, ['folders']);
+});
+
 test('"/pdf facture" searches the words among the files only, telling them the type', async () => {
     const t = typeSetup();
     await t.controller.search('/pdf facture');

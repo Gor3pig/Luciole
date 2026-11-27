@@ -696,6 +696,7 @@ clear_entry 8
 typed "/dossiers pinson"
 wait_last 'results: 2 first=Pinsonnet.* query=/dossiers pinson' || fail "folders: '/dossiers' did not find the folders (last: $(last_results))"
 [ "$(chip_info)" = "6 3" ] || fail "folders: '/dossiers' did not choose the Folders chip ('$(chip_info)')"
+case ";$(section_titles);" in *";Dossiers;"*) ;; *) fail "folders: '/dossiers' did not list them as folders ('$(section_titles)')" ;; esac
 echo "ok: '/dossiers' chooses the Folders chip and finds the folders"
 clear_entry 20
 press BackSpace

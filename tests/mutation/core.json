@@ -1857,8 +1857,8 @@
   {
    "file": "src/core/session.js",
    "label": "a typed search goes to every source",
-   "old": "        if (this.#typeFilter !== null)\n            return providers.filter(provider => provider.id === 'files');\n",
-   "new": "\n"
+   "old": "        if (this.#typeFilter !== null) {\n            const folders",
+   "new": "        if (false) {\n            const folders"
   },
   {
    "file": "src/core/session.js",
@@ -2129,6 +2129,12 @@
    "label": "the help says Space previews before an arrow chose",
    "old": "key: spacePreviews ? _('Space') : _('Ctrl+Y')",
    "new": "key: _('Space')"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "\"/folders\" goes to the files though Folders is a source",
+   "old": "            const folders = this.#typeFilter === 'folders' && providers.some(provider => provider.id === 'folders');",
+   "new": "            const folders = false;"
   }
  ]
 }

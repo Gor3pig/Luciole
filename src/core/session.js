@@ -139,11 +139,14 @@ export class SearchController {
         this.#filter = typeof id === 'string' ? id : null;
     }
 
-    // The sources a search goes to: the files for a type of file, else the chosen one, or all of them.
+    // The sources a search goes to: the files for a type of file (the folders for "/folders", when
+    // they are a source of their own), else the chosen one, or all of them.
     #searched() {
         const providers = this.#getProviders();
-        if (this.#typeFilter !== null)
-            return providers.filter(provider => provider.id === 'files');
+        if (this.#typeFilter !== null) {
+            const folders = this.#typeFilter === 'folders' && providers.some(provider => provider.id === 'folders');
+            return providers.filter(provider => provider.id === (folders ? 'folders' : 'files'));
+        }
         const only = effectiveFilter(this.#filter, providers);
         return only === null ? providers : providers.filter(provider => provider.id === only);
     }
