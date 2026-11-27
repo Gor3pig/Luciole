@@ -10,11 +10,13 @@ const WITH_ACTIONS = new Set(['apps', 'files', 'folders', 'calc']);
 /**
  * @param {{providerId: string, result: {completesTo?: string, data?: {folder?: boolean}}} | null} item
  * @param {object} options
- * @param {boolean} options.canPreview - Space previews this result
+ * @param {boolean} options.canPreview - this result can be previewed
+ * @param {boolean} [options.spacePreviews] - Space previews it (once it was chosen with the arrows;
+ *   before that Space types a space, and Ctrl+Y is the key)
  * @param {(text: string) => string} options.gettext
  * @returns {Array<{label: string, key: string}>} nothing when no result is chosen
  */
-export function helpItems(item, {canPreview, gettext}) {
+export function helpItems(item, {canPreview, spacePreviews = true, gettext}) {
     if (!item?.result)
         return [];
     const _ = gettext;
@@ -28,7 +30,7 @@ export function helpItems(item, {canPreview, gettext}) {
         open = _('Open in Files');
     const list = [{label: open, key: _('Enter')}];
     if (canPreview)
-        list.push({label: _('Preview'), key: _('Space')});
+        list.push({label: _('Preview'), key: spacePreviews ? _('Space') : _('Ctrl+Y')});
     if (WITH_ACTIONS.has(item.providerId))
         list.push({label: _('Actions'), key: _('Ctrl+K')});
     return list;

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-27 13:49+0100\n"
+"POT-Creation-Date: 2026-11-27 16:37+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -43,6 +43,10 @@ msgstr ""
 
 #: src/core/help-bar.js src/providers/files-query.js
 msgid "Space"
+msgstr ""
+
+#: src/core/help-bar.js
+msgid "Ctrl+Y"
 msgstr ""
 
 #: src/core/help-bar.js
@@ -423,6 +427,11 @@ msgid "Search %s"
 msgstr ""
 
 #: src/ui/launcher.js
+#, javascript-format
+msgid "No results for “%s”"
+msgstr ""
+
+#: src/ui/launcher.js
 msgid "Type to search your applications"
 msgstr ""
 
@@ -432,10 +441,6 @@ msgstr ""
 
 #: src/ui/launcher.js
 msgid "Type to search in this category"
-msgstr ""
-
-#: src/ui/launcher.js
-msgid "Space: preview"
 msgstr ""
 
 #: src/ui/launcher.js

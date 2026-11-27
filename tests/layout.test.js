@@ -99,18 +99,26 @@ test('on GNOME 50, which has no reduced motion setting, the animations switch al
     assertEquals(systemMotion({enableAnimations: false, reducedMotion: undefined, reduceValue: undefined}), false);
 });
 
-test('a menu from the keyboard goes under its row when it fits there', () => {
-    assertEquals(menuAnchor({y: 300, height: 40}, 200, 120, 800), {y: 300, height: 40});
+const AREA = {top: 32, bottom: 720};
+
+test('a menu goes under its row, or its point, when it fits there', () => {
+    assertEquals(menuAnchor({y: 300, height: 40}, 200, 120, AREA), {y: 300, height: 40});
+    assertEquals(menuAnchor({y: 300, height: 0}, 200, null, AREA), {y: 300, height: 0});
 });
 
-test('without room below, it goes above its row when it fits between the row and the field', () => {
-    assertEquals(menuAnchor({y: 500, height: 40}, 350, 120, 800), {y: 500, height: 40}, 'the menu flips above the box itself');
+test('without room below, it goes above when it fits there (the anchor stays, the menu flips)', () => {
+    assertEquals(menuAnchor({y: 500, height: 40}, 350, 120, AREA), {y: 500, height: 40});
 });
 
-test('fitting neither below nor above without covering the field, it opens just under the field', () => {
-    assertEquals(menuAnchor({y: 400, height: 40}, 380, 120, 720), {y: 120, height: 0});
+test('fitting neither below nor above, it is moved as low as it can be while it fits', () => {
+    assertEquals(menuAnchor({y: 350, height: 0}, 500, null, AREA), {y: 212, height: 0});
 });
 
-test('a menu at the pointer has no field to keep clear', () => {
-    assertEquals(menuAnchor({y: 400, height: 0}, 900, null, 720), {y: 400, height: 0});
+test('moved, a menu from the keyboard never goes over the field', () => {
+    assertEquals(menuAnchor({y: 400, height: 40}, 640, 150, AREA), {y: 150, height: 0});
+    assertEquals(menuAnchor({y: 400, height: 40}, 380, 150, AREA), {y: 332, height: 0}, 'as low as it fits, below the field');
+});
+
+test('without a field to keep clear, a moved menu stops at the top of the screen', () => {
+    assertEquals(menuAnchor({y: 400, height: 0}, 900, null, AREA), {y: 32, height: 0});
 });

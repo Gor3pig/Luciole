@@ -54,6 +54,12 @@ chip_center() {
 empty_hint_shown() {
     shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-empty-hint')) return String(a.visible); for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
 }
+help_text() {
+    shell_eval "(function() { let bar = null; (function w(a) { if (bar) return; if ((a.style_class || '') === 'luciole-help-bar') { bar = a; return; } a.get_children().forEach(w); })(global.stage); if (!bar || !bar.visible || !bar.mapped) return 'hidden'; return bar.get_children().filter(p => p.get_n_children() > 0).map(p => p.get_children().map(l => l.text).join(' ')).join(' · '); })()"
+}
+empty_hint_text() {
+    shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-empty-hint')) return a.visible ? a.text : 'hidden'; for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
+}
 # wait_last <regex>: the most recent "results:" line of the log matches it (polls for 4 s).
 wait_last() {
     i=0
@@ -244,8 +250,9 @@ wait_last 'results: 3 first=.*query=quok' || fail "files not found with the File
 [ "$(empty_hint_shown)" = false ] || fail "the empty-field hint stays once something is typed"
 chord Control_L+1
 wait_last 'results: 0 first=- query=quok' || fail "applications only should find no quokka (last: $(last_results))"
-[ "$(empty_hint_shown)" = false ] || fail "the empty-field hint shows although something is typed and nothing was found"
-echo "ok: the empty-field hint shows only for an empty field; a category finds only its own results"
+sleep 0.3
+[ "$(empty_hint_text)" = "Aucun résultat pour « quok »" ] || fail "nothing found, the window does not say so ('$(empty_hint_text)')"
+echo "ok: the empty-field hint shows only for an empty field; nothing found is said; a category finds only its own results"
 
 # Every opening starts on All again.
 escape
@@ -379,10 +386,10 @@ sleep 0.3
 [ "$(entry_text_length)" = 8 ] || fail "preview: Space before any arrow should type a space ($(entry_text_length) characters, expected 8)"
 press BackSpace
 wait_last 'results: 1 first=rapport.* query=rapport$' || fail "results did not come back (last: $(last_results))"
+case "$(help_text)" in *"Aperçu Ctrl+Y"*) ;; *) fail "preview: before an arrow, the help does not give Ctrl+Y for the preview ('$(help_text)')" ;; esac
 press Down
 sleep 0.3
-HINTS=$(shell_eval "(function count(a) { return ((a.style_class || '').includes('luciole-row-hint') && a.visible ? 1 : 0) + a.get_children().reduce((n, c) => n + count(c), 0); })(global.stage)")
-[ "$HINTS" = 1 ] || fail "preview: the chosen file does not say that Space previews it ($HINTS hints shown)"
+case "$(help_text)" in *"Aperçu Espace"*) ;; *) fail "preview: the help does not say that Space previews the chosen file ('$(help_text)')" ;; esac
 HIDDEN=$(grep -cF "hidden for the preview" "$LOG")
 BACK=$(grep -cF "back from the preview" "$LOG")
 typed " "
@@ -685,6 +692,13 @@ sleep 0.6
 [ "$(grep -cF "hidden for the preview" "$LOG")" = "$HIDDEN" ] || fail "folders: Space on a folder tried to preview it"
 [ "$(entry_text_length)" = $((LENGTH + 1)) ] || fail "folders: the space typed on a folder did not reach the field"
 echo "ok: a folder has its own menu, and Space on it types a space"
+clear_entry 8
+typed "/dossiers pinson"
+wait_last 'results: 2 first=Pinsonnet.* query=/dossiers pinson' || fail "folders: '/dossiers' did not find the folders (last: $(last_results))"
+[ "$(chip_info)" = "6 3" ] || fail "folders: '/dossiers' did not choose the Folders chip ('$(chip_info)')"
+echo "ok: '/dossiers' chooses the Folders chip and finds the folders"
+clear_entry 20
+press BackSpace
 chord Control_L+0
 clear_entry 8
 sleep 0.3
@@ -693,14 +707,14 @@ fi
 if part help; then
 fresh_start
 # The bar under the results says what the keys do for the chosen result.
-help_text() {
-    shell_eval "(function() { let bar = null; (function w(a) { if (bar) return; if ((a.style_class || '') === 'luciole-help-bar') { bar = a; return; } a.get_children().forEach(w); })(global.stage); if (!bar || !bar.visible || !bar.mapped) return 'hidden'; return bar.get_children().filter(p => p.get_n_children() > 0).map(p => p.get_children().map(l => l.text).join(' ')).join(' · '); })()"
-}
 clear_entry 8
 typed rapport
 wait_last 'results: 1 first=rapport' || fail "help: the real file was not found (last: $(last_results))"
 sleep 0.3
-[ "$(help_text)" = "Ouvrir Entrée · Aperçu Espace · Actions Ctrl+K" ] || fail "help: a file says '$(help_text)'"
+[ "$(help_text)" = "Ouvrir Entrée · Aperçu Ctrl+Y · Actions Ctrl+K" ] || fail "help: a file says '$(help_text)'"
+press Down
+sleep 0.3
+[ "$(help_text)" = "Ouvrir Entrée · Aperçu Espace · Actions Ctrl+K" ] || fail "help: a file chosen with an arrow says '$(help_text)'"
 clear_entry 8
 typed pinson
 wait_last 'results: 3 first=.*query=pinson' || fail "help: the folders were not found (last: $(last_results))"

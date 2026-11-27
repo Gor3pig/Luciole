@@ -363,12 +363,14 @@ export class FilesProvider extends Provider {
         if (!connection || this.#destroyed || cancellable.is_cancelled())
             return [];
 
-        // A type of file ("/pdf", "/folders") is a search of Files alone: folders are in it when
-        // asked for.
-        if (typeFilter !== null && this.#kind === 'folders')
+        // A type of file ("/pdf") is a search of Files; "/folders" is the Folders' own search (or
+        // Files', which then keeps its folders, when Folders is not a source).
+        const folders = this.#kind === 'folders';
+        if (folders && typeFilter !== null && typeFilter !== 'folders')
             return [];
-        let rows = await runQuery(connection, terms, cancellable, {typed: typeFilter !== null, folders: this.#kind === 'folders'});
-        if (typeFilter !== null)
+        const typed = typeFilter !== null && !folders;
+        let rows = await runQuery(connection, terms, cancellable, {typed, folders});
+        if (typed)
             rows = keepType(rows, typeFilter);
         return rowsToResults(rows, {
             home: GLib.get_home_dir(),

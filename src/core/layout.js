@@ -108,23 +108,26 @@ export function needsHeightEase(from, to) {
     return Number.isFinite(from) && Number.isFinite(to) && from > 0 && to > 0 && Math.abs(to - from) >= 1;
 }
 
+// Room kept between a menu moved to fit and the edge of the screen.
+const MENU_MARGIN = 8;
+
 /**
- * Where a menu opened under a box (a row) is anchored: under it when it fits below, above it when it
- * fits between the box and the floor (what it must never cover, the field), else just under the floor.
- * The anchor is a box: the menu goes below it, or above it when there is no room below.
+ * Where a menu is anchored so that it is seen whole. Its anchor is a box (a row, or a point): the menu
+ * goes below it, or above it when it fits there and not below. When it fits neither, it is moved, as
+ * low as it can be while it fits, but never above the limit: the top of the screen, or for a menu
+ * opened from the keyboard the field, which it must not cover.
  *
  * @param {{y: number, height: number}} box
  * @param {number} menuHeight
- * @param {number | null} floor
- * @param {number} bottom - the lowest point the menu may reach (the work area's bottom)
- * @returns {{y: number, height: number}}
+ * @param {number | null} floor - what the menu must never cover above it, or null
+ * @param {{top: number, bottom: number}} area - the part of the screen the menu may take
+ * @returns {{y: number, height: number}} the anchor to give it
  */
-export function menuAnchor(box, menuHeight, floor, bottom) {
-    if (floor === null)
+export function menuAnchor(box, menuHeight, floor, area) {
+    const limit = floor ?? area.top;
+    const below = area.bottom - (box.y + box.height);
+    const above = box.y - limit;
+    if (menuHeight <= below || menuHeight <= above)
         return {y: box.y, height: box.height};
-    const below = bottom - (box.y + box.height);
-    const above = box.y - floor;
-    if (menuHeight > below && menuHeight > above)
-        return {y: floor, height: 0};
-    return {y: box.y, height: box.height};
+    return {y: Math.max(limit, area.bottom - menuHeight - MENU_MARGIN), height: 0};
 }

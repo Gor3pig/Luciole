@@ -370,11 +370,11 @@
   {
    "file": "src/ui/launcher.js",
    "label": "the chosen row is drawn before the arrows are noted",
-   "old": "        // Noted first: what the chosen row shows (\"Space: preview\") depends on it.\n        this.#navigated = true;\n        this.#choose(this.#items[next].key);",
+   "old": "        // Noted first: what the help bar says of Space (it previews once an arrow chose) depends on it.\n        this.#navigated = true;\n        this.#choose(this.#items[next].key);",
    "new": "        this.#choose(this.#items[next].key);\n        this.#navigated = true;",
    "command": [
     "env",
-    "FILES_PARTS=preview",
+    "FILES_PARTS=help",
     "sh",
     "tests/shell/files.sh"
    ]
@@ -454,7 +454,7 @@
   {
    "file": "src/ui/launcher.js",
    "label": "a type does not choose the Files category",
-   "old": "            this.#filter = typeId === null ? null : 'files';",
+   "old": "            this.#filter = typeId === null ? null : source;",
    "new": "            this.#filter = null;",
    "command": [
     "env",
@@ -897,6 +897,42 @@
    "command": [
     "env",
     "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "\"/folders\" chooses the Files chip",
+   "old": "        const source = folders ? 'folders' : 'files';",
+   "new": "        const source = 'files';",
+   "command": [
+    "env",
+    "FILES_PARTS=folders",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "nothing found is not said",
+   "old": "        if (empty && words.trim() !== '') {",
+   "new": "        if (false) {",
+   "command": [
+    "env",
+    "FILES_PARTS=categories",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the help bar ignores whether an arrow chose",
+   "old": "            spacePreviews: this.#navigated,",
+   "new": "            spacePreviews: true,",
+   "command": [
+    "env",
+    "FILES_PARTS=help",
     "sh",
     "tests/shell/files.sh"
    ]

@@ -369,7 +369,7 @@
   {
    "file": "src/providers/files.js",
    "label": "Folders answers a search of one type of file",
-   "old": "        if (typeFilter !== null && this.#kind === 'folders')\n            return [];\n",
+   "old": "        if (folders && typeFilter !== null && typeFilter !== 'folders')\n            return [];\n",
    "new": ""
   },
   {
@@ -461,6 +461,12 @@
    "label": "a file cannot be copied for Files",
    "old": "        {id: 'copy-file', label: _('Copy File'), hint: _('Ctrl+C'), confirmation: _('File copied')},\n",
    "new": ""
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "Folders gives nothing for \"/folders\"",
+   "old": "        if (folders && typeFilter !== null && typeFilter !== 'folders')",
+   "new": "        if (folders && typeFilter !== null)"
   }
  ]
 }

@@ -24,16 +24,14 @@ export class ResultsView {
     #gettext;
     #onActivate;
     #onContextMenu;
-    #hintFor;
-    // A short note at the end of the selected row ("Space: preview"), by key.
-    #hints = new Map();
+    // The result of each row, by key (what a click on a row is about).
+    #itemsByKey = new Map();
     #rows = new Map();
 
-    constructor({gettext, onActivate, onContextMenu = () => {}, hintFor = () => null}) {
+    constructor({gettext, onActivate, onContextMenu = () => {}}) {
         this.#gettext = gettext;
         this.#onActivate = onActivate;
         this.#onContextMenu = onContextMenu;
-        this.#hintFor = hintFor;
         this.#box = new St.BoxLayout({
             style_class: 'luciole-results',
             orientation: Clutter.Orientation.VERTICAL,
@@ -115,21 +113,13 @@ export class ResultsView {
 
     select(key) {
         for (const [rowKey, row] of this.#rows) {
-            const hint = this.#hints.get(rowKey);
             if (rowKey === key) {
                 row.add_style_pseudo_class('selected');
                 setSelected(row, true);
                 compat.ensureVisible(this.#actor, row);
-                const text = hint ? this.#hintFor(hint.item) : null;
-                if (hint) {
-                    hint.label.text = text ?? '';
-                    hint.label.visible = Boolean(text);
-                }
             } else {
                 row.remove_style_pseudo_class('selected');
                 setSelected(row, false);
-                if (hint)
-                    hint.label.visible = false;
             }
         }
     }
@@ -152,14 +142,14 @@ export class ResultsView {
     itemAt(actor) {
         for (const [key, row] of this.#rows) {
             if (actor && row.contains(actor))
-                return this.#hints.get(key)?.item ?? null;
+                return this.#itemsByKey.get(key) ?? null;
         }
         return null;
     }
 
     clear() {
         this.#rows.clear();
-        this.#hints.clear();
+        this.#itemsByKey.clear();
         this.#box.destroy_all_children();
     }
 
@@ -200,8 +190,6 @@ export class ResultsView {
                 : {icon_name: typeof result.icon === 'string' ? result.icon : FALLBACK_ICON}),
         }));
         content.add_child(text);
-        const hint = new St.Label({style_class: 'luciole-row-hint', y_align: Clutter.ActorAlign.CENTER, visible: false});
-        content.add_child(hint);
 
         const row = new St.Button({
             style_class: 'luciole-row',
@@ -220,7 +208,7 @@ export class ResultsView {
         });
 
         this.#rows.set(item.key, row);
-        this.#hints.set(item.key, {label: hint, item});
+        this.#itemsByKey.set(item.key, item);
         this.#box.add_child(row);
     }
 }

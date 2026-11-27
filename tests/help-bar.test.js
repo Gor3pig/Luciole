@@ -5,12 +5,16 @@ import {helpItems} from '../src/core/help-bar.js';
 import {assertEquals, test} from './harness.js';
 
 const echo = text => text;
-const said = (item, canPreview = false) => helpItems(item, {canPreview, gettext: echo}).map(({label, key}) => `${label} ${key}`);
+const said = (item, canPreview = false, spacePreviews = true) => helpItems(item, {canPreview, spacePreviews, gettext: echo}).map(({label, key}) => `${label} ${key}`);
 
 test('a file: Open, Preview when it can be previewed, and its actions', () => {
     const file = {providerId: 'files', result: {data: {folder: false}}};
     assertEquals(said(file, true), ['Open Enter', 'Preview Space', 'Actions Ctrl+K']);
     assertEquals(said(file, false), ['Open Enter', 'Actions Ctrl+K']);
+});
+
+test('before an arrow chose the file, Space types a space: the preview is Ctrl+Y', () => {
+    assertEquals(said({providerId: 'files', result: {data: {folder: false}}}, true, false), ['Open Enter', 'Preview Ctrl+Y', 'Actions Ctrl+K']);
 });
 
 test('a folder opens in Files', () => {

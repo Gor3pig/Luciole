@@ -317,7 +317,7 @@ export class Launcher {
             return;
         const current = this.#selectedIndex();
         const next = Math.min(this.#items.length - 1, Math.max(0, current + delta));
-        // Noted first: what the chosen row shows ("Space: preview") depends on it.
+        // Noted first: what the help bar says of Space (it previews once an arrow chose) depends on it.
         this.#navigated = true;
         this.#choose(this.#items[next].key);
     }
@@ -479,15 +479,23 @@ export class Launcher {
             : searching[this.#filter] ?? _('Search %s').format(name);
     }
 
-    // Shown only when a source is chosen, the field is empty and that source has nothing to list
-    // before something is typed (files have no "recent" list).
+    // Said under the chips once every source has answered with nothing: what to type, when a source
+    // is chosen and the field is empty (files have no "recent" list), or that the search found
+    // nothing, so it is clear it was made.
     #updateEmptyHint(done) {
         const _ = this.#gettext;
-        const waiting = {apps: _('Type to search your applications'), files: _('Type to search your files')};
-        const show = done && this.#filter !== null && this.#entry.get_text() === '' && this.#items.length === 0;
-        if (show)
-            this.#emptyHint.set_text(waiting[this.#filter] ?? _('Type to search in this category'));
-        this.#emptyHint.visible = show;
+        const words = this.#entry.get_text();
+        const empty = done && this.#items.length === 0;
+        let text = null;
+        if (empty && words.trim() !== '') {
+            text = _('No results for “%s”').format(words.trim());
+        } else if (empty && this.#filter !== null && words === '') {
+            const waiting = {apps: _('Type to search your applications'), files: _('Type to search your files')};
+            text = waiting[this.#filter] ?? _('Type to search in this category');
+        }
+        if (text)
+            this.#emptyHint.set_text(text);
+        this.#emptyHint.visible = text !== null;
     }
 
     // ---- The type of file a search is restricted to ("/pdf facture") ----
@@ -515,10 +523,12 @@ export class Launcher {
             this.#typeLabel.set_text(typeLabels(this.#gettext)[typeId] ?? typePrefix(typeId).trim());
             this.#typeLabel.show();
         }
-        // Files only, while a type of file is chosen: the category says so too.
-        const files = this.#categories.some(category => category.id === 'files');
-        if (files && this.#isOpen) {
-            this.#filter = typeId === null ? null : 'files';
+        // Files only (folders only for "/folders", when they are a source), while a type of file is
+        // chosen: the category says so too.
+        const folders = typeId === 'folders' && this.#categories.some(category => category.id === 'folders');
+        const source = folders ? 'folders' : 'files';
+        if (this.#categories.some(category => category.id === source) && this.#isOpen) {
+            this.#filter = typeId === null ? null : source;
             this.#log.guard('restricting the search', () => this.#onFilter(this.#filter));
             this.#markChips();
             this.#updateFilterTexts();
@@ -544,13 +554,6 @@ export class Launcher {
 
     #canPreview(item) {
         return Boolean(this.#previewer?.available && item?.result?.previewable === true);
-    }
-
-    // What the selected row says it can do with Space: only once the user chose it with the arrows.
-    #rowHint(item) {
-        if (!this.#navigated || !this.#canPreview(item))
-            return null;
-        return this.#gettext('Space: preview');
     }
 
     // The window steps aside (the preview needs the keyboard), keeping the search, and comes back
@@ -885,7 +888,11 @@ export class Launcher {
         if (!bar)
             return;
         const item = this.#selectedItem();
-        const items = this.#confirmTimer ? [] : helpItems(item, {canPreview: this.#canPreview(item), gettext: this.#gettext});
+        const items = this.#confirmTimer ? [] : helpItems(item, {
+            canPreview: this.#canPreview(item),
+            spacePreviews: this.#navigated,
+            gettext: this.#gettext,
+        });
         bar.destroy_all_children();
         // The bar spans the window (its line above too), its words on the right.
         bar.add_child(new St.Widget({x_expand: true}));
@@ -979,7 +986,6 @@ export class Launcher {
             gettext: this.#gettext,
             onActivate: item => this.#activate(item),
             onContextMenu: item => this.#log.guardAsync('opening the actions menu', () => this.#openMenuOf(item)),
-            hintFor: item => this.#rowHint(item),
         });
 
         const panel = new St.BoxLayout({

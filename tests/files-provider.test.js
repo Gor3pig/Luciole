@@ -452,17 +452,18 @@ test('folders are a source of their own: Files leaves them out, Folders lists on
     folders.provider.destroy();
 });
 
-test('"/folders" is a search of Files that finds the folders; the Folders source then stays quiet', async () => {
+test('"/folders" is the Folders\' own search; Files finds them too when Folders is not a source', async () => {
     const files = setupProvider({files: WITH_FOLDERS});
     const folders = setupProvider({files: WITH_FOLDERS, kind: 'folders'});
     await files.ready;
     await folders.ready;
     const typed = (t, typeFilter) => t.provider.search('compta', {cancellable: new Gio.Cancellable(), limit: 6, emit() {}, typeFilter});
+    assertEquals((await typed(folders, 'folders')).map(r => r.title).sort(), ['Compta', 'Compta 2025']);
+    assertEquals(await typed(folders, 'documents'), [], 'another type is not the Folders\' business');
     const found = await typed(files, 'folders');
     assertEquals(found.map(r => r.title).sort(), ['Compta', 'Compta 2025']);
     assert(found.every(r => r.data.folder === true && r.icon === 'folder'), 'they are known as folders');
     assertEquals((await typed(files, 'documents')).map(r => r.data.folder), [false]);
-    assertEquals(await typed(folders, 'folders'), []);
     files.provider.destroy();
     folders.provider.destroy();
 });

@@ -1875,7 +1875,7 @@
   {
    "file": "src/providers/files.js",
    "label": "a typed search keeps every file",
-   "old": "        if (typeFilter !== null)\n            rows = keepType(rows, typeFilter);\n",
+   "old": "        if (typed)\n            rows = keepType(rows, typeFilter);\n",
    "new": "\n"
   },
   {
@@ -2102,15 +2102,33 @@
   },
   {
    "file": "src/core/layout.js",
-   "label": "a menu from the keyboard may cover the field",
-   "old": "    if (menuHeight > below && menuHeight > above)\n        return {y: floor, height: 0};",
-   "new": "    if (false)\n        return {y: floor, height: 0};"
+   "label": "a menu from the keyboard may go over the field",
+   "old": "    const limit = floor ?? area.top;",
+   "new": "    const limit = area.top;"
   },
   {
    "file": "src/core/layout.js",
-   "label": "a menu that fits above its row is moved under the field",
-   "old": "    if (menuHeight > below && menuHeight > above)",
-   "new": "    if (menuHeight > below || menuHeight > above)"
+   "label": "a menu that fits above is moved",
+   "old": "    if (menuHeight <= below || menuHeight <= above)",
+   "new": "    if (menuHeight <= below)"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "a menu that fits nowhere is left to overflow",
+   "old": "    return {y: Math.max(limit, area.bottom - menuHeight - MENU_MARGIN), height: 0};",
+   "new": "    return {y: box.y, height: box.height};"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "a moved menu may go above the limit",
+   "old": "    return {y: Math.max(limit, area.bottom - menuHeight - MENU_MARGIN), height: 0};",
+   "new": "    return {y: area.bottom - menuHeight - MENU_MARGIN, height: 0};"
+  },
+  {
+   "file": "src/core/help-bar.js",
+   "label": "the help says Space previews before an arrow chose",
+   "old": "key: spacePreviews ? _('Space') : _('Ctrl+Y')",
+   "new": "key: _('Space')"
   }
  ]
 }

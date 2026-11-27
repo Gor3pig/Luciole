@@ -82,8 +82,8 @@
   {
    "file": "src/ui/launcher.js",
    "label": "the empty-field hint never shows",
-   "old": "        const show = done && this.#filter !== null && this.#entry.get_text() === '' && this.#items.length === 0;",
-   "new": "        const show = false;",
+   "old": "        } else if (empty && this.#filter !== null && words === '') {",
+   "new": "        } else if (false) {",
    "command": [
     "env",
     "FILES_PARTS=categories",
@@ -94,8 +94,8 @@
   {
    "file": "src/ui/launcher.js",
    "label": "the empty-field hint stays with text typed",
-   "old": "this.#filter !== null && this.#entry.get_text() === '' && this.#items.length === 0;",
-   "new": "this.#filter !== null && this.#items.length === 0;",
+   "old": "        } else if (empty && this.#filter !== null && words === '') {",
+   "new": "        } else if (empty && this.#filter !== null) {",
    "command": [
     "env",
     "FILES_PARTS=categories",

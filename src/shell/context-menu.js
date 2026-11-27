@@ -26,6 +26,8 @@ export class ContextMenu {
     #manager;
     #report = {chosen: null, outside: null, typed: null};
     #onClosed;
+    // Where the menu was asked to open, kept to place it again when it grows (a submenu unfolds).
+    #anchor = null;
     #closing = false;
     #idleId = 0;
 
@@ -97,15 +99,23 @@ export class ContextMenu {
      *   fits neither below the box nor between the box and the floor, it opens just under the floor
      */
     open({x, y, height = 0}, keyboard, floor = null) {
-        const [, natural] = this.#menu.actor.get_preferred_height(-1);
-        const area = Main.layoutManager.getWorkAreaForMonitor(monitorAt(x, y));
-        const anchor = menuAnchor({y, height}, natural, floor, area.y + area.height);
-        Main.layoutManager.setDummyCursorGeometry(x, anchor.y, 0, anchor.height);
+        this.#anchor = {x, y, height, floor};
+        this.#place();
         this.#menu.open();
         // GNOME highlights the first action when the key that opened the menu is still being
         // handled; here the actions were listed first, so it is done by hand.
         if (keyboard)
             this.#menu.actor.navigate_focus(null, St.DirectionType.TAB_FORWARD, false);
+    }
+
+    // Puts the menu where it is seen whole, for its size now (see menuAnchor).
+    #place() {
+        const {x, y, height, floor} = this.#anchor;
+        const [, natural] = this.#menu.actor.get_preferred_height(-1);
+        const area = Main.layoutManager.getWorkAreaForMonitor(monitorAt(x, y));
+        const anchor = menuAnchor({y, height}, natural, floor, {top: area.y, bottom: area.y + area.height});
+        Main.layoutManager.setDummyCursorGeometry(x, anchor.y, 0, anchor.height);
+        this.#menu.actor.queue_relayout();
     }
 
     /**
@@ -128,6 +138,11 @@ export class ContextMenu {
             submenu.menu.addMenuItem(row);
         });
         this.#menu.addMenuItem(submenu);
+        // Unfolded or folded, the menu changes height: placed again so it stays on screen.
+        submenu.menu.connect('open-state-changed', () => {
+            if (this.#menu?.isOpen)
+                this.#place();
+        });
     }
 
     get isOpen() {

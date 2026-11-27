@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-27 13:49+0100\n"
+"POT-Creation-Date: 2026-11-27 16:37+0100\n"
 "PO-Revision-Date: 2026-11-25 20:00+0100\n"
 "Last-Translator: Luciole contributors\n"
 "Language-Team: fr <>\n"
@@ -43,6 +43,10 @@ msgstr "Aperçu"
 #: src/core/help-bar.js src/providers/files-query.js
 msgid "Space"
 msgstr "Espace"
+
+#: src/core/help-bar.js
+msgid "Ctrl+Y"
+msgstr "Ctrl+Y"
 
 #: src/core/help-bar.js
 msgid "Actions"
@@ -437,6 +441,11 @@ msgid "Search %s"
 msgstr "Rechercher dans %s"
 
 #: src/ui/launcher.js
+#, javascript-format
+msgid "No results for “%s”"
+msgstr "Aucun résultat pour « %s »"
+
+#: src/ui/launcher.js
 msgid "Type to search your applications"
 msgstr "Tapez pour chercher dans vos applications"
 
@@ -447,10 +456,6 @@ msgstr "Tapez pour chercher dans vos fichiers"
 #: src/ui/launcher.js
 msgid "Type to search in this category"
 msgstr "Tapez pour chercher dans cette catégorie"
-
-#: src/ui/launcher.js
-msgid "Space: preview"
-msgstr "Espace : aperçu"
 
 #: src/ui/launcher.js
 #, javascript-format
