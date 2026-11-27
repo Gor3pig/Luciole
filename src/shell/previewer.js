@@ -27,8 +27,12 @@ function previewWindowShown() {
 // keyboard (focus stealing prevention): the shell, asked by the user's key press, gives it here.
 function focusPreviewWindow() {
     const actor = global.get_window_actors().find(candidate => isPreviewWindow(candidate.meta_window));
-    if (actor)
+    if (actor) {
         Main.activateWindow(actor.meta_window);
+        // The keys go to the window only when nothing of the shell keeps the keyboard: opened over
+        // the overview, the launcher otherwise hands it back to the overview's controls.
+        global.stage.set_key_focus(null);
+    }
     return Boolean(actor);
 }
 
@@ -105,31 +109,37 @@ export class Previewer {
                 this.#finish(current, 'timeout');
             return GLib.SOURCE_REMOVE;
         });
-        this.#bus.call(NAME, PATH, IFACE, 'ShowFile', new GLib.Variant('(ssbs)', [uri, '', false, '']),
-            null, Gio.DBusCallFlags.NONE, -1, null, (bus, result) => {
-                try {
-                    bus.call_finish(result);
-                } catch (error) {
-                    this.#log.warn(`the file previewer failed: ${error.message}`);
-                    this.#finish(current, 'error');
-                    return;
-                }
-                // A preview already on screen shows the new file without its Visible property
-                // changing: read it once.
-                this.#readVisible(current);
-            });
+        // A preview already on screen shows the new file without its Visible property changing:
+        // whether one is there is read first (without starting the previewer for that).
+        this.#readVisible(alreadyShown => {
+            if (this.#current !== current)
+                return;
+            this.#bus.call(NAME, PATH, IFACE, 'ShowFile', new GLib.Variant('(ssbs)', [uri, '', false, '']),
+                null, Gio.DBusCallFlags.NONE, -1, null, (bus, result) => {
+                    try {
+                        bus.call_finish(result);
+                    } catch (error) {
+                        this.#log.warn(`the file previewer failed: ${error.message}`);
+                        this.#finish(current, 'error');
+                        return;
+                    }
+                    if (alreadyShown)
+                        this.#seen(current);
+                });
+        });
     }
 
-    #readVisible(current) {
+    // Calls back with whether a preview is on screen now; false when the previewer is not running.
+    #readVisible(callback) {
         this.#bus.call(NAME, PATH, 'org.freedesktop.DBus.Properties', 'Get', new GLib.Variant('(ss)', [IFACE, 'Visible']),
-            new GLib.VariantType('(v)'), Gio.DBusCallFlags.NONE, -1, null, (bus, result) => {
+            new GLib.VariantType('(v)'), Gio.DBusCallFlags.NO_AUTO_START, 1000, null, (bus, result) => {
+                let visible = false;
                 try {
-                    const [value] = bus.call_finish(result).deepUnpack();
-                    if (value.deepUnpack() === true && this.#current === current)
-                        this.#seen(current);
+                    visible = bus.call_finish(result).deepUnpack()[0].deepUnpack() === true;
                 } catch {
-                    // Not readable: the property change, or the timeout, will tell.
+                    // Not running, or not answering: no preview is on screen.
                 }
+                callback(visible);
             });
     }
 

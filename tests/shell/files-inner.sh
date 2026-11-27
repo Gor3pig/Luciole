@@ -11,6 +11,8 @@ UUID=luciole@gor3pig.github.io
 # Budget for the time from a keystroke to the file results being shown (ms), in this VM.
 FILES_BUDGET_MS=400
 
+# The test shell starts in the overview and this test leaves it there: Luciole is used over the
+# overview, which is also what a preview must cope with (the keyboard must go to its window).
 start_shell "$LOG_FILE"
 start_index_service
 wait_for_extension
@@ -99,6 +101,17 @@ result_row_center() {
 }
 menu_title() {
     shell_eval "(function find(a) { if (a.style_class === 'luciole-menu-title' && a.mapped) return a.get_text(); for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage) || 'none'"
+}
+# escape_preview <count of "back" before>: Escape to the preview until it is closed. Just after it
+# opens, the previewer may not handle keys yet and ignores an Escape: then another is sent (four at most).
+escape_preview() {
+    tries=0
+    while [ "$tries" -lt 4 ]; do
+        escape
+        wait_log "back from the preview" $(($1 + 1)) 1 && return 0
+        tries=$((tries + 1))
+    done
+    return 1
 }
 menu_row_center() {
     shell_eval "(function find(a) { if (a.style_class === 'luciole-menu') { const rows = a.get_children()[0].get_children().filter(c => c.style_class === 'luciole-menu-row'); const c = rows[$1]; const [x, y] = c.get_transformed_position(); const [w, h] = c.get_transformed_size(); return Math.round(x + w / 2) + ' ' + Math.round(y + h / 2); } for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
@@ -373,8 +386,7 @@ done
 echo "preview: keyboard focus on $FOCUSED"
 [ "$FOCUSED" = org.gnome.NautilusPreviewer ] || fail "preview: the preview window did not get the keyboard"
 sleep 0.5
-escape
-wait_log "back from the preview" $((BACK + 1)) || fail "preview: the window did not come back after the preview"
+escape_preview "$BACK" || fail "preview: the window did not come back after the preview (grab: $(shell_eval "(function() { const g = global.stage.get_grab_actor(); return (!g || g === global.stage) ? 'none' : (g.style_class || g.constructor.name); })()"); key focus: $(shell_eval "String(global.stage.key_focus?.constructor?.name ?? 'none') + ' ' + String(global.stage.key_focus?.style_class ?? '')"); windows: $(shell_eval "global.get_window_actors().map(a => a.meta_window.get_wm_class()).join(',')"); focus: $(shell_eval "String(global.display.focus_window?.get_wm_class() ?? 'none')"); log: $(grep -F '[Luciole] preview' "$LOG" | tail -n 3 | sed 's/.*\[Luciole\] //' | tr '\n' ';'))"
 grep -F "back from the preview" "$LOG" | tail -n 1 | sed 's/.*\[Luciole\] /preview: /'
 sleep 0.4
 [ "$(entry_text_length)" = 7 ] || fail "preview: the search was not kept ($(entry_text_length) characters, expected 7)"
@@ -437,8 +449,7 @@ sleep 0.2
 press Return
 wait_log "hidden for the preview" $((HIDDEN + 1)) || fail "preview: the menu's Preview did not show the preview"
 sleep 1
-escape
-wait_log "back from the preview" $((BACK + 1)) || fail "preview: the window did not come back after a preview from the menu"
+escape_preview "$BACK" || fail "preview: the window did not come back after a preview from the menu"
 sleep 0.4
 [ "$(menu_state)" = hidden ] || fail "preview: the menu was still shown after coming back"
 [ "$(entry_text_length)" = 7 ] || fail "preview: the search was not kept after a preview from the menu"
