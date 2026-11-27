@@ -67,6 +67,16 @@
    "label": "the search field is not capped",
    "old": "        text.max_length = MAX_QUERY_LENGTH;\n",
    "new": ""
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "the missing index is reported by both Files and Folders",
+   "old": "                if (this.#kind === 'files')\n                    this.#log.warn(",
+   "new": "                if (true)\n                    this.#log.warn(",
+   "command": [
+    "sh",
+    "tests/shell/degrade.sh"
+   ]
   }
  ]
 }

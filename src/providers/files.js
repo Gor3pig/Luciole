@@ -490,7 +490,11 @@ export class FilesProvider extends Provider {
                 this.#connection = connection;
                 return connection;
             }, error => {
-                this.#log.warn(`file search is unavailable: ${error.message}`);
+                // Files and Folders read the same index: its absence is said once, by Files.
+                if (this.#kind === 'files')
+                    this.#log.warn(`file search is unavailable: ${error.message}`);
+                else
+                    this.#log.debug(`folder search is unavailable: ${error.message}`);
                 return null;
             });
         }
