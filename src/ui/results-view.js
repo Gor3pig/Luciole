@@ -22,15 +22,15 @@ export class ResultsView {
     #actor;
     #box;
     #gettext;
-    #onActivate;
+    #onClick;
     #onContextMenu;
     // The result of each row, by key (what a click on a row is about).
     #itemsByKey = new Map();
     #rows = new Map();
 
-    constructor({gettext, onActivate, onContextMenu = () => {}}) {
+    constructor({gettext, onClick, onContextMenu = () => {}}) {
         this.#gettext = gettext;
-        this.#onActivate = onActivate;
+        this.#onClick = onClick;
         this.#onContextMenu = onContextMenu;
         this.#box = new St.BoxLayout({
             style_class: 'luciole-results',
@@ -196,7 +196,7 @@ export class ResultsView {
             can_focus: false,
             x_expand: true,
             child: content,
-            // The left button opens the result, the right one shows its actions.
+            // The left button opens the result (or chooses it, see the launcher), the right one shows its actions.
             button_mask: St.ButtonMask.ONE | St.ButtonMask.THREE,
         });
         describeResult(row, result.title, result.subtitle);
@@ -204,7 +204,7 @@ export class ResultsView {
             if (button === Clutter.BUTTON_SECONDARY)
                 this.#onContextMenu(item);
             else
-                this.#onActivate(item);
+                this.#onClick(item, compat.currentEventTime());
         });
 
         this.#rows.set(item.key, row);

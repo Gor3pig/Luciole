@@ -51,7 +51,7 @@ start_shell() {
     unset LC_ALL LC_MESSAGES
     PRIVATE_RUNTIME=$(mktemp -d)
     export XDG_RUNTIME_DIR="$PRIVATE_RUNTIME"
-    gnome-shell --headless --wayland --no-x11 --wayland-display="$WAYLAND_NAME" --virtual-monitor 1280x720 ${SHELL_EXTRA_ARGS:-} >"$LOG" 2>&1 &
+    gnome-shell --headless --wayland --no-x11 --wayland-display="$WAYLAND_NAME" --virtual-monitor "${TEST_MONITOR:-1280x720}" ${SHELL_EXTRA_ARGS:-} >"$LOG" 2>&1 &
     SHELL_PID=$!
     gdbus call --session --dest org.freedesktop.DBus --object-path /org/freedesktop/DBus \
         --method org.freedesktop.DBus.UpdateActivationEnvironment "{'WAYLAND_DISPLAY': '$WAYLAND_NAME', 'DISPLAY': '', 'XDG_RUNTIME_DIR': '$PRIVATE_RUNTIME'}" >/dev/null

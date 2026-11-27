@@ -8,6 +8,7 @@ import St from 'gi://St';
 
 import {ActionMenu} from '../core/action-menu.js';
 import {categoryForDigit, digitOfKey} from '../core/categories.js';
+import {isDoubleClick} from '../core/click.js';
 import {helpItems} from '../core/help-bar.js';
 import {backdropClass, motionEnabled, verticalLayout} from '../core/layout.js';
 import {jumpSection, nextSelection} from '../core/merge.js';
@@ -56,6 +57,9 @@ export class Launcher {
     #onSecondary;
     #getBackdrop;
     #getAnimations;
+    #getOpenClick;
+    // The last left click on a row, {key, time}: with the double click, what the next click pairs with.
+    #lastClick = null;
     #getQueries;
     #getCategories;
     #getActions;
@@ -114,6 +118,7 @@ export class Launcher {
      * @param {(item: object) => void} options.onSecondary - the user asked for the other action (Ctrl+Enter)
      * @param {() => string} options.getBackdrop - the dimming setting: 'none', 'light' or 'standard'
      * @param {() => boolean} options.getAnimations - the animations setting
+     * @param {() => string} [options.getOpenClick] - 'single' (a click opens a result) or 'double' (a click chooses it)
      * @param {() => string[]} options.getQueries - the remembered searches, newest first
      * @param {() => Array<{id: string, name: string}>} options.getCategories - the sources a search can be restricted to
      * @param {(id: string | null) => void} options.onFilter - the search is restricted to a source (null: all)
@@ -122,7 +127,7 @@ export class Launcher {
      * @param {{available: boolean, show: Function, cancel: Function}} [options.previewer] - GNOME's file previewer
      * @param {(item: object) => Promise<string | null>} [options.getPreviewUri] - the file to preview for a result, checked
      */
-    constructor({log, gettext, onQuery, onActivate, onSecondary, getBackdrop, getAnimations, getQueries = () => [], getCategories = () => [], onFilter = () => {},
+    constructor({log, gettext, onQuery, onActivate, onSecondary, getBackdrop, getAnimations, getOpenClick = () => 'single', getQueries = () => [], getCategories = () => [], onFilter = () => {},
         getActions = async () => [], onRunAction = async () => ({ok: false, confirmation: null}),
         previewer = null, getPreviewUri = async () => null}) {
         this.#log = log;
@@ -132,6 +137,7 @@ export class Launcher {
         this.#onSecondary = onSecondary;
         this.#getBackdrop = getBackdrop;
         this.#getAnimations = getAnimations;
+        this.#getOpenClick = getOpenClick;
         this.#getQueries = getQueries;
         this.#getCategories = getCategories;
         this.#onFilter = onFilter;
@@ -171,6 +177,7 @@ export class Launcher {
         this.#merged = null;
         this.#selectedKey = null;
         this.#navigated = false;
+        this.#lastClick = null;
         this.#history.reset();
         this.#setTypeChip(null);
         this.#entry.set_text('');
@@ -340,6 +347,28 @@ export class Launcher {
     #confirmationOf(item) {
         const text = item?.result?.activationConfirmation;
         return typeof text === 'string' && text !== '' ? text : null;
+    }
+
+    // A left click on a row: it opens the result, or, set to open with a double click, it chooses
+    // the row as the arrows do, and a second click on that row within GNOME's delay opens it.
+    #clicked(item, time) {
+        const mode = this.#log.guard('reading the click setting', () => this.#getOpenClick(), 'single');
+        if (mode !== 'double') {
+            this.#activate(item);
+            return;
+        }
+        const click = {key: item.key, time};
+        const delay = this.#log.guard('reading the double-click delay', () => compat.doubleClickTime(), 400);
+        if (isDoubleClick(this.#lastClick, click, delay)) {
+            this.#lastClick = null;
+            this.#activate(item);
+            return;
+        }
+        this.#lastClick = click;
+        if (!this.#items.some(candidate => candidate.key === item.key))
+            return;
+        this.#navigated = true;
+        this.#choose(item.key);
     }
 
     #activate(item) {
@@ -957,7 +986,7 @@ export class Launcher {
 
         const view = new ResultsView({
             gettext: this.#gettext,
-            onActivate: item => this.#activate(item),
+            onClick: (item, time) => this.#clicked(item, time),
             onContextMenu: item => this.#log.guardAsync('opening the actions menu', () => this.#openMenuOf(item)),
         });
 

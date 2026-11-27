@@ -1151,6 +1151,62 @@ fi
 clear_entry 8
 fi
 
+if part clicks; then
+# How a click opens a result, set in the preferences (read at each click). Single (the default): one
+# click opens. Double: one click chooses the row, a second one on it within GNOME's delay opens it;
+# a click on another row only chooses that one.
+# click_row <index>: the pointer on that row of results, then a left click.
+click_row() {
+    set -- $(result_row_center "$1")
+    [ -n "${1:-}" ] || fail "clicks: no row to click"
+    pointer "$1" "$2"
+    sleep 0.15
+}
+fresh_start
+typed quok
+wait_last 'results: 3 first=.*query=quok' || fail "results did not come back (last: $(last_results))"
+sleep 0.6
+gsettings set org.gnome.shell.extensions.luciole open-click double
+sleep 0.5
+ACTIVATED=$(grep -cF "activating " "$LOG")
+FIRST=$(selected_row)
+click_row 2
+click
+sleep 0.6
+[ "$(launcher_shown)" = yes ] || fail "clicks: with the double click, one click closed the window"
+[ "$(grep -cF "activating " "$LOG")" = "$ACTIVATED" ] || fail "clicks: with the double click, one click opened the result"
+CHOSEN=$(selected_row)
+[ "$CHOSEN" != "$FIRST" ] && [ "$CHOSEN" != none ] || fail "clicks: one click did not choose the row clicked (chosen: '$CHOSEN', before: '$FIRST')"
+echo "ok: set to the double click, one click chooses the row and opens nothing"
+click_row 0
+click
+sleep 0.6
+[ "$(grep -cF "activating " "$LOG")" = "$ACTIVATED" ] || fail "clicks: a click on one row then another opened a result"
+[ "$(selected_row)" != "$CHOSEN" ] || fail "clicks: the second row clicked was not chosen"
+echo "ok: a click on another row only chooses that one"
+CLOSED_NOW=$(launcher_closed_count)
+click_row 1
+click
+click
+wait_log "activating " $((ACTIVATED + 1)) || fail "clicks: a double click did not open the result"
+wait_log "[Luciole] closed" $((CLOSED_NOW + 1)) || fail "clicks: the window did not close after the double click"
+echo "ok: a double click opens the result"
+sleep 0.4
+gsettings set org.gnome.shell.extensions.luciole open-click single
+sleep 0.5
+reopen_launcher
+typed quok
+wait_last 'results: 3 first=.*query=quok' || fail "results did not come back (last: $(last_results))"
+sleep 0.6
+CLOSED_NOW=$(launcher_closed_count)
+click_row 1
+click
+wait_log "activating " $((ACTIVATED + 2)) || fail "clicks: back to the single click, one click did not open the result"
+wait_log "[Luciole] closed" $((CLOSED_NOW + 1)) || fail "clicks: the window did not close after the click"
+echo "ok: back to the single click, one click opens the result"
+sleep 0.4
+fi
+
 # Opening a file is covered by the unit tests, with an injected opener: the files here do not exist.
 fresh_start
 typed quok

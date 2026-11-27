@@ -30,6 +30,16 @@
       <description>none: the desktop stays fully visible; light: slightly dimmed; standard: clearly dimmed.</description>
     </key>
 
+    <key name="open-click" type="s">
+      <choices>
+        <choice value="single"/>
+        <choice value="double"/>
+      </choices>
+      <default>"single"</default>
+      <summary>How a click opens a result</summary>
+      <description>single: one click opens it; double: one click chooses it, a double click opens it. Enter always opens the chosen result.</description>
+    </key>
+
     <key name="animations" type="b">
       <default>true</default>
       <summary>Animate the launcher</summary>

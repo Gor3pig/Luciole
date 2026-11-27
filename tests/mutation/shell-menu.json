@@ -532,8 +532,8 @@
   {
    "file": "src/ui/results-view.js",
    "label": "a right click opens the result",
-   "old": "            if (button === Clutter.BUTTON_SECONDARY)\n                this.#onContextMenu(item);\n            else\n                this.#onActivate(item);",
-   "new": "            this.#onActivate(item);",
+   "old": "            if (button === Clutter.BUTTON_SECONDARY)\n                this.#onContextMenu(item);\n            else\n                this.#onClick(item, compat.currentEventTime());",
+   "new": "            this.#onClick(item, compat.currentEventTime());",
    "command": [
     "env",
     "FILES_PARTS=menu",
@@ -969,6 +969,78 @@
    "command": [
     "env",
     "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the click setting is ignored: a click always opens",
+   "old": "        if (mode !== 'double') {",
+   "new": "        if (true) {",
+   "command": [
+    "env",
+    "FILES_PARTS=clicks",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the double click setting opens nothing",
+   "old": "        if (isDoubleClick(this.#lastClick, click, delay)) {",
+   "new": "        if (false) {",
+   "command": [
+    "env",
+    "FILES_PARTS=clicks",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "with the double click, a click opens at once",
+   "old": "        if (isDoubleClick(this.#lastClick, click, delay)) {",
+   "new": "        if (true) {",
+   "command": [
+    "env",
+    "FILES_PARTS=clicks",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the first click is not remembered",
+   "old": "        this.#lastClick = click;\n        if (!this.#items",
+   "new": "        if (!this.#items",
+   "command": [
+    "env",
+    "FILES_PARTS=clicks",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "a click with the double click does not choose the row",
+   "old": "        this.#navigated = true;\n        this.#choose(item.key);\n    }\n\n    #activate(item) {",
+   "new": "    }\n\n    #activate(item) {",
+   "command": [
+    "env",
+    "FILES_PARTS=clicks",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/results-view.js",
+   "label": "a left click reaches nothing",
+   "old": "                this.#onClick(item, compat.currentEventTime());",
+   "new": "                void item;",
+   "command": [
+    "env",
+    "FILES_PARTS=clicks",
     "sh",
     "tests/shell/files.sh"
    ]

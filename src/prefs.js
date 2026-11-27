@@ -104,6 +104,20 @@ export default class LucioleExtensionPreferences extends ExtensionPreferences {
         return row;
     }
 
+    _openClickRow(settings) {
+        const modes = ['single', 'double'];
+        const row = new Adw.ComboRow({
+            title: _('Open a Result'),
+            subtitle: _('With the mouse. Enter always opens the chosen result'),
+            model: Gtk.StringList.new([_('With a Single Click'), _('With a Double Click')]),
+        });
+        row.selected = Math.max(0, modes.indexOf(settings.get_string('open-click')));
+        row.connect('notify::selected', () => {
+            settings.set_string('open-click', modes[row.selected] ?? 'single');
+        });
+        return row;
+    }
+
     _animationsRow(settings) {
         const row = new Adw.SwitchRow({
             title: _('Animations'),
@@ -135,6 +149,7 @@ export default class LucioleExtensionPreferences extends ExtensionPreferences {
         });
         settings.bind('max-results', maxResults, 'value', Gio.SettingsBindFlags.DEFAULT);
         resultsGroup.add(maxResults);
+        resultsGroup.add(this._openClickRow(settings));
         page.add(resultsGroup);
 
         const historyGroup = new Adw.PreferencesGroup({

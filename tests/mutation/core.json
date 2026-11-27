@@ -2087,6 +2087,42 @@
    "label": "\"/folders\" goes to the files though Folders is a source",
    "old": "            const folders = this.#typeFilter === 'folders' && providers.some(provider => provider.id === 'folders');",
    "new": "            const folders = false;"
+  },
+  {
+   "file": "src/core/click.js",
+   "label": "a click on another row completes a double click",
+   "old": "|| previous.key !== current?.key)",
+   "new": ")"
+  },
+  {
+   "file": "src/core/click.js",
+   "label": "clicks on no row complete a double click",
+   "old": "typeof previous?.key !== 'string' || ",
+   "new": ""
+  },
+  {
+   "file": "src/core/click.js",
+   "label": "a second click however late completes a double click",
+   "old": "gap >= 0 && gap <= delay;",
+   "new": "gap >= 0;"
+  },
+  {
+   "file": "src/core/click.js",
+   "label": "a time going back completes a double click",
+   "old": "gap >= 0 && gap <= delay;",
+   "new": "gap <= delay;"
+  },
+  {
+   "file": "src/core/click.js",
+   "label": "a click exactly at the delay is too late",
+   "old": "gap <= delay;",
+   "new": "gap < delay;"
+  },
+  {
+   "file": "src/core/click.js",
+   "label": "no delay still pairs clicks",
+   "old": "return delay > 0 && ",
+   "new": "return "
   }
  ]
 }

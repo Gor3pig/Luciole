@@ -62,6 +62,7 @@ export default class LucioleExtension extends Extension {
                 onSecondary: item => backend.controller?.activateSecondary(item),
                 getBackdrop: () => settings.get_string('backdrop'),
                 getAnimations: () => settings.get_boolean('animations'),
+                getOpenClick: () => settings.get_string('open-click'),
                 getActions: item => backend.controller?.actionsFor(item) ?? Promise.resolve([]),
                 onRunAction: (item, action) => backend.controller?.runAction(item, action) ?? Promise.resolve({ok: false, confirmation: null}),
                 previewer,

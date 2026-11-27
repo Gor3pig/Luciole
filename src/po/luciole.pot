@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-27 18:34+0100\n"
+"POT-Creation-Date: 2026-11-27 20:06+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -147,6 +147,22 @@ msgstr ""
 
 #: src/prefs.js
 msgid "Standard"
+msgstr ""
+
+#: src/prefs.js
+msgid "Open a Result"
+msgstr ""
+
+#: src/prefs.js
+msgid "With the mouse. Enter always opens the chosen result"
+msgstr ""
+
+#: src/prefs.js
+msgid "With a Single Click"
+msgstr ""
+
+#: src/prefs.js
+msgid "With a Double Click"
 msgstr ""
 
 #: src/prefs.js

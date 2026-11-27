@@ -11,6 +11,7 @@
 // otherwise.
 
 import Clutter from 'gi://Clutter';
+import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
@@ -111,6 +112,16 @@ export function connectMonitorsChanged(disposables, handler) {
 /** The actor that currently receives the keyboard, or null. */
 export function keyFocusActor() {
     return global.stage.get_key_focus();
+}
+
+/** The time of the event being handled, in milliseconds (0 when there is none). */
+export function currentEventTime() {
+    return Clutter.get_current_event_time();
+}
+
+/** The longest gap of a double click, in milliseconds, as set in GNOME (mouse settings). */
+export function doubleClickTime() {
+    return new Gio.Settings({schema_id: 'org.gnome.desktop.peripherals.mouse'}).get_int('double-click');
 }
 
 /** Where the pointer is on screen, as {x, y}. */
