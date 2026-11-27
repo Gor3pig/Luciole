@@ -45,7 +45,9 @@ start_shell() {
         export PIPEWIRE_RUNTIME_DIR="$XDG_RUNTIME_DIR"
     fi
     # The tests read French labels (the shell's and Luciole's own): the same language on any machine.
-    export LANG=fr_FR.UTF-8 LANGUAGE=fr_FR:fr
+    # (Screenshots may ask for another one with LUCIOLE_TEST_LANG, e.g. en_US.UTF-8.)
+    export LANG="${LUCIOLE_TEST_LANG:-fr_FR.UTF-8}" LANGUAGE="${LUCIOLE_TEST_LANG%%.*}:${LUCIOLE_TEST_LANG%%_*}"
+    [ -n "${LUCIOLE_TEST_LANG:-}" ] || LANGUAGE=fr_FR:fr
     unset LC_ALL LC_MESSAGES
     PRIVATE_RUNTIME=$(mktemp -d)
     export XDG_RUNTIME_DIR="$PRIVATE_RUNTIME"

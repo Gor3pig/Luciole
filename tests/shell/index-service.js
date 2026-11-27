@@ -23,6 +23,25 @@ const FILES = [
     ['/home/tester/projet/node_modules/lib', 'quokka.js'],
 ];
 
+// INDEX_DEMO=en or fr: made-up everyday files instead, for the screenshots of the README.
+const DEMO = {
+    en: [
+        ['/home/tester/Documents', 'Project plan.odt'], ['/home/tester/Documents', 'Budget 2026.ods'],
+        ['/home/tester/Documents', 'Invoice March.pdf'], ['/home/tester/Documents', 'Invoice February.pdf'],
+        ['/home/tester/Documents', 'Meeting notes.md'], ['/home/tester/Pictures', 'Holiday by the sea.jpg'],
+        ['/home/tester/Pictures', 'Profile picture.png'], ['/home/tester/Music', 'Morning playlist.ogg'],
+    ],
+    fr: [
+        ['/home/tester/Documents', 'Plan du projet.odt'], ['/home/tester/Documents', 'Budget 2026.ods'],
+        ['/home/tester/Documents', 'Facture mars.pdf'], ['/home/tester/Documents', 'Facture février.pdf'],
+        ['/home/tester/Documents', 'Notes de réunion.md'], ['/home/tester/Images', 'Vacances à la mer.jpg'],
+        ['/home/tester/Images', 'Photo de profil.png'], ['/home/tester/Musique', 'Playlist du matin.ogg'],
+    ],
+};
+const demo = DEMO[GLib.getenv('INDEX_DEMO') ?? ''];
+if (demo)
+    FILES.splice(0, FILES.length, ...demo);
+
 // INDEX_EXTRA=<n> adds n more files, to see the list scroll.
 for (let i = 1; i <= Number(GLib.getenv('INDEX_EXTRA') ?? 0); i++)
     FILES.push(['/home/tester/Archives', `quokka-archive-${String(i).padStart(2, '0')}.txt`]);

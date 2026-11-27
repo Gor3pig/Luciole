@@ -17,6 +17,12 @@ wait_for_extension
 
 gsettings set org.gnome.shell.extensions.luciole debug-timings true || fail "could not set debug-timings"
 gsettings set org.gnome.desktop.interface color-scheme "$SCHEME" || fail "could not set the colour scheme"
+[ -z "${CAPTURE_MAX:-}" ] || gsettings set org.gnome.shell.extensions.luciole max-results "$CAPTURE_MAX" || fail "could not set the number of results"
+if [ "${CAPTURE_PLAIN:-0}" = 1 ]; then
+    gsettings set org.gnome.desktop.background picture-options none || fail "could not remove the wallpaper"
+    gsettings set org.gnome.desktop.background primary-color '#3a5a8c'
+    gsettings set org.gnome.desktop.background color-shading-type solid
+fi
 [ -z "${CAPTURE_BACKDROP:-}" ] || gsettings set org.gnome.shell.extensions.luciole backdrop "$CAPTURE_BACKDROP" || fail "could not set the backdrop"
 if [ "${CAPTURE_INDEX:-0}" = 1 ]; then
     start_index_service
