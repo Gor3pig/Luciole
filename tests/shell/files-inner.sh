@@ -854,6 +854,22 @@ wait_log "[Luciole] closed" $((CLOSED_BEFORE + 2)) || fail "menu: the window did
 echo "ok: Copy Name puts the name on the clipboard"
 sleep 0.4
 
+# The first action of the menu (Open, highlighted when the menu opens) runs with Enter: a choice at
+# position 0 is a choice like any other.
+reopen_launcher
+typed factu
+wait_last 'results: 2 first=Facture Express query=factu' || fail "results did not come back (last: $(last_results))"
+CLOSED_NOW=$(launcher_closed_count)
+RAN=$(grep -cF "menu action: open" "$LOG")
+chord Control_L+k
+wait_menu || fail "menu: Ctrl+K did not open the menu"
+press Return
+wait_log "menu action: open" $((RAN + 1)) || fail "menu: Enter on the first action (Open) ran nothing"
+grep -F "menu action: " "$LOG" | tail -n 1 | grep -qx '.*menu action: open' || fail "menu: Enter on the first action ran '$(grep -F "menu action: " "$LOG" | tail -n 1)'"
+wait_log "[Luciole] closed" $((CLOSED_NOW + 1)) || fail "menu: the window did not close after Open"
+echo "ok: the first action of the menu (Open) runs with Enter"
+sleep 0.4
+
 # Open With: a plain action, the last one, that hands the file to GNOME's own chooser (the desktop
 # portal, asked to ask the user) and closes the window.
 reopen_launcher
