@@ -114,3 +114,14 @@ test('the light stylesheet is also given under its own name, unchanged', () => {
     // session went back to dark. stylesheet.css stays as what the shell falls back to.
     assertEquals(readSource('stylesheet-light.css'), readSource('stylesheet.css'));
 });
+
+test('in every theme, a row under the pointer does not look chosen', () => {
+    for (const name of ['stylesheet.css', 'stylesheet-light.css', 'stylesheet-dark.css']) {
+        const css = readSource(name);
+        const hover = declared(css, '.luciole-row:hover', 'background-color');
+        const selected = declared(css, '.luciole-row:selected', 'background-color');
+        assert(hover && selected, `${name}: both are set`);
+        assert(hover !== selected, `${name}: the same tint for both`);
+        assert(css.indexOf('.luciole-row:selected') > css.indexOf('.luciole-row:hover'), `${name}: the chosen one must come last, to win under the pointer`);
+    }
+});

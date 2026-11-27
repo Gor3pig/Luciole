@@ -144,7 +144,11 @@
     spacing: 12px;
 }
 
-.luciole-row:hover,
+/* Under the pointer, a light tint; chosen (Enter, Space and Ctrl+K act on it), the accent: the
+   chosen one keeps the accent when the pointer is over it too (the later rule wins). */
+.luciole-row:hover {
+    background-color: rgba(0, 0, 0, 0.06);
+}
 .luciole-row:selected {
     background-color: rgba(53, 132, 228, 0.18);
 }

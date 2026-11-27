@@ -2051,6 +2051,12 @@
    "label": "values defined exactly are cut short",
    "old": "const SIGNIFICANT_DIGITS = 12;",
    "new": "const SIGNIFICANT_DIGITS = 10;"
+  },
+  {
+   "file": "src/stylesheet.css",
+   "label": "in the light theme the row under the pointer looks chosen",
+   "old": ".luciole-row:hover {\n    background-color: rgba(0, 0, 0, 0.06);",
+   "new": ".luciole-row:hover {\n    background-color: rgba(53, 132, 228, 0.18);"
   }
  ]
 }

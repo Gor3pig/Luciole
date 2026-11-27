@@ -723,14 +723,36 @@ sleep 0.3
 [ "$(launcher_closed_count)" = "$CLOSED_NOW" ] || fail "menu: Escape closed the whole window"
 echo "ok: Escape goes back from the submenu, then closes the menu"
 
+# Under the pointer a row takes a light tint, unlike the chosen one; the chosen one under the pointer
+# keeps its own. row_tint <index>: "<red>,<green>,<blue>,<alpha>" of that row's background.
+row_tint() {
+    shell_eval "(function() { const rows = []; (function walk(a) { if (a.style_class === 'luciole-row' && a.visible) rows.push(a); a.get_children().forEach(walk); })(global.stage); const r = rows[$1]; if (!r) return ''; const c = r.get_theme_node().get_background_color(); return [c.red, c.green, c.blue, c.alpha].join(','); })()"
+}
+clear_entry 12
+typed quok
+wait_last 'results: 3 first=.*query=quok' || fail "results did not come back (last: $(last_results))"
+CHOSEN=$(row_tint 0)
+set -- $(result_row_center 2)
+pointer "$1" "$2"
+i=0; while [ "$i" -lt 30 ]; do HOVERED=$(row_tint 2); case "$HOVERED" in *,0|"") ;; *) break ;; esac; sleep 0.1; i=$((i + 1)); done
+[ -n "$HOVERED" ] && [ "$HOVERED" != "$CHOSEN" ] || fail "hover: the row under the pointer looks chosen ($HOVERED, chosen $CHOSEN)"
+case "$HOVERED" in *,0) fail "hover: the row under the pointer shows nothing ($HOVERED)" ;; esac
+set -- $(result_row_center 0)
+pointer "$1" "$2"
+i=0; while [ "$i" -lt 30 ] && [ "$(row_tint 2)" = "$HOVERED" ]; do sleep 0.1; i=$((i + 1)); done
+[ "$(row_tint 0)" = "$CHOSEN" ] || fail "hover: the chosen row under the pointer lost its tint ($(row_tint 0), was $CHOSEN)"
+echo "ok: the row under the pointer has a light tint of its own; the chosen one keeps its tint"
+
 # A right click on a row shows the actions of that result (not of the one selected before).
 clear_entry 12
 typed quok
 wait_last 'results: 3 first=.*query=quok' || fail "results did not come back (last: $(last_results))"
 CLOSED_RC=$(launcher_closed_count)
-SECOND=$(grep -F '[Luciole] results:' "$LOG" >/dev/null; shell_eval "(function() { const rows = []; (function walk(a) { if (a.style_class === 'luciole-row' && a.visible) rows.push(a); a.get_children().forEach(walk); })(global.stage); return rows[1] ? rows[1].get_accessible_name?.() ?? '' : ''; })()")
-set -- $(result_row_center 1)
+# (The list may still be redrawn for a moment after the results are logged.)
+i=0; while [ "$i" -lt 20 ]; do set -- $(result_row_center 1); [ "$#" = 2 ] && break; sleep 0.1; i=$((i + 1)); done
 [ "$#" = 2 ] || fail "right click: the second row was not found"
+SECOND=$(shell_eval "(function() { const rows = []; (function walk(a) { if (a.style_class === 'luciole-row' && a.visible) rows.push(a); a.get_children().forEach(walk); })(global.stage); return rows[1] ? rows[1].get_accessible_name?.() ?? '' : ''; })()")
+[ -n "$SECOND" ] || fail "right click: the second row has no name"
 pointer "$1" "$2"
 send rclick
 sleep 0.6

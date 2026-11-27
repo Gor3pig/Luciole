@@ -708,6 +708,18 @@
     "sh",
     "tests/shell/files.sh"
    ]
+  },
+  {
+   "file": "src/stylesheet-dark.css",
+   "label": "the row under the pointer looks chosen",
+   "old": ".luciole-row:hover {\n    background-color: rgba(255, 255, 255, 0.08);",
+   "new": ".luciole-row:hover {\n    background-color: rgba(120, 174, 237, 0.24);",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   }
  ]
 }
