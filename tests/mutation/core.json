@@ -2099,6 +2099,18 @@
    "label": "an action of a source is never confirmed",
    "old": "        return {ok, confirmation: ok ? action.confirmation ?? null : null};",
    "new": "        return {ok, confirmation: null};"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "a menu from the keyboard may cover the field",
+   "old": "    if (menuHeight > below && menuHeight > above)\n        return {y: floor, height: 0};",
+   "new": "    if (false)\n        return {y: floor, height: 0};"
+  },
+  {
+   "file": "src/core/layout.js",
+   "label": "a menu that fits above its row is moved under the field",
+   "old": "    if (menuHeight > below && menuHeight > above)",
+   "new": "    if (menuHeight > below || menuHeight > above)"
   }
  ]
 }

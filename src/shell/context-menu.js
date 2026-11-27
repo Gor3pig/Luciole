@@ -8,6 +8,8 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
+import {menuAnchor} from '../core/layout.js';
+
 /**
  * The actions of a result in GNOME's own menu, the one of a right click on the
  * dock. It opens like a menu of Files: its top left corner at the point given
@@ -86,13 +88,19 @@ export class ContextMenu {
     }
 
     /**
-     * Opens the menu with its top left corner at a point of the screen.
+     * Opens the menu with its top left corner at a point of the screen, or under a box (a row),
+     * above it when there is no room below.
      *
-     * @param {{x: number, y: number}} where
+     * @param {{x: number, y: number, height?: number}} where - a point, or the box's left edge
      * @param {boolean} keyboard - opened from the keyboard: the first action is highlighted
+     * @param {number | null} [floor] - what the menu must never cover above it (the field): when it
+     *   fits neither below the box nor between the box and the floor, it opens just under the floor
      */
-    open({x, y}, keyboard) {
-        Main.layoutManager.setDummyCursorGeometry(x, y, 0, 0);
+    open({x, y, height = 0}, keyboard, floor = null) {
+        const [, natural] = this.#menu.actor.get_preferred_height(-1);
+        const area = Main.layoutManager.getWorkAreaForMonitor(monitorAt(x, y));
+        const anchor = menuAnchor({y, height}, natural, floor, area.y + area.height);
+        Main.layoutManager.setDummyCursorGeometry(x, anchor.y, 0, anchor.height);
         this.#menu.open();
         // GNOME highlights the first action when the key that opened the menu is still being
         // handled; here the actions were listed first, so it is done by hand.
@@ -182,6 +190,13 @@ export class ContextMenu {
             return GLib.SOURCE_REMOVE;
         });
     }
+}
+
+// The monitor that holds a point, else the primary one.
+function monitorAt(x, y) {
+    const index = Main.layoutManager.monitors.findIndex(monitor =>
+        x >= monitor.x && x < monitor.x + monitor.width && y >= monitor.y && y < monitor.y + monitor.height);
+    return index >= 0 ? index : Main.layoutManager.primaryIndex;
 }
 
 // The character a key types, when it is one for the search: not with Ctrl, Alt or Super, not Space

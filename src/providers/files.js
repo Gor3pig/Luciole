@@ -27,6 +27,7 @@ ORDER BY DESC(?rank)
 LIMIT 40`;
 
 // The same for folders only: the index keeps a folder as a file whose content is an nfo:Folder.
+// Asked as a filter, like the files' query: a join was three to four times slower on a real index.
 const FOLDERS_QUERY = `
 SELECT ?url ?name ?modified (fts:rank(?f) AS ?rank)
 WHERE {
@@ -35,7 +36,7 @@ WHERE {
        nfo:fileName ?name ;
        nfo:fileLastModified ?modified ;
        fts:match ~terms .
-    ?folder nie:isStoredAs ?f ; a nfo:Folder .
+    FILTER EXISTS { ?folder nie:isStoredAs ?f ; a nfo:Folder }
 }
 ORDER BY DESC(?rank)
 LIMIT 40`;

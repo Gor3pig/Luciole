@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Luciole contributors
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-import {backdropClass, chooseMonitorIndex, motionEnabled, systemMotion, needsHeightEase, TOP_FRACTION, verticalLayout} from '../src/core/layout.js';
+import {backdropClass, chooseMonitorIndex, motionEnabled, systemMotion, needsHeightEase, TOP_FRACTION, verticalLayout, menuAnchor} from '../src/core/layout.js';
 import {assert, assertEquals, test} from './harness.js';
 
 test('the monitor of the focused window wins over the pointer and the primary one', () => {
@@ -97,4 +97,20 @@ test('the system lets the interface move unless animations are off or reduced mo
 test('on GNOME 50, which has no reduced motion setting, the animations switch alone decides', () => {
     assertEquals(systemMotion({enableAnimations: true, reducedMotion: undefined, reduceValue: undefined}), true);
     assertEquals(systemMotion({enableAnimations: false, reducedMotion: undefined, reduceValue: undefined}), false);
+});
+
+test('a menu from the keyboard goes under its row when it fits there', () => {
+    assertEquals(menuAnchor({y: 300, height: 40}, 200, 120, 800), {y: 300, height: 40});
+});
+
+test('without room below, it goes above its row when it fits between the row and the field', () => {
+    assertEquals(menuAnchor({y: 500, height: 40}, 350, 120, 800), {y: 500, height: 40}, 'the menu flips above the box itself');
+});
+
+test('fitting neither below nor above without covering the field, it opens just under the field', () => {
+    assertEquals(menuAnchor({y: 400, height: 40}, 380, 120, 720), {y: 120, height: 0});
+});
+
+test('a menu at the pointer has no field to keep clear', () => {
+    assertEquals(menuAnchor({y: 400, height: 0}, 900, null, 720), {y: 400, height: 0});
 });

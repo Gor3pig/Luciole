@@ -652,7 +652,14 @@ export class Launcher {
             onClosed: report => this.#log.guardAsync('running an action', () => this.#menuClosed(popup, report, choices)),
         });
         this.#popup = popup;
-        popup.open(place, where === null);
+        // From the keyboard the menu never covers the field: what is typed stays in sight.
+        let floor = null;
+        if (where === null) {
+            const [, fieldY] = this.#entry.get_transformed_position();
+            const [, fieldHeight] = this.#entry.get_transformed_size();
+            floor = fieldY + fieldHeight;
+        }
+        popup.open(place, where === null, floor);
         this.#log.debug(`menu opened: ${item.key}`);
         // The menu is on screen at once; what a submenu offers is listed meanwhile.
         usable.forEach((action, index) => {

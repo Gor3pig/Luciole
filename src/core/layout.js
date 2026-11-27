@@ -107,3 +107,24 @@ export function motionEnabled(systemAllows, preference) {
 export function needsHeightEase(from, to) {
     return Number.isFinite(from) && Number.isFinite(to) && from > 0 && to > 0 && Math.abs(to - from) >= 1;
 }
+
+/**
+ * Where a menu opened under a box (a row) is anchored: under it when it fits below, above it when it
+ * fits between the box and the floor (what it must never cover, the field), else just under the floor.
+ * The anchor is a box: the menu goes below it, or above it when there is no room below.
+ *
+ * @param {{y: number, height: number}} box
+ * @param {number} menuHeight
+ * @param {number | null} floor
+ * @param {number} bottom - the lowest point the menu may reach (the work area's bottom)
+ * @returns {{y: number, height: number}}
+ */
+export function menuAnchor(box, menuHeight, floor, bottom) {
+    if (floor === null)
+        return {y: box.y, height: box.height};
+    const below = bottom - (box.y + box.height);
+    const above = box.y - floor;
+    if (menuHeight > below && menuHeight > above)
+        return {y: floor, height: 0};
+    return {y: box.y, height: box.height};
+}

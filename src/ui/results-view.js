@@ -134,8 +134,8 @@ export class ResultsView {
         }
     }
 
-    // Where a menu opened from the keyboard goes: just under the start of the row's name, like the
-    // menu key in Files. Null when the row is not shown.
+    // Where a menu opened from the keyboard goes: under the start of the row's name, like the menu
+    // key in Files (above the row when there is no room below). Null when the row is not shown.
     menuPoint(key) {
         const row = this.#rows.get(key);
         if (!row?.mapped)
@@ -145,7 +145,7 @@ export class ResultsView {
         // The row's content: its icon, then the box of its name and place.
         const text = row.get_child()?.get_children()[1];
         const [x] = (text ?? row).get_transformed_position();
-        return {x, y: rowY + rowHeight};
+        return {x, y: rowY, height: rowHeight};
     }
 
     // The result whose row holds an actor (what a click landed on), or null.

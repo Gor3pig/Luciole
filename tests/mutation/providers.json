@@ -357,8 +357,8 @@
   {
    "file": "src/providers/files.js",
    "label": "Folders lists files too",
-   "old": "    ?folder nie:isStoredAs ?f ; a nfo:Folder .\n}",
-   "new": "}"
+   "old": "       fts:match ~terms .\n    FILTER EXISTS { ?folder nie:isStoredAs ?f ; a nfo:Folder }\n}",
+   "new": "       fts:match ~terms .\n}"
   },
   {
    "file": "src/providers/files.js",
