@@ -10,16 +10,19 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 /**
  * The actions of a result in GNOME's own menu, the one of a right click on the
- * dock: it opens over the launcher, holds the keyboard while it is open, and
- * gives it back to the launcher's field when it closes.
+ * dock. It opens like a menu of Files: its top left corner at the point given
+ * (the pointer, or the start of a row's name), going up instead when there is
+ * no room below. It holds the keyboard while it is open.
  *
- * What was chosen is reported once the menu has closed, never from inside the
- * menu's own signals: the action may close the launcher, which destroys the menu.
+ * How it closed is reported once it has closed, never from inside the menu's
+ * own signals (what follows may close the launcher, which destroys the menu):
+ * the action chosen, a click outside it (where, which button) or a character
+ * typed, which belongs to the search.
  */
 export class ContextMenu {
     #menu;
     #manager;
-    #chosen = null;
+    #report = {chosen: null, outside: null, typed: null};
     #onClosed;
     #closing = false;
     #idleId = 0;
@@ -28,32 +31,21 @@ export class ContextMenu {
      * @param {object} options
      * @param {Clutter.Actor} options.owner - the launcher's window
      * @param {string} options.title - the result, shown at the top
-     * @param {Array<{label: string, hint?: string, choices?: Array<{label: string}>}>} options.entries -
-     *   the actions, in order; one with choices is a submenu ("Open With…")
-     * @param {(chosen: number[] | null) => void} options.onClosed - the index of the action (and of the
-     *   choice in a submenu) chosen, or null when the menu was left
+     * @param {string} [options.subtitle] - where it is, or what it is, shown under the title
+     * @param {Array<{index: number, label: string, hint?: string}>} options.entries - the actions, in
+     *   order; `index` is the action's place in the launcher's list
+     * @param {(report: {chosen: number[] | null, outside: {x: number, y: number, button: number} | null,
+     *   typed: string | null}) => void} options.onClosed
      */
-    constructor({owner, title, entries, onClosed}) {
+    constructor({owner, title, subtitle = '', entries, onClosed}) {
         this.#onClosed = onClosed;
-        const menu = new PopupMenu.PopupMenu(Main.layoutManager.dummyCursor, 0.5, St.Side.TOP);
+        // Alignment 0 and a point as the source: the menu's left edge is at that point.
+        const menu = new PopupMenu.PopupMenu(Main.layoutManager.dummyCursor, 0, St.Side.TOP);
         menu.actor.add_style_class_name('luciole-context-menu');
 
-        const heading = new PopupMenu.PopupMenuItem(title, {reactive: false, can_focus: false});
-        heading.label.set_style('font-weight: bold;');
-        menu.addMenuItem(heading);
+        menu.addMenuItem(this.#heading(title, subtitle));
         menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-
-        entries.forEach((entry, index) => {
-            if (Array.isArray(entry.choices)) {
-                const submenu = new PopupMenu.PopupSubMenuMenuItem(entry.label);
-                entry.choices.forEach((choice, choiceIndex) => {
-                    const row = new PopupMenu.PopupMenuItem(choice.label);
-                    row.connect('activate', () => this.#choose([index, choiceIndex]));
-                    submenu.menu.addMenuItem(row);
-                });
-                menu.addMenuItem(submenu);
-                return;
-            }
+        for (const entry of entries) {
             const row = new PopupMenu.PopupMenuItem(entry.label);
             if (entry.hint) {
                 row.label.x_expand = true;
@@ -61,9 +53,11 @@ export class ContextMenu {
                 // runs into it.
                 row.add_child(new St.Label({text: entry.hint, opacity: 150, style: 'padding-left: 24px;', y_align: Clutter.ActorAlign.CENTER}));
             }
-            row.connect('activate', () => this.#choose([index]));
+            row.connect('activate', () => {
+                this.#report.chosen = [entry.index];
+            });
             menu.addMenuItem(row);
-        });
+        }
 
         Main.layoutManager.uiGroup.add_child(menu.actor);
         menu.actor.hide();
@@ -73,22 +67,59 @@ export class ContextMenu {
             if (!open)
                 this.#closed();
         });
+        menu.actor.connect('captured-event', (_actor, event) => this.#onEvent(event));
         this.#menu = menu;
     }
 
+    // The result the menu is about: its name, and under it where it is. Not a choice, yet not
+    // greyed out like one that is unavailable.
+    #heading(title, subtitle) {
+        const heading = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
+        heading.add_style_class_name('luciole-context-heading');
+        heading.remove_style_pseudo_class('insensitive');
+        const text = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, x_expand: true});
+        text.add_child(new St.Label({text: title, style: 'font-weight: bold;'}));
+        if (subtitle)
+            text.add_child(new St.Label({text: subtitle, opacity: 150, style: 'font-size: smaller;'}));
+        heading.add_child(text);
+        return heading;
+    }
+
     /**
-     * Opens the menu pointing at a place on screen: a point (a right click) or a box (a row).
+     * Opens the menu with its top left corner at a point of the screen.
      *
-     * @param {{x: number, y: number, width: number, height: number}} where
+     * @param {{x: number, y: number}} where
      * @param {boolean} keyboard - opened from the keyboard: the first action is highlighted
      */
-    open({x, y, width, height}, keyboard) {
-        Main.layoutManager.setDummyCursorGeometry(x, y, width, height);
+    open({x, y}, keyboard) {
+        Main.layoutManager.setDummyCursorGeometry(x, y, 0, 0);
         this.#menu.open();
         // GNOME highlights the first action when the key that opened the menu is still being
         // handled; here the actions were listed first, so it is done by hand.
         if (keyboard)
             this.#menu.actor.navigate_focus(null, St.DirectionType.TAB_FORWARD, false);
+    }
+
+    /**
+     * Adds a submenu at the end ("Open With…"), its choices known once the menu was open. Nothing
+     * is added once the menu is closed, or without choices.
+     *
+     * @param {number} index - the action's place in the launcher's list
+     * @param {string} label
+     * @param {Array<{label: string}>} choices
+     */
+    addSubmenu(index, label, choices) {
+        if (!this.#menu?.isOpen || choices.length === 0)
+            return;
+        const submenu = new PopupMenu.PopupSubMenuMenuItem(label);
+        choices.forEach((choice, choiceIndex) => {
+            const row = new PopupMenu.PopupMenuItem(choice.label);
+            row.connect('activate', () => {
+                this.#report.chosen = [index, choiceIndex];
+            });
+            submenu.menu.addMenuItem(row);
+        });
+        this.#menu.addMenuItem(submenu);
     }
 
     get isOpen() {
@@ -114,18 +145,59 @@ export class ContextMenu {
         menu?.destroy();
     }
 
-    #choose(path) {
-        this.#chosen = path;
+    // While the menu is open the keys come to it: Ctrl+K closes it, as it opened it; a character
+    // typed closes it and is handed to the search.
+    #onEvent(event) {
+        if (event.type() !== Clutter.EventType.KEY_PRESS)
+            return Clutter.EVENT_PROPAGATE;
+        const state = event.get_state();
+        const control = (state & Clutter.ModifierType.CONTROL_MASK) !== 0;
+        const symbol = event.get_key_symbol();
+        if (control && (symbol === Clutter.KEY_k || symbol === Clutter.KEY_K)) {
+            this.#menu.close();
+            return Clutter.EVENT_STOP;
+        }
+        const typed = printable(event, state);
+        if (typed === null)
+            return Clutter.EVENT_PROPAGATE;
+        this.#report.typed = typed;
+        this.#menu.close();
+        return Clutter.EVENT_STOP;
     }
 
     #closed() {
         if (this.#closing)
             return;
         this.#closing = true;
+        // GNOME closes its menu itself on a click outside it, with any button: the event being
+        // handled is that click, reported so the launcher goes on with what it meant.
+        const event = Clutter.get_current_event();
+        if (!this.#report.chosen && !this.#report.outside && event?.type() === Clutter.EventType.BUTTON_PRESS) {
+            const [x, y] = event.get_coords();
+            this.#report.outside = {x, y, button: event.get_button()};
+        }
         this.#idleId = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
             this.#idleId = 0;
-            this.#onClosed?.(this.#chosen);
+            this.#onClosed?.(this.#report);
             return GLib.SOURCE_REMOVE;
         });
     }
+}
+
+// The character a key types, when it is one for the search: not with Ctrl, Alt or Super, not Space
+// (it chooses in a menu), not a control character. Null otherwise.
+function printable(event, state) {
+    const modifiers = Clutter.ModifierType.CONTROL_MASK | Clutter.ModifierType.MOD1_MASK |
+        Clutter.ModifierType.SUPER_MASK | Clutter.ModifierType.MOD4_MASK;
+    if ((state & modifiers) !== 0)
+        return null;
+    const raw = event.get_key_unicode();
+    // A character, or its code point, depending on the bindings.
+    const code = typeof raw === 'number' ? (raw > 0 ? String.fromCodePoint(raw) : '') : raw;
+    if (typeof code !== 'string' || code.length === 0)
+        return null;
+    const point = code.codePointAt(0);
+    if (point <= 0x20 || point === 0x7f)
+        return null;
+    return code;
 }

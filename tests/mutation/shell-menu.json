@@ -591,9 +591,9 @@
   },
   {
    "file": "src/ui/launcher.js",
-   "label": "Ctrl+K has nothing to point the menu at",
-   "old": "        const place = where ?? this.#view.rowExtents(item.key);",
-   "new": "        const place = where;",
+   "label": "Ctrl+K opens the menu away from its row",
+   "old": "        const place = where ?? this.#view.menuPoint(item.key);",
+   "new": "        const place = where ?? {x: 0, y: 0};",
    "command": [
     "env",
     "FILES_PARTS=menu",
@@ -628,7 +628,7 @@
   {
    "file": "src/shell/context-menu.js",
    "label": "an action chosen in the menu is not run",
-   "old": "            row.connect('activate', () => this.#choose([index]));",
+   "old": "            row.connect('activate', () => {\n                this.#report.chosen = [entry.index];\n            });",
    "new": "            row.connect('activate', () => {});",
    "command": [
     "env",
@@ -650,10 +650,10 @@
    ]
   },
   {
-   "file": "src/shell/context-menu.js",
+   "file": "src/ui/launcher.js",
    "label": "Open With offers no application",
-   "old": "                    submenu.menu.addMenuItem(row);",
-   "new": "                    void row;",
+   "old": "                popup.addSubmenu(index, action.label, list);\n",
+   "new": "",
    "command": [
     "env",
     "FILES_PARTS=menu",
@@ -676,8 +676,8 @@
   {
    "file": "src/ui/launcher.js",
    "label": "a right click shows the actions of the result selected before",
-   "old": "        this.#navigated = true;\n        this.#choose(item.key);\n        await this.#openMenu({x, y, width: 0, height: 0});",
-   "new": "        await this.#openMenu({x, y, width: 0, height: 0});",
+   "old": "        this.#navigated = true;\n        this.#choose(item.key);\n        await this.#openMenu({x, y});",
+   "new": "        await this.#openMenu({x, y});",
    "command": [
     "env",
     "FILES_PARTS=menu",
@@ -702,6 +702,90 @@
    "label": "the menu stays behind when the window closes",
    "old": "        this.#popup = null;\n        popup?.destroy();",
    "new": "        this.#popup = null;",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "a right click on another row, menu open, only closes the menu",
+   "old": "            const item = outside.button === Clutter.BUTTON_SECONDARY ? this.#view.itemAt(target) : null;",
+   "new": "            const item = null;",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "a click outside the window, menu open, leaves the window open",
+   "old": "            if (!target || !this.#panel.contains(target)) {",
+   "new": "            if (false) {",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "a letter typed in the menu is lost",
+   "old": "            text.insert_text(typed, text.get_cursor_position());\n",
+   "new": "",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/shell/context-menu.js",
+   "label": "Ctrl+K does not close the menu",
+   "old": "        if (control && (symbol === Clutter.KEY_k || symbol === Clutter.KEY_K)) {",
+   "new": "        if (false) {",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/shell/context-menu.js",
+   "label": "a letter typed does not leave the menu",
+   "old": "        const typed = printable(event, state);",
+   "new": "        const typed = null;",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/shell/context-menu.js",
+   "label": "the click that closed the menu is not reported",
+   "old": "            this.#report.outside = {x, y, button: event.get_button()};\n        }\n        this.#idleId",
+   "new": "        }\n        this.#idleId",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/shell/context-menu.js",
+   "label": "the heading does not say where the result is",
+   "old": "        if (subtitle)\n            text.add_child(",
+   "new": "        if (false)\n            text.add_child(",
    "command": [
     "env",
     "FILES_PARTS=menu",

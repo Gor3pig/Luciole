@@ -110,7 +110,12 @@ result_row_center() {
     shell_eval "(function() { const rows = []; (function walk(a) { if (a.style_class === 'luciole-row' && a.visible) rows.push(a); a.get_children().forEach(walk); })(global.stage); const c = rows[$1]; if (!c) return ''; const [x, y] = c.get_transformed_position(); const [w, h] = c.get_transformed_size(); return Math.round(x + w / 2) + ' ' + Math.round(y + h / 2); })()"
 }
 menu_title() {
-    shell_eval "(function() { let bp = null; (function f(a) { if (bp) return; if ((a.style_class || '').includes('luciole-context-menu')) { bp = a; return; } a.get_children().forEach(f); })(global.stage); const m = bp && bp._delegate; if (!m || !m.isOpen) return 'none'; const t = m._getMenuItems().find(i => !i.reactive && i.label); return t ? t.label.text : 'none'; })()"
+    shell_eval "(function() { let bp = null; (function f(a) { if (bp) return; if ((a.style_class || '').includes('luciole-context-menu')) { bp = a; return; } a.get_children().forEach(f); })(global.stage); const m = bp && bp._delegate; if (!m || !m.isOpen) return 'none'; const h = m._getMenuItems().find(i => (i.style_class || '').includes('luciole-context-heading')); if (!h) return 'none'; const labels = []; (function w(a) { if (a instanceof imports.gi.St.Label) labels.push(a.get_text()); a.get_children().forEach(w); })(h); return labels.join(' | '); })()"
+}
+# wait_menu_count <n>: until the menu shows n actions (a submenu joins it once its choices are known).
+wait_menu_count() {
+    i=0; while [ "$i" -lt 30 ]; do set -- $(menu_state); [ "${1:-}" = "$WANT" ] && return 0; sleep 0.1; i=$((i + 1)); done
+    return 1
 }
 # escape_preview <count of "back" before>: Escape to the preview until it is closed. Just after it
 # opens, the previewer may not handle keys yet and ignores an Escape: then another is sent (four at most).
@@ -652,11 +657,40 @@ wait_last 'results: 1 first=rapport' || fail "the real file was not found (last:
 CLOSED_BEFORE=$(launcher_closed_count)
 chord Control_L+k
 wait_menu || fail "menu: Ctrl+K did not open the menu"
+WANT=6 wait_menu_count || fail "menu: Open With did not join the menu ('$(menu_state)')"
 set -- $(menu_state)
 [ "$1" = 6 ] && [ "$2" = 0 ] || fail "menu: expected 6 actions with the first highlighted, got '$(menu_state)'"
 [ "$(results_visible)" = true ] || fail "menu: the results are hidden behind the menu"
-[ "$(menu_title)" = "rapport-test.txt" ] || fail "menu: the menu is titled '$(menu_title)', expected the file"
-echo "ok: Ctrl+K opens GNOME's menu with the 6 actions of a file, over the results"
+case "$(menu_title)" in "rapport-test.txt | "*/docs) ;; *) fail "menu: the heading is '$(menu_title)', expected the file and its folder" ;; esac
+echo "ok: Ctrl+K opens GNOME's menu with the 6 actions of a file, over the results, the file and its folder at the top"
+# From the keyboard the menu opens under the start of the row's name, like the menu key in Files:
+# below the row, never over the field.
+set -- $(actor_geometry luciole-context-menu) $(actor_geometry luciole-entry) $(result_row_center 0)
+MENU_X=$1; MENU_Y=$2; ENTRY_Y=$6; ENTRY_H=$8; ROW_Y=${10}
+[ "$MENU_Y" -gt "$ROW_Y" ] || fail "menu: the menu of Ctrl+K is not below its row (menu at y=$MENU_Y, row centre at y=$ROW_Y)"
+[ "$MENU_Y" -ge $((ENTRY_Y + ENTRY_H)) ] || fail "menu: the menu of Ctrl+K covers the field (menu at y=$MENU_Y)"
+[ "$MENU_X" -gt "$5" ] || fail "menu: the menu of Ctrl+K does not start at the row's name (x=$MENU_X)"
+echo "ok: from the keyboard the menu opens under the row's name, below the field"
+chord Control_L+k
+sleep 0.4
+[ "$(menu_state)" = hidden ] || fail "menu: Ctrl+K again did not close the menu"
+[ "$(launcher_closed_count)" = "$CLOSED_BEFORE" ] || fail "menu: Ctrl+K again closed the whole window"
+[ "$(focus_in_field)" = yes ] || fail "menu: the keyboard did not come back to the field after Ctrl+K"
+LENGTH=$(entry_text_length)
+SEARCHES=$(grep -cF '[Luciole] results:' "$LOG")
+chord Control_L+k
+wait_menu || fail "menu: Ctrl+K did not open the menu again"
+typed s
+sleep 0.5
+[ "$(menu_state)" = hidden ] || fail "menu: a letter typed did not close the menu"
+[ "$(entry_text_length)" = $((LENGTH + 1)) ] || fail "menu: the letter typed in the menu did not reach the field ($(entry_text_length) characters)"
+[ "$(grep -cF '[Luciole] results:' "$LOG")" -gt "$SEARCHES" ] || fail "menu: the letter typed in the menu did not search"
+clear_entry 1
+wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
+echo "ok: Ctrl+K closes the menu it opened; a letter typed in the menu goes to the search"
+chord Control_L+k
+wait_menu || fail "menu: Ctrl+K did not open the menu"
+WANT=6 wait_menu_count || fail "menu: Open With did not join the menu ('$(menu_state)')"
 press Down
 sleep 0.3
 set -- $(menu_state)
@@ -719,6 +753,7 @@ wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $
 CLOSED_NOW=$(launcher_closed_count)
 chord Control_L+k
 wait_menu || fail "menu: Ctrl+K did not open the menu"
+WANT=6 wait_menu_count || fail "menu: Open With did not join the menu ('$(menu_state)')"
 press Up
 sleep 0.2
 press Right
@@ -786,7 +821,7 @@ while [ "$tries" -lt 3 ]; do
     [ "$#" = 2 ] && pointer "$1" "$2"
 done
 [ "$(menu_state)" != hidden ] || fail "right click: no menu of actions"
-TITLE=$(menu_title)
+TITLE=$(menu_title | sed 's/ | .*//')
 [ "$TITLE" != none ] && [ -n "$TITLE" ] || fail "right click: the menu has no title"
 case "$SECOND" in *"$TITLE"*) ;; *) fail "right click: the menu is for '$TITLE', not for the row clicked ('$SECOND')" ;; esac
 grep -F '[Luciole] selected: ' "$LOG" | tail -n 1 | grep -qF "$(printf '%s' "$TITLE" | cut -c1-6)" || fail "right click: the row clicked was not chosen"
@@ -795,6 +830,24 @@ sleep 0.3
 [ "$(menu_state)" = hidden ] || fail "right click: Escape did not close the menu"
 [ "$(launcher_closed_count)" = "$CLOSED_RC" ] || fail "right click: the window closed"
 [ "$(focus_in_field)" = yes ] || fail "right click: the keyboard did not come back to the field"
+# Another row right-clicked while a menu is open: its own menu, at once. (The menu opens below the
+# pointer, over the rows under it: the row above is the one in sight.)
+FIRST=$(shell_eval "(function() { const rows = []; (function walk(a) { if (a.style_class === 'luciole-row' && a.visible) rows.push(a); a.get_children().forEach(walk); })(global.stage); return rows[0] ? rows[0].get_accessible_name?.() ?? '' : ''; })()")
+set -- $(result_row_center 1)
+pointer "$1" "$2"
+send rclick
+wait_menu || fail "right click: no menu for the second row"
+SECOND_TITLE=$(menu_title)
+set -- $(result_row_center 0)
+pointer "$1" "$2"
+send rclick
+i=0; while [ "$i" -lt 30 ] && { [ "$(menu_title)" = "$SECOND_TITLE" ] || [ "$(menu_state)" = hidden ]; }; do sleep 0.1; i=$((i + 1)); done
+[ "$(menu_state)" != hidden ] || fail "right click: a right click on another row, menu open, only closed the menu"
+case "$(menu_title)" in "$SECOND_TITLE") fail "right click: the menu stayed the second row's" ;; esac
+case "$FIRST" in *"$(menu_title | sed 's/ | .*//')"*) ;; *) fail "right click: the menu is '$(menu_title)', not the first row's ('$FIRST')" ;; esac
+escape
+sleep 0.4
+echo "ok: a right click on another row, menu open, opens that row's menu at once"
 # A click beside the menu closes the menu only.
 set -- $(result_row_center 1)
 pointer "$1" "$2"
@@ -807,10 +860,22 @@ sleep 0.5
 [ "$(menu_state)" = hidden ] || fail "right click: a click beside the menu did not close it"
 [ "$(launcher_closed_count)" = "$CLOSED_RC" ] || fail "right click: a click beside the menu closed the window"
 [ "$(focus_in_field)" = yes ] || fail "right click: the keyboard did not come back to the field after a click beside the menu"
+# Menu open, a click outside the window closes both.
+set -- $(result_row_center 1)
+pointer "$1" "$2"
+send rclick
+wait_menu || fail "right click: the menu did not open before the click outside"
+pointer 60 650
+click
+wait_log "[Luciole] closed" $((CLOSED_RC + 1)) || fail "right click: a click outside the window, menu open, did not close the window"
+sleep 0.4
+[ "$(context_menus)" = 0 ] || fail "right click: the menu is still there after the window closed ($(context_menus))"
+reopen_launcher
+CLOSED_RC=$(launcher_closed_count)
 pointer 60 650
 send rclick
 wait_log "[Luciole] closed" $((CLOSED_RC + 1)) || fail "right click outside the window did not close it"
-echo "ok: a right click shows the actions of the row clicked; Escape or a click beside closes the menu only; outside the window it closes it"
+echo "ok: a right click shows the actions of the row clicked; Escape or a click beside closes the menu only; a click outside the window closes both"
 sleep 0.4
 reopen_launcher
 CLOSED_NOW=$(launcher_closed_count)

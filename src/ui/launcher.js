@@ -615,48 +615,57 @@ export class Launcher {
         const {x, y} = compat.pointerPosition();
         this.#navigated = true;
         this.#choose(item.key);
-        await this.#openMenu({x, y, width: 0, height: 0});
+        await this.#openMenu({x, y});
     }
 
-    // Opens the menu of the chosen result, pointing at `where`, else at its row (Ctrl+K).
+    // Opens the menu of the chosen result at `where`, else (from the keyboard) under the start of
+    // its row's name, like the menu key in Files.
     async #openMenu(where = null) {
         const item = this.#items.find(candidate => candidate.key === this.#selectedKey);
         if (!item || !this.#isOpen || this.#confirmTimer || this.#menu.isOpen)
             return;
         const token = ++this.#menuToken;
         const actions = await this.#log.guardAsync('listing the actions', () => this.#getActions(item), []);
-        // "Preview" is the window's own business, and only when there is a previewer.
-        const usable = this.#canPreview(item) ? actions : actions.filter(action => action.id !== 'preview');
-        // What a submenu ("Open With…") offers is listed now, so the menu is complete when it opens.
-        const choices = new Map();
-        for (const action of usable.filter(candidate => candidate.submenu)) {
-            choices.set(action, await this.#log.guardAsync('listing the choices', () => this.#getSubActions(item, action), []));
-        }
         // The window may have closed, or the user done something else, while the actions were listed.
         if (token !== this.#menuToken || !this.#isOpen || this.#menu.isOpen)
             return;
-        // A submenu with nothing in it is left out.
-        const shown = usable.filter(action => !action.submenu || choices.get(action).length > 0);
-        const place = where ?? this.#view.rowExtents(item.key);
-        if (shown.length === 0 || !place)
+        // "Preview" is the window's own business, and only when there is a previewer.
+        const usable = this.#canPreview(item) ? actions : actions.filter(action => action.id !== 'preview');
+        const place = where ?? this.#view.menuPoint(item.key);
+        if (usable.length === 0 || !place)
             return;
         this.#menuItem = item;
-        this.#menu.open(item.result.title, shown);
+        this.#menu.open(item.result.title, usable);
+        const choices = new Map();
         const popup = new ContextMenu({
             owner: this.#overlay,
             title: item.result.title,
-            entries: shown.map(action => action.submenu
-                ? {label: action.label, choices: choices.get(action)}
-                : {label: action.label, hint: action.hint}),
-            onClosed: chosen => this.#log.guardAsync('running an action', () => this.#menuClosed(popup, chosen, choices)),
+            subtitle: item.result.subtitle ?? '',
+            // A submenu ("Open With…") joins the menu once its choices are known, below.
+            entries: usable.map((action, index) => ({index, label: action.label, hint: action.hint}))
+                .filter((_entry, index) => !usable[index].submenu),
+            onClosed: report => this.#log.guardAsync('running an action', () => this.#menuClosed(popup, report, choices)),
         });
         this.#popup = popup;
         popup.open(place, where === null);
         this.#log.debug(`menu opened: ${item.key}`);
+        // The menu is on screen at once; what a submenu offers is listed meanwhile.
+        usable.forEach((action, index) => {
+            if (!action.submenu)
+                return;
+            this.#log.guardAsync('listing the choices', async () => {
+                const list = await this.#getSubActions(item, action);
+                if (popup !== this.#popup || !Array.isArray(list))
+                    return;
+                choices.set(action, list);
+                popup.addSubmenu(index, action.label, list);
+            });
+        });
     }
 
-    // The menu closed, with an action chosen or not. The keyboard comes back to the field.
-    async #menuClosed(popup, chosen, choices) {
+    // The menu closed: an action chosen, a click outside it, a character typed, or simply left. The
+    // keyboard comes back to the field.
+    async #menuClosed(popup, {chosen, outside, typed}, choices) {
         if (popup !== this.#popup)
             return;
         this.#popup = null;
@@ -667,8 +676,8 @@ export class Launcher {
         if (!focus || !this.#overlay.contains(focus))
             this.#entry.grab_key_focus();
         if (!chosen) {
-            this.#log.debug('menu left');
             this.#resetMenu();
+            this.#afterMenu(outside, typed);
             return;
         }
         const [index, choiceIndex] = chosen;
@@ -682,6 +691,32 @@ export class Launcher {
             this.#menu.select(choiceIndex);
         }
         await this.#runMenuAction();
+    }
+
+    // What the menu was closed for goes on: a click outside the window closes it, a right click on
+    // another row opens that row's menu, a character typed goes into the search.
+    #afterMenu(outside, typed) {
+        if (outside) {
+            const target = compat.actorAt(outside.x, outside.y);
+            if (!target || !this.#panel.contains(target)) {
+                this.#log.debug('menu left by a click outside the window');
+                this.close();
+                return;
+            }
+            const item = outside.button === Clutter.BUTTON_SECONDARY ? this.#view.itemAt(target) : null;
+            if (item) {
+                this.#log.debug('menu left for the menu of another row');
+                this.#log.guardAsync('opening the actions menu', () => this.#openMenuOf(item));
+                return;
+            }
+        }
+        if (typed) {
+            const text = this.#entry.clutter_text;
+            text.insert_text(typed, text.get_cursor_position());
+            this.#log.debug('menu left by typing');
+            return;
+        }
+        this.#log.debug('menu left');
     }
 
     async #runMenuAction() {

@@ -10,6 +10,7 @@
 // yet: the functions below are assumed identical until a test on 50 says
 // otherwise.
 
+import Clutter from 'gi://Clutter';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
@@ -114,6 +115,11 @@ export function keyFocusActor() {
 export function pointerPosition() {
     const [x, y] = global.get_pointer();
     return {x, y};
+}
+
+/** The reactive actor at a point of the screen, or null. */
+export function actorAt(x, y) {
+    return global.stage.get_actor_at_pos(Clutter.PickMode.REACTIVE, x, y);
 }
 
 /** The actor a pointer or touch event is aimed at, or null. */
