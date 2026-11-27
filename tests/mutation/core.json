@@ -1028,12 +1028,6 @@
   },
   {
    "file": "src/core/action-menu.js",
-   "label": "any truthy submenu counts",
-   "old": "if (raw.submenu === true)",
-   "new": "if (raw.submenu)"
-  },
-  {
-   "file": "src/core/action-menu.js",
    "label": "a huge copy text is kept",
    "old": "raw.copy !== '' && raw.copy.length <= MAX_COPY_CHARS)",
    "new": "raw.copy !== '')"
@@ -1065,38 +1059,32 @@
   {
    "file": "src/core/action-menu.js",
    "label": "the highlight stops at the ends instead of wrapping",
-   "old": "level.index = (((level.index + delta) % count) + count) % count;",
-   "new": "level.index = Math.max(0, Math.min(count - 1, level.index + delta));"
-  },
-  {
-   "file": "src/core/action-menu.js",
-   "label": "a submenu with nothing in it is entered",
-   "old": "if (!this.isOpen || !Array.isArray(actions) || actions.length === 0)",
-   "new": "if (!this.isOpen || !Array.isArray(actions))"
+   "old": "this.#shown.index = (((this.#shown.index + delta) % count) + count) % count;",
+   "new": "this.#shown.index = Math.max(0, Math.min(count - 1, this.#shown.index + delta));"
   },
   {
    "file": "src/core/action-menu.js",
    "label": "a menu with nothing in it opens",
-   "old": "if (Array.isArray(actions) && actions.length > 0)",
-   "new": "if (Array.isArray(actions))"
+   "old": "this.#shown = Array.isArray(actions) && actions.length > 0",
+   "new": "this.#shown = Array.isArray(actions)"
   },
   {
    "file": "src/core/action-menu.js",
    "label": "selecting a position that does not exist is accepted",
-   "old": "index >= 0 && index < level.actions.length)",
+   "old": "index >= 0 && index < this.#shown.actions.length)",
    "new": "index >= 0)"
   },
   {
    "file": "src/core/action-menu.js",
-   "label": "going back does not leave a level",
-   "old": "        this.#levels.pop();\n        return this.isOpen;",
-   "new": "        return this.isOpen;"
+   "label": "closing does not forget the menu",
+   "old": "    close() {\n        this.#shown = null;\n    }",
+   "new": "    close() {\n    }"
   },
   {
    "file": "src/core/action-menu.js",
    "label": "actions hands out the real list",
-   "old": "        return [...(this.#levels[this.#levels.length - 1]?.actions ?? [])];",
-   "new": "        return this.#levels[this.#levels.length - 1]?.actions ?? [];"
+   "old": "        return [...(this.#shown?.actions ?? [])];",
+   "new": "        return this.#shown?.actions ?? [];"
   },
   {
    "file": "src/providers/files-query.js",
@@ -1118,57 +1106,33 @@
   },
   {
    "file": "src/providers/files-query.js",
-   "label": "Open With is not a submenu",
-   "old": "    const openWith = {id: 'open-with', label: _('Open With…'), submenu: true};",
-   "new": "    const openWith = {id: 'open-with', label: _('Open With…')};"
-  },
-  {
-   "file": "src/providers/files-query.js",
-   "label": "the default application is not first",
-   "old": "const ordered = [...usable.filter(app => app.isDefault === true), ...usable.filter(app => app.isDefault !== true)];",
-   "new": "const ordered = usable;"
-  },
-  {
-   "file": "src/providers/files-query.js",
-   "label": "every application is listed",
-   "old": "return ordered.slice(0, MAX_OPEN_WITH).map",
-   "new": "return ordered.map"
-  },
-  {
-   "file": "src/providers/files-query.js",
-   "label": "the default application is not marked",
-   "old": "        if (app.isDefault === true)\n            action.hint = gettext('Default');",
-   "new": "        void gettext;"
+   "label": "Open With becomes a submenu again",
+   "old": "    const openWith = {id: 'open-with', label: _('Open With…')};",
+   "new": "    const openWith = {id: 'open-with', label: _('Open With…'), submenu: true};"
   },
   {
    "file": "src/providers/files.js",
    "label": "Open With does not check that the file is there",
-   "old": "            if (!await this.#exists(url, this.#lifetime))\n                throw new Error('the file is no longer there');\n            const app",
-   "new": "            const app"
+   "old": "            if (!await this.#exists(url, this.#lifetime))\n                throw new Error('the file is no longer there');\n            await this.#openWith(url, this.#lifetime);",
+   "new": "            await this.#openWith(url, this.#lifetime);"
   },
   {
    "file": "src/providers/files.js",
-   "label": "Open With launches any application asked for",
-   "old": "            const app = (await this.#appsFor(url, this.#lifetime)).find(candidate => `${OPEN_WITH_PREFIX}${candidate.id}` === action.id);\n            if (!app)\n                throw new Error('that application cannot open this file');",
-   "new": "            const app = (await this.#appsFor(url, this.#lifetime))[0];"
+   "label": "Open With asks nothing of the chooser",
+   "old": "            await this.#openWith(url, this.#lifetime);",
+   "new": "            void this.#openWith;"
   },
   {
    "file": "src/providers/files.js",
    "label": "Open With accepts an address that is not a local file",
-   "old": "            const url = result.data.url;\n            if (!isLocalFileUri(url))\n                throw new Error('refusing to open an address that is not a local file');\n            if (!await this.#exists(url, this.#lifetime))",
-   "new": "            const url = result.data.url;\n            if (!await this.#exists(url, this.#lifetime))"
+   "old": "            const url = result.data?.url;\n            if (!isLocalFileUri(url))\n                throw new Error('refusing to open an address that is not a local file');\n            if (!await this.#exists(url, this.#lifetime))\n                throw new Error('the file is no longer there');\n            await this.#openWith",
+   "new": "            const url = result.data?.url;\n            if (!await this.#exists(url, this.#lifetime))\n                throw new Error('the file is no longer there');\n            await this.#openWith"
   },
   {
    "file": "src/providers/files.js",
    "label": "an unknown action is ignored",
    "old": "        } else {\n            throw new Error(`unknown action ${action.id}`);\n        }",
    "new": "        }"
-  },
-  {
-   "file": "src/providers/files.js",
-   "label": "the applications of a file that is not local are listed",
-   "old": "        if (action.id !== 'open-with' || !isLocalFileUri(url))\n            return [];",
-   "new": "        if (action.id !== 'open-with')\n            return [];"
   },
   {
    "file": "src/providers/apps-index.js",
@@ -1199,18 +1163,6 @@
    "label": "what a source offers is not checked",
    "old": "        const actions = cleanActions(offered);",
    "new": "        const actions = Array.isArray(offered) ? offered : [];"
-  },
-  {
-   "file": "src/core/session.js",
-   "label": "a submenu inside a submenu is listed",
-   "old": "return cleanActions(offered).filter(candidate => !candidate.submenu);",
-   "new": "return cleanActions(offered);"
-  },
-  {
-   "file": "src/core/session.js",
-   "label": "a submenu is listed for any action",
-   "old": "if (!provider?.subActions || !action?.submenu)",
-   "new": "if (!provider?.subActions)"
   },
   {
    "file": "src/core/session.js",

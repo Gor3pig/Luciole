@@ -48,11 +48,12 @@ const FILES = [
     ['/home/me/Documents', 'say "hi" now.txt'],
 ];
 
-function setupProvider({files = FILES, excludedFolders = [], excludedTypes = [], openConnection, missing = [], apps = [], noFileManager = false, kind = 'files', terminals = []} = {}) {
+function setupProvider({files = FILES, excludedFolders = [], excludedTypes = [], openConnection, missing = [], chooserFails = false, noFileManager = false, kind = 'files', terminals = []} = {}) {
     const log = recordingLog();
     const database = openConnection ? null : memoryDatabase(files);
     const opened = [];
     const launched = [];
+    const chosen = [];
     const shown = [];
     const copied = [];
     const spawned = [];
@@ -69,7 +70,11 @@ function setupProvider({files = FILES, excludedFolders = [], excludedTypes = [],
             launched.push(uri);
         },
         exists: async uri => !missing.includes(uri),
-        appsFor: async () => apps.map(app => ({...app, launch: uri => launched.push(`${app.id} ${uri}`)})),
+        openWith: async uri => {
+            if (chooserFails)
+                throw new Error('no desktop portal on the bus');
+            chosen.push(uri);
+        },
         showItem: async uri => {
             if (noFileManager)
                 throw new Error('no file manager on the bus');
@@ -82,7 +87,7 @@ function setupProvider({files = FILES, excludedFolders = [], excludedTypes = [],
     };
     const ready = provider.init({settings, log, gettext: text => text});
     const search = query => provider.search(query, {cancellable: new Gio.Cancellable(), limit: 6, emit() {}});
-    return {provider, log, opened, launched, shown, copied, spawned, ready, search, database};
+    return {provider, log, opened, launched, chosen, shown, copied, spawned, ready, search, database};
 }
 
 const titles = results => results.map(r => r.title);
@@ -325,40 +330,37 @@ test('a file offers its menu actions, and a result that is not a local file offe
     t.provider.destroy();
 });
 
-test('Open With lists the applications of the file, the default first', async () => {
-    const t = setupProvider({apps: [{id: 'a.desktop', name: 'A'}, {id: 'b.desktop', name: 'B', isDefault: true}]});
+test('Open With is a plain action, left out for a file no longer there', async () => {
+    const t = setupProvider({missing: [FILE.data.url]});
     await t.ready;
-    const choices = await t.provider.subActions(FILE, {id: 'open-with'});
-    assertEquals(choices.map(choice => choice.id), ['open-with:b.desktop', 'open-with:a.desktop']);
-    assertEquals(await t.provider.subActions(FILE, {id: 'copy-path'}), [], 'no submenu for another action');
-    assertEquals(await t.provider.subActions({data: {url: 'smb://host/x'}}, {id: 'open-with'}), [], 'nothing for a file that is not local');
+    const actions = await t.provider.actions(FILE);
+    assertEquals(actions.map(action => action.id), ['open-folder', 'preview', 'copy-file', 'copy-path', 'copy-name']);
     t.provider.destroy();
 });
 
-test('Open With offers nothing for a file no longer there', async () => {
-    const t = setupProvider({apps: [{id: 'a.desktop', name: 'A'}], missing: [FILE.data.url]});
+test('Open With hands the file to GNOME\'s own chooser, and nothing is launched by the source', async () => {
+    const t = setupProvider();
     await t.ready;
-    assertEquals(await t.provider.subActions(FILE, {id: 'open-with'}), [], 'its applications are not listed');
-    t.provider.destroy();
-});
-
-test('Open With launches the chosen application with the file', async () => {
-    const t = setupProvider({apps: [{id: 'a.desktop', name: 'A'}, {id: 'b.desktop', name: 'B'}]});
-    await t.ready;
-    await t.provider.activateAction(FILE, {id: 'open-with:b.desktop'});
-    assertEquals(t.launched, ['b.desktop file:///home/me/Documents/Facture%20mars.pdf']);
-    t.provider.destroy();
-});
-
-test('Open With refuses an application that cannot open this file, a missing file, and anything not local', async () => {
-    const t = setupProvider({apps: [{id: 'a.desktop', name: 'A'}], missing: ['file:///home/me/gone.txt']});
-    await t.ready;
-    assert((await failureOf(t.provider.activateAction(FILE, {id: 'open-with:other.desktop'})))?.includes('cannot open'), 'an unknown application was accepted');
-    assert((await failureOf(t.provider.activateAction({data: {url: 'file:///home/me/gone.txt'}}, {id: 'open-with:a.desktop'})))?.includes('no longer there'), 'a missing file was accepted');
-    for (const url of ['https://example.org/x', 'file://server/share/x', 'smb://host/x'])
-        assert((await failureOf(t.provider.activateAction({data: {url}}, {id: 'open-with:a.desktop'}))) !== null, `${url} was accepted`);
+    const action = (await t.provider.actions(FILE)).find(candidate => candidate.id === 'open-with');
+    assert(action && !('submenu' in action), 'Open With is a plain action');
+    await t.provider.activateAction(FILE, action);
+    assertEquals(t.chosen, ['file:///home/me/Documents/Facture%20mars.pdf']);
     assertEquals(t.launched, []);
     t.provider.destroy();
+});
+
+test('Open With refuses a missing file and anything not local, and reports a chooser that fails', async () => {
+    const t = setupProvider({missing: ['file:///home/me/gone.txt']});
+    await t.ready;
+    assert((await failureOf(t.provider.activateAction({data: {url: 'file:///home/me/gone.txt'}}, {id: 'open-with'})))?.includes('no longer there'), 'a missing file was accepted');
+    for (const url of ['https://example.org/x', 'file://server/share/x', 'smb://host/x', undefined])
+        assert((await failureOf(t.provider.activateAction({data: {url}}, {id: 'open-with'}))) !== null, `${url} was accepted`);
+    assertEquals(t.chosen, []);
+    t.provider.destroy();
+    const failing = setupProvider({chooserFails: true});
+    await failing.ready;
+    assert((await failureOf(failing.provider.activateAction(FILE, {id: 'open-with'})))?.includes('portal'), 'a failing chooser was not reported');
+    failing.provider.destroy();
 });
 
 test('an action the provider does not know is refused and launches nothing', async () => {

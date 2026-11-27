@@ -72,10 +72,9 @@ wait_last() {
 }
 last_results() { grep -F '[Luciole] results:' "$LOG" | tail -n 1 | sed 's/.*results: //'; }
 # The menu of actions is GNOME's own (a popup menu over the window).
-# menu_state: "hidden", or "<number of actions> <index highlighted> <labels>"; while "Open With…" is
-# unfolded, those of its applications.
+# menu_state: "hidden", or "<number of actions> <index highlighted> <labels>".
 menu_state() {
-    shell_eval "(function() { let bp = null; (function f(a) { if (bp) return; if ((a.style_class || '').includes('luciole-context-menu')) { bp = a; return; } a.get_children().forEach(f); })(global.stage); const m = bp && bp._delegate; if (!m || !m.isOpen) return 'hidden'; const sub = m._getMenuItems().find(i => i.menu && i.menu.isOpen); const rows = (sub ? sub.menu : m)._getMenuItems().filter(i => i.reactive && i.label); const f = global.stage.key_focus; return rows.length + ' ' + rows.findIndex(i => f && (i === f || i.contains(f))) + ' ' + rows.map(i => i.label.text).join(';'); })()"
+    shell_eval "(function() { let bp = null; (function f(a) { if (bp) return; if ((a.style_class || '').includes('luciole-context-menu')) { bp = a; return; } a.get_children().forEach(f); })(global.stage); const m = bp && bp._delegate; if (!m || !m.isOpen) return 'hidden'; const rows = m._getMenuItems().filter(i => i.reactive && i.label); const f = global.stage.key_focus; return rows.length + ' ' + rows.findIndex(i => f && (i === f || i.contains(f))) + ' ' + rows.map(i => i.label.text).join(';'); })()"
 }
 # context_menus: how many of the launcher's menus exist (shown or not): none once one is closed.
 context_menus() {
@@ -118,11 +117,6 @@ result_row_center() {
 menu_title() {
     shell_eval "(function() { let bp = null; (function f(a) { if (bp) return; if ((a.style_class || '').includes('luciole-context-menu')) { bp = a; return; } a.get_children().forEach(f); })(global.stage); const m = bp && bp._delegate; if (!m || !m.isOpen) return 'none'; const h = m._getMenuItems().find(i => (i.style_class || '').includes('luciole-context-heading')); if (!h) return 'none'; const labels = []; (function w(a) { if (a instanceof imports.gi.St.Label) labels.push(a.get_text()); a.get_children().forEach(w); })(h); return labels.join(' | '); })()"
 }
-# wait_menu_count <n>: until the menu shows n actions (a submenu joins it once its choices are known).
-wait_menu_count() {
-    i=0; while [ "$i" -lt 30 ]; do set -- $(menu_state); [ "${1:-}" = "$WANT" ] && return 0; sleep 0.1; i=$((i + 1)); done
-    return 1
-}
 # escape_preview <count of "back" before>: Escape to the preview until it is closed. Just after it
 # opens, the previewer may not handle keys yet and ignores an Escape: then another is sent (four at most).
 escape_preview() {
@@ -135,7 +129,7 @@ escape_preview() {
     return 1
 }
 menu_row_center() {
-    shell_eval "(function() { let bp = null; (function f(a) { if (bp) return; if ((a.style_class || '').includes('luciole-context-menu')) { bp = a; return; } a.get_children().forEach(f); })(global.stage); const m = bp && bp._delegate; if (!m || !m.isOpen) return ''; const sub = m._getMenuItems().find(i => i.menu && i.menu.isOpen); const rows = (sub ? sub.menu : m)._getMenuItems().filter(i => i.reactive && i.label); const c = rows[$1]; if (!c) return ''; const [x, y] = c.get_transformed_position(); const [w, h] = c.get_transformed_size(); return Math.round(x + w / 2) + ' ' + Math.round(y + h / 2); })()"
+    shell_eval "(function() { let bp = null; (function f(a) { if (bp) return; if ((a.style_class || '').includes('luciole-context-menu')) { bp = a; return; } a.get_children().forEach(f); })(global.stage); const m = bp && bp._delegate; if (!m || !m.isOpen) return ''; const rows = m._getMenuItems().filter(i => i.reactive && i.label); const c = rows[$1]; if (!c) return ''; const [x, y] = c.get_transformed_position(); const [w, h] = c.get_transformed_size(); return Math.round(x + w / 2) + ' ' + Math.round(y + h / 2); })()"
 }
 # wait_menu: until the menu is shown (the actions are listed first), two seconds at most.
 wait_menu() {
@@ -766,7 +760,6 @@ wait_last 'results: 1 first=rapport' || fail "the real file was not found (last:
 CLOSED_BEFORE=$(launcher_closed_count)
 chord Control_L+k
 wait_menu || fail "menu: Ctrl+K did not open the menu"
-WANT=8 wait_menu_count || fail "menu: Open With did not join the menu ('$(menu_state)')"
 set -- $(menu_state)
 [ "$1" = 8 ] && [ "$2" = 0 ] || fail "menu: expected 8 actions with the first highlighted, got '$(menu_state)'"
 [ "$(results_visible)" = true ] || fail "menu: the results are hidden behind the menu"
@@ -774,12 +767,17 @@ case "$(menu_title)" in "rapport-test.txt | "*/docs) ;; *) fail "menu: the headi
 echo "ok: Ctrl+K opens GNOME's menu with the 8 actions of a file, over the results, the file and its folder at the top"
 # From the keyboard the menu opens under the start of the row's name, like the menu key in Files:
 # below the row, never over the field.
+# When it does not fit below the row (a short screen), it opens as low as it can, still under the
+# field, and whole on screen.
 set -- $(actor_geometry luciole-context-menu) $(actor_geometry luciole-entry) $(result_row_center 0)
-MENU_X=$1; MENU_Y=$2; ENTRY_Y=$6; ENTRY_H=$8; ROW_Y=${10}
-[ "$MENU_Y" -gt "$ROW_Y" ] || fail "menu: the menu of Ctrl+K is not below its row (menu at y=$MENU_Y, row centre at y=$ROW_Y)"
+MENU_X=$1; MENU_Y=$2; MENU_H=$4; ENTRY_Y=$6; ENTRY_H=$8; ROW_Y=${10}
+if [ $((ROW_Y + MENU_H)) -le 720 ]; then
+    [ "$MENU_Y" -gt "$ROW_Y" ] || fail "menu: the menu of Ctrl+K is not below its row (menu at y=$MENU_Y, row centre at y=$ROW_Y)"
+fi
+[ $((MENU_Y + MENU_H)) -le 720 ] || fail "menu: the menu of Ctrl+K runs past the bottom of the screen (y=$MENU_Y, height=$MENU_H)"
 [ "$MENU_Y" -ge $((ENTRY_Y + ENTRY_H)) ] || fail "menu: the menu of Ctrl+K covers the field (menu at y=$MENU_Y)"
 [ "$MENU_X" -gt "$5" ] || fail "menu: the menu of Ctrl+K does not start at the row's name (x=$MENU_X)"
-echo "ok: from the keyboard the menu opens under the row's name, below the field"
+echo "ok: from the keyboard the menu opens under the row's name (as low as it fits), below the field, whole on screen"
 chord Control_L+k
 sleep 0.4
 [ "$(menu_state)" = hidden ] || fail "menu: Ctrl+K again did not close the menu"
@@ -799,7 +797,6 @@ wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $
 echo "ok: Ctrl+K closes the menu it opened; a letter typed in the menu goes to the search"
 chord Control_L+k
 wait_menu || fail "menu: Ctrl+K did not open the menu"
-WANT=8 wait_menu_count || fail "menu: Open With did not join the menu ('$(menu_state)')"
 press Down
 sleep 0.3
 set -- $(menu_state)
@@ -857,38 +854,27 @@ wait_log "[Luciole] closed" $((CLOSED_BEFORE + 2)) || fail "menu: the window did
 echo "ok: Copy Name puts the name on the clipboard"
 sleep 0.4
 
-# Open With: unfolds in the menu, listing the applications; the left arrow folds it again.
+# Open With: a plain action, the last one, that hands the file to GNOME's own chooser (the desktop
+# portal, asked to ask the user) and closes the window.
 reopen_launcher
 typed rapport
 wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
 CLOSED_NOW=$(launcher_closed_count)
 chord Control_L+k
 wait_menu || fail "menu: Ctrl+K did not open the menu"
-WANT=8 wait_menu_count || fail "menu: Open With did not join the menu ('$(menu_state)')"
 press Up
 sleep 0.2
+case "$(menu_state)" in *";Ouvrir avec…") ;; *) fail "menu: Open With is not the last action ('$(menu_state)')" ;; esac
 press Right
-sleep 0.6
-set -- $(menu_state)
-[ "$1" -ge 1 ] && [ "$1" != 8 ] || fail "menu: Open With did not list applications ('$(menu_state)')"
-case "$(menu_state)" in *"Lecteur Luciole de test"*) ;; *) fail "menu: Open With does not offer the test reader ('$(menu_state)')" ;; esac
-# Unfolded, the menu stays whole on screen (it grew; it is moved up when it would run past the bottom).
-set -- $(actor_geometry luciole-context-menu)
-[ $(($2 + $4)) -le 720 ] || fail "menu: unfolded, the menu runs past the bottom of the screen (y=$2, height=$4)"
-echo "ok: Open With unfolds the applications that open the file ($1 here: $(menu_state))"
-press Left
 sleep 0.4
 set -- $(menu_state)
-[ "$1" = 8 ] && [ "$2" = 7 ] || fail "menu: the left arrow did not fold Open With back ('$(menu_state)')"
-press Right
-sleep 0.6
-OPENED_WITH=$(grep -cF "menu action: " "$LOG")
+[ "$1" = 8 ] && [ "$2" = 7 ] || fail "menu: Open With unfolded something ('$(menu_state)')"
 press Return
-wait_log "menu action: " $((OPENED_WITH + 1)) || fail "menu: choosing an application in Open With did nothing"
-grep -F "menu action: " "$LOG" | tail -n 1 | grep -qF "menu action: open-with:luciole-test-reader.desktop" ||
-    fail "menu: Open With ran '$(grep -F "menu action: " "$LOG" | tail -n 1)', expected the test reader"
-echo "ok: the application chosen in Open With opens the file"
+i=0; while [ "$i" -lt 30 ] && [ ! -s "$PORTAL_RECORD" ]; do sleep 0.1; i=$((i + 1)); done
+[ "$(cat "$PORTAL_RECORD" 2>/dev/null)" = "OpenFile $WORK/docs/rapport-test.txt ask=true" ] ||
+    fail "menu: Open With asked the portal '$(cat "$PORTAL_RECORD" 2>/dev/null)', expected the file and ask=true"
 wait_log "[Luciole] closed" $((CLOSED_NOW + 1)) || fail "menu: the window did not close after Open With"
+echo "ok: Open With hands the file to GNOME's chooser (the portal, asked to ask) and closes the window"
 sleep 0.4
 reopen_launcher
 clear_entry 8

@@ -12,11 +12,11 @@ test('well-formed actions are kept as they are, with the optional parts they car
     assertEquals(cleanActions([
         open,
         {id: 'copy-path', label: 'Copy Path', copy: '/home/a/b.txt', confirmation: 'Path copied'},
-        {id: 'open-with', label: 'Open With', submenu: true, hint: '>'},
+        {id: 'open-with', label: 'Open With', hint: '>'},
     ]), [
         {id: 'open', label: 'Open'},
         {id: 'copy-path', label: 'Copy Path', copy: '/home/a/b.txt', confirmation: 'Path copied'},
-        {id: 'open-with', label: 'Open With', hint: '>', submenu: true},
+        {id: 'open-with', label: 'Open With', hint: '>'},
     ]);
 });
 
@@ -51,9 +51,9 @@ test('what is put on the clipboard is a non-empty text of reasonable size, and o
     assertEquals(copies.map(action => 'copy' in action), [false, false, false, true]);
 });
 
-test('submenu is kept only when it is exactly true', () => {
-    const [a, b, c] = cleanActions([{id: 'a', label: 'A', submenu: 'yes'}, {id: 'b', label: 'B', submenu: 1}, {id: 'c', label: 'C', submenu: true}]);
-    assert(!('submenu' in a) && !('submenu' in b) && c.submenu === true, 'only a real true counts');
+test('what a source adds besides the known parts is dropped', () => {
+    const [action] = cleanActions([{id: 'a', label: 'A', submenu: true, run: 'rm -rf /'}]);
+    assertEquals(action, {id: 'a', label: 'A'});
 });
 
 test('only so many actions are kept', () => {
@@ -66,7 +66,6 @@ test('the menu opens on its first action', () => {
     assert(!menu.isOpen, 'closed to begin with');
     menu.open('Quokka.odt', [open, folder]);
     assert(menu.isOpen, 'open');
-    assertEquals(menu.depth, 1);
     assertEquals(menu.title, 'Quokka.odt');
     assertEquals(menu.selected, open);
     assertEquals(menu.index, 0);
@@ -104,30 +103,6 @@ test('moving with something that is not a whole number does nothing', () => {
     assertEquals(menu.index, 0);
 });
 
-test('a submenu goes one level deeper and back brings the previous one with its highlight', () => {
-    const menu = new ActionMenu();
-    menu.open('Quokka.odt', [open, folder, {id: 'open-with', label: 'Open With', submenu: true}]);
-    menu.move(2);
-    assert(menu.push('Open With', [{id: 'open-with:a', label: 'App A'}, {id: 'open-with:b', label: 'App B'}]), 'pushed');
-    assertEquals(menu.depth, 2);
-    assertEquals(menu.title, 'Open With');
-    assertEquals(menu.selected.id, 'open-with:a');
-    assert(menu.back(), 'one level is left');
-    assertEquals(menu.depth, 1);
-    assertEquals(menu.selected.id, 'open-with', 'the highlight is where it was');
-    assert(!menu.back(), 'going back from the first level closes it');
-    assert(!menu.isOpen, 'closed');
-});
-
-test('a submenu with nothing in it is not entered, and nothing can be pushed on a closed menu', () => {
-    const menu = new ActionMenu();
-    assert(!menu.push('x', [open]), 'closed menu');
-    menu.open('x', [open]);
-    assert(!menu.push('y', []), 'empty submenu');
-    assert(!menu.push('y', undefined), 'no submenu');
-    assertEquals(menu.depth, 1);
-});
-
 test('selecting by position is for a click, and ignores positions that do not exist', () => {
     const menu = new ActionMenu();
     menu.open('x', [open, folder]);
@@ -138,19 +113,17 @@ test('selecting by position is for a click, and ignores positions that do not ex
     assertEquals(menu.selected, folder, 'unchanged');
 });
 
-test('actions is a copy, and close forgets every level', () => {
+test('actions is a copy, and close forgets the menu', () => {
     const menu = new ActionMenu();
     menu.open('x', [open, folder]);
     menu.actions.push({id: 'intruder', label: 'X'});
     assertEquals(menu.actions.length, 2);
-    menu.push('y', [open]);
     menu.close();
-    assert(!menu.isOpen && menu.depth === 0, 'closed at every level');
+    assert(!menu.isOpen && menu.selected === null && menu.title === '', 'closed');
 });
 
-test('going back on a closed menu is harmless', () => {
+test('moving or selecting on a closed menu is harmless', () => {
     const menu = new ActionMenu();
-    assert(!menu.back(), 'still closed');
     menu.move(1);
     menu.select(0);
     assert(!menu.isOpen, 'nothing happened');

@@ -26,7 +26,7 @@ export class ContextMenu {
     #manager;
     #report = {chosen: null, outside: null, typed: null};
     #onClosed;
-    // Where the menu was asked to open, kept to place it again when it grows (a submenu unfolds).
+    // Where the menu was asked to open.
     #anchor = null;
     #closing = false;
     #idleId = 0;
@@ -39,7 +39,7 @@ export class ContextMenu {
      * @param {string} [options.subtitle] - where it is, or what it is, shown under the title
      * @param {Array<{index: number, label: string, hint?: string}>} options.entries - the actions, in
      *   order; `index` is the action's place in the launcher's list
-     * @param {(report: {chosen: number[] | null, outside: {x: number, y: number, button: number} | null,
+     * @param {(report: {chosen: number | null, outside: {x: number, y: number, button: number} | null,
      *   typed: string | null}) => void} options.onClosed
      */
     constructor({owner, title, subtitle = '', entries, onClosed}) {
@@ -59,7 +59,7 @@ export class ContextMenu {
                 row.add_child(new St.Label({text: entry.hint, opacity: 150, style: 'padding-left: 24px;', y_align: Clutter.ActorAlign.CENTER}));
             }
             row.connect('activate', () => {
-                this.#report.chosen = [entry.index];
+                this.#report.chosen = entry.index;
             });
             menu.addMenuItem(row);
         }
@@ -109,13 +109,12 @@ export class ContextMenu {
             this.#menu.actor.navigate_focus(null, St.DirectionType.TAB_FORWARD, false);
     }
 
-    // Puts the menu where it is seen whole (see menuAnchor), for its size now plus `growing`: what a
-    // submenu about to unfold will add (it unfolds from no height, so it is not counted yet).
-    #place(growing = 0) {
+    // Puts the menu where it is seen whole (see menuAnchor).
+    #place() {
         const {x, y, height, floor} = this.#anchor;
         const [, natural] = this.#menu.actor.get_preferred_height(-1);
         const area = Main.layoutManager.getWorkAreaForMonitor(monitorAt(x, y));
-        const anchor = menuAnchor({y, height}, natural + growing, floor, {top: area.y, bottom: area.y + area.height});
+        const anchor = menuAnchor({y, height}, natural, floor, {top: area.y, bottom: area.y + area.height});
         Main.layoutManager.setDummyCursorGeometry(x, anchor.y, 0, anchor.height);
         // GNOME places the menu where its anchor was when it was last laid out: once the anchor
         // has moved (the next cycle), the menu is laid out again to follow it.
@@ -126,33 +125,6 @@ export class ContextMenu {
                 return GLib.SOURCE_REMOVE;
             });
         }
-    }
-
-    /**
-     * Adds a submenu at the end ("Open With…"), its choices known once the menu was open. Nothing
-     * is added once the menu is closed, or without choices.
-     *
-     * @param {number} index - the action's place in the launcher's list
-     * @param {string} label
-     * @param {Array<{label: string}>} choices
-     */
-    addSubmenu(index, label, choices) {
-        if (!this.#menu?.isOpen || choices.length === 0)
-            return;
-        const submenu = new PopupMenu.PopupSubMenuMenuItem(label);
-        choices.forEach((choice, choiceIndex) => {
-            const row = new PopupMenu.PopupMenuItem(choice.label);
-            row.connect('activate', () => {
-                this.#report.chosen = [index, choiceIndex];
-            });
-            submenu.menu.addMenuItem(row);
-        });
-        this.#menu.addMenuItem(submenu);
-        // Unfolded or folded, the menu changes height: placed again so it stays on screen.
-        submenu.menu.connect('open-state-changed', (_submenu, open) => {
-            if (this.#menu?.isOpen)
-                this.#place(open ? submenu.menu.box.get_preferred_height(-1)[1] : 0);
-        });
     }
 
     get isOpen() {
@@ -209,7 +181,7 @@ export class ContextMenu {
         // GNOME closes its menu itself on a click outside it, with any button: the event being
         // handled is that click, reported so the launcher goes on with what it meant.
         const event = Clutter.get_current_event();
-        if (!this.#report.chosen && !this.#report.outside && event?.type() === Clutter.EventType.BUTTON_PRESS) {
+        if (this.#report.chosen === null && !this.#report.outside && event?.type() === Clutter.EventType.BUTTON_PRESS) {
             const [x, y] = event.get_coords();
             this.#report.outside = {x, y, button: event.get_button()};
         }

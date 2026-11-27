@@ -59,7 +59,6 @@ export class Launcher {
     #getQueries;
     #getCategories;
     #getActions;
-    #getSubActions;
     #onRunAction;
     #previewer;
     #getPreviewUri;
@@ -119,13 +118,12 @@ export class Launcher {
      * @param {() => Array<{id: string, name: string}>} options.getCategories - the sources a search can be restricted to
      * @param {(id: string | null) => void} options.onFilter - the search is restricted to a source (null: all)
      * @param {(item: object) => Promise<object[]>} options.getActions - the actions of a result, for its menu
-     * @param {(item: object, action: object) => Promise<object[]>} options.getSubActions - what a submenu action leads to
      * @param {(item: object, action: object) => Promise<{ok: boolean, confirmation: string | null}>} options.onRunAction - runs an action
      * @param {{available: boolean, show: Function, cancel: Function}} [options.previewer] - GNOME's file previewer
      * @param {(item: object) => Promise<string | null>} [options.getPreviewUri] - the file to preview for a result, checked
      */
     constructor({log, gettext, onQuery, onActivate, onSecondary, getBackdrop, getAnimations, getQueries = () => [], getCategories = () => [], onFilter = () => {},
-        getActions = async () => [], getSubActions = async () => [], onRunAction = async () => ({ok: false, confirmation: null}),
+        getActions = async () => [], onRunAction = async () => ({ok: false, confirmation: null}),
         previewer = null, getPreviewUri = async () => null}) {
         this.#log = log;
         this.#gettext = gettext;
@@ -138,7 +136,6 @@ export class Launcher {
         this.#getCategories = getCategories;
         this.#onFilter = onFilter;
         this.#getActions = getActions;
-        this.#getSubActions = getSubActions;
         this.#onRunAction = onRunAction;
         this.#previewer = previewer;
         this.#getPreviewUri = getPreviewUri;
@@ -644,15 +641,12 @@ export class Launcher {
             return;
         this.#menuItem = item;
         this.#menu.open(item.result.title, usable);
-        const choices = new Map();
         const popup = new ContextMenu({
             owner: this.#overlay,
             title: item.result.title,
             subtitle: item.result.subtitle ?? '',
-            // A submenu ("Open With…") joins the menu once its choices are known, below.
-            entries: usable.map((action, index) => ({index, label: action.label, hint: action.hint}))
-                .filter((_entry, index) => !usable[index].submenu),
-            onClosed: report => this.#log.guardAsync('running an action', () => this.#menuClosed(popup, report, choices)),
+            entries: usable.map((action, index) => ({index, label: action.label, hint: action.hint})),
+            onClosed: report => this.#log.guardAsync('running an action', () => this.#menuClosed(popup, report)),
         });
         this.#popup = popup;
         // From the keyboard the menu never covers the field: what is typed stays in sight.
@@ -664,23 +658,11 @@ export class Launcher {
         }
         popup.open(place, where === null, floor);
         this.#log.debug(`menu opened: ${item.key}`);
-        // The menu is on screen at once; what a submenu offers is listed meanwhile.
-        usable.forEach((action, index) => {
-            if (!action.submenu)
-                return;
-            this.#log.guardAsync('listing the choices', async () => {
-                const list = await this.#getSubActions(item, action);
-                if (popup !== this.#popup || !Array.isArray(list))
-                    return;
-                choices.set(action, list);
-                popup.addSubmenu(index, action.label, list);
-            });
-        });
     }
 
     // The menu closed: an action chosen, a click outside it, a character typed, or simply left. The
     // keyboard comes back to the field.
-    async #menuClosed(popup, {chosen, outside, typed}, choices) {
+    async #menuClosed(popup, {chosen, outside, typed}) {
         if (popup !== this.#popup)
             return;
         this.#popup = null;
@@ -690,21 +672,12 @@ export class Launcher {
         const focus = compat.keyFocusActor();
         if (!focus || !this.#overlay.contains(focus))
             this.#entry.grab_key_focus();
-        if (!chosen) {
+        if (chosen === null) {
             this.#resetMenu();
             this.#afterMenu(outside, typed);
             return;
         }
-        const [index, choiceIndex] = chosen;
-        this.#menu.select(index);
-        if (choiceIndex !== undefined) {
-            const action = this.#menu.selected;
-            if (!action || !this.#menu.push(action.label, choices.get(action) ?? [])) {
-                this.#resetMenu();
-                return;
-            }
-            this.#menu.select(choiceIndex);
-        }
+        this.#menu.select(chosen);
         await this.#runMenuAction();
     }
 

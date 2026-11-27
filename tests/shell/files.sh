@@ -43,18 +43,7 @@ Keywords=lucioletest;
 Exec=touch $WORK/panel-ran
 NoDisplay=true
 DESKTOP
-# An application of our own that opens text files: "Open With" must not depend on the editors the
-# machine has installed.
-cat >"$WORK/data/applications/luciole-test-reader.desktop" <<DESKTOP
-[Desktop Entry]
-Type=Application
-Name=Lecteur Luciole de test
-Exec=true %f
-MimeType=text/plain;
-DESKTOP
-# GIO finds which applications open a type through this index, written when an application is installed.
-printf '[MIME Cache]\ntext/plain=luciole-test-reader.desktop;\n' >"$WORK/data/applications/mimeinfo.cache"
-# A file that really exists, in the stand-in index, to ask which applications open it.
+# A file that really exists, in the stand-in index, for the actions that need one.
 mkdir -p "$WORK/docs"
 printf 'a test file\n' >"$WORK/docs/rapport-test.txt"
 export INDEX_REAL_FILE="$WORK/docs/rapport-test.txt"
@@ -75,6 +64,14 @@ cat >"$WORK/services/dbus-1/services/org.freedesktop.FileManager1.service" <<SER
 [D-BUS Service]
 Name=org.freedesktop.FileManager1
 Exec=/usr/bin/gjs -m $ROOT/tests/shell/filemanager-service.js $WORK/shown.txt
+SERVICE
+# The desktop portal too ("Open With" asks it for GNOME's chooser): it notes the file it receives
+# and shows nothing; the real portal is never started on the test bus.
+export PORTAL_RECORD="$WORK/portal.txt"
+cat >"$WORK/services/dbus-1/services/org.freedesktop.portal.Desktop.service" <<SERVICE
+[D-BUS Service]
+Name=org.freedesktop.portal.Desktop
+Exec=/usr/bin/gjs -m $ROOT/tests/shell/portal-service.js $WORK/portal.txt
 SERVICE
 # If our stand-in were late, the bus must not start the real indexer instead.
 cat >"$WORK/services/dbus-1/services/org.freedesktop.LocalSearch3.service" <<SERVICE

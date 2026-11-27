@@ -1,5 +1,5 @@
 {
- "description": "Mutants for the menu of actions in the live launcher (GNOME's own menu: moving in it, Escape and the clicks are GNOME's, not listed). Not listed because GNOME does it too: giving the keyboard back to the field when the menu closes (the shell's modal stack restores it first). Not listed because equivalent or out of reach: the staleness check of an answer (the gap between asking and the answer is too short to close the window inside it, in a test), and forgetting the menu when closing (opening forgets it too). Not listed because it cannot be provoked in a live shell: a copy that fails (the clipboard always works there); it is covered by the unit tests of the controller. Also not listed because equivalent: the guard on Enter during the confirmation (a field that is not editable does not send Enter at all). Each mutant runs only the part of tests/shell/files.sh that covers it (FILES_PARTS); the whole script runs in the gate. A preview already on screen is noticed twice (its Visible state read after ShowFile, and its window at the timeout): the mutant removes both. Not listed because it cannot be provoked: typing leaving the menu (GNOME's menu holds the keyboard while it is open; the call stays for text typed while a chosen action is still running). Not listed because it cannot be provoked: results arriving during the 0.6 s of a confirmation (the help bar is hidden by the confirmation itself; its own check only covers such late results).",
+ "description": "Mutants for the menu of actions in the live launcher (GNOME's own menu: moving in it, Escape and the clicks are GNOME's, not listed). Not listed because GNOME does it too: giving the keyboard back to the field when the menu closes (the shell's modal stack restores it first). Not listed because equivalent or out of reach: the staleness check of an answer (the gap between asking and the answer is too short to close the window inside it, in a test), and forgetting the menu when closing (opening forgets it too). Not listed because it cannot be provoked in a live shell: a copy that fails (the clipboard always works there); it is covered by the unit tests of the controller. Also not listed because equivalent: the guard on Enter during the confirmation (a field that is not editable does not send Enter at all). Each mutant runs only the part of tests/shell/files.sh that covers it (FILES_PARTS); the whole script runs in the gate. A preview already on screen is noticed twice (its Visible state read after ShowFile, and its window at the timeout): the mutant removes both. Not listed because it cannot be provoked: typing leaving the menu (GNOME's menu holds the keyboard while it is open; the call stays for text typed while a chosen action is still running). Not listed because it cannot be provoked: results arriving during the 0.6 s of a confirmation (the help bar is hidden by the confirmation itself; its own check only covers such late results). Not listed because equivalent: the menu noting a click outside it when its first action was chosen (an action is chosen on a button release, never a press, and the launcher ignores the click once an action is chosen).",
  "slow": true,
  "timeout": 400,
  "command": [
@@ -628,7 +628,7 @@
   {
    "file": "src/shell/context-menu.js",
    "label": "an action chosen in the menu is not run",
-   "old": "            row.connect('activate', () => {\n                this.#report.chosen = [entry.index];\n            });",
+   "old": "            row.connect('activate', () => {\n                this.#report.chosen = entry.index;\n            });",
    "new": "            row.connect('activate', () => {});",
    "command": [
     "env",
@@ -650,10 +650,10 @@
    ]
   },
   {
-   "file": "src/ui/launcher.js",
-   "label": "Open With offers no application",
-   "old": "                popup.addSubmenu(index, action.label, list);\n",
-   "new": "",
+   "file": "src/providers/files.js",
+   "label": "Open With does not reach the desktop portal",
+   "old": "'org.freedesktop.portal.OpenURI', 'OpenFile',",
+   "new": "'org.freedesktop.portal.OpenURI', 'OpenURI',",
    "command": [
     "env",
     "FILES_PARTS=menu",
@@ -662,10 +662,10 @@
    ]
   },
   {
-   "file": "src/ui/launcher.js",
-   "label": "an application chosen in Open With is not the one run",
-   "old": "        if (choiceIndex !== undefined) {",
-   "new": "        if (false) {",
+   "file": "src/providers/files.js",
+   "label": "Open With does not ask the user to choose",
+   "old": "{ask: new GLib.Variant('b', true)}",
+   "new": "{}",
    "command": [
     "env",
     "FILES_PARTS=menu",
@@ -941,6 +941,30 @@
    "file": "src/shell/context-menu.js",
    "label": "the menu does not follow its anchor when it grows",
    "old": "                this.#menu?.actor.queue_relayout();\n",
+   "new": "",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "choosing the first action of the menu runs nothing",
+   "old": "        if (chosen === null) {\n            this.#resetMenu();",
+   "new": "        if (!chosen) {\n            this.#resetMenu();",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "Open With hands the portal no file",
+   "old": "            handles.append(fd);\n",
    "new": "",
    "command": [
     "env",

@@ -344,9 +344,9 @@
   },
   {
    "file": "src/providers/files.js",
-   "label": "Open With lists applications for a file no longer there",
-   "old": "        if (!await this.#exists(url, this.#lifetime))\n            return [];\n        return openWithActions(",
-   "new": "        return openWithActions("
+   "label": "Open With is offered for a file no longer there",
+   "old": "        if (actions.length > 0 && !await this.#exists(url, this.#lifetime))\n            return actions.filter(action => action.id !== 'open-with');\n",
+   "new": ""
   },
   {
    "file": "src/providers/files.js",

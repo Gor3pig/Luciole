@@ -148,7 +148,6 @@ export function rowsToResults(rows, {home, excludedFolders = [], excludedTypes =
     return results;
 }
 
-export const OPEN_WITH_PREFIX = 'open-with:';
 // The theme's icon for a folder, as Files shows it.
 export const FOLDER_ICON = 'folder';
 
@@ -177,7 +176,6 @@ export function findTerminal(findProgram) {
     }
     return null;
 }
-const MAX_OPEN_WITH = 12;
 
 /** The last part of a path or an address, decoded: "file:///a/b%20c.odt" -> "b c.odt". */
 export function baseName(url) {
@@ -203,7 +201,7 @@ export function fileActionList(url, gettext, {folder = false, terminal = false} 
     const _ = gettext;
     const copyPath = {id: 'copy-path', label: _('Copy Path'), copy: pathOfUrl(url), confirmation: _('Path copied')};
     const copyName = {id: 'copy-name', label: _('Copy Name'), copy: baseName(url), confirmation: _('Name copied')};
-    const openWith = {id: 'open-with', label: _('Open With…'), submenu: true};
+    const openWith = {id: 'open-with', label: _('Open With…')};
     if (folder) {
         return [
             {id: 'open-folder', label: _('Show in Parent Folder'), hint: _('Ctrl+Enter')},
@@ -220,24 +218,4 @@ export function fileActionList(url, gettext, {folder = false, terminal = false} 
         ...terminal ? [{id: 'terminal', label: _('Open a Terminal in Its Folder')}] : [],
         openWith,
     ];
-}
-
-/**
- * The applications that can open a file, as menu actions: the default one first, then the others
- * in the order given, at most MAX_OPEN_WITH.
- *
- * @param {Array<{id: string, name: string, isDefault?: boolean}>} apps
- * @param {(text: string) => string} gettext
- */
-export function openWithActions(apps, gettext) {
-    if (!Array.isArray(apps))
-        return [];
-    const usable = apps.filter(app => app && typeof app.id === 'string' && app.id !== '' && typeof app.name === 'string' && app.name !== '');
-    const ordered = [...usable.filter(app => app.isDefault === true), ...usable.filter(app => app.isDefault !== true)];
-    return ordered.slice(0, MAX_OPEN_WITH).map(app => {
-        const action = {id: `${OPEN_WITH_PREFIX}${app.id}`, label: app.name};
-        if (app.isDefault === true)
-            action.hint = gettext('Default');
-        return action;
-    });
 }

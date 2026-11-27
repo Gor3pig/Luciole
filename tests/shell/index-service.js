@@ -53,7 +53,7 @@ if (demo)
 for (let i = 1; i <= Number(GLib.getenv('INDEX_EXTRA') ?? 0); i++)
     FILES.push(['/home/tester/Archives', `quokka-archive-${String(i).padStart(2, '0')}.txt`]);
 
-// INDEX_REAL_FILE=<path> adds a file that really exists (to ask for the applications that open it).
+// INDEX_REAL_FILE=<path> adds a file that really exists (for the actions that need one).
 const realFile = GLib.getenv('INDEX_REAL_FILE');
 if (realFile)
     FILES.push([GLib.path_get_dirname(realFile), GLib.path_get_basename(realFile)]);

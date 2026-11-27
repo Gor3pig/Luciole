@@ -63,7 +63,6 @@ export default class LucioleExtension extends Extension {
                 getBackdrop: () => settings.get_string('backdrop'),
                 getAnimations: () => settings.get_boolean('animations'),
                 getActions: item => backend.controller?.actionsFor(item) ?? Promise.resolve([]),
-                getSubActions: (item, action) => backend.controller?.subActionsFor(item, action) ?? Promise.resolve([]),
                 onRunAction: (item, action) => backend.controller?.runAction(item, action) ?? Promise.resolve({ok: false, confirmation: null}),
                 previewer,
                 getPreviewUri: item => backend.controller?.previewUriFor(item) ?? Promise.resolve(null),

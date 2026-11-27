@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 import {
-    baseName, buildFtsTerms, displayFolder, fileActionList, findTerminal, isExcluded, isExcludedType, isLocalFileUri, openWithActions, parentUrl, pathOfUrl, rowsToResults,
+    baseName, buildFtsTerms, displayFolder, fileActionList, findTerminal, isExcluded, isExcludedType, isLocalFileUri, parentUrl, pathOfUrl, rowsToResults,
 } from '../src/providers/files-query.js';
 import {assert, assertEquals, test} from './harness.js';
 
@@ -168,7 +168,8 @@ test('a local file has the file actions, in this order, each with what it needs'
     assertEquals(actions[4].copy, 'Facture mars.pdf');
     assertEquals(actions[3].confirmation, 'Path copied');
     assertEquals(actions[4].confirmation, 'Name copied');
-    assert(actions[5].submenu === true, 'Open With leads to a submenu');
+    assertEquals(actions[5].label, 'Open With…');
+    assert(!('submenu' in actions[5]), 'Open With is a plain action: GNOME\'s chooser does the rest');
 });
 
 test('with a terminal installed, a file offers one in its folder, before Open With', () => {
@@ -210,23 +211,4 @@ test('the first terminal installed is used, opened in the folder by an argument 
 test('what is not a local file has no file actions', () => {
     for (const url of ['https://example.org/x', 'file://server/share/x', 'file:///a?b=1', 'smb://host/x', '', undefined, null, 5])
         assertEquals(fileActionList(url, echo), [], String(url));
-});
-
-test('the applications that open a file are listed with the default one first', () => {
-    const actions = openWithActions([
-        {id: 'a.desktop', name: 'App A'},
-        {id: 'b.desktop', name: 'App B', isDefault: true},
-        {id: 'c.desktop', name: 'App C'},
-    ], echo);
-    assertEquals(actions.map(action => action.id), ['open-with:b.desktop', 'open-with:a.desktop', 'open-with:c.desktop']);
-    assertEquals(actions[0].hint, 'Default');
-    assert(!('hint' in actions[1]), 'only the default one is marked');
-});
-
-test('unusable applications are left out, and only a dozen are listed', () => {
-    assertEquals(openWithActions([null, {id: '', name: 'x'}, {id: 'a'}, {id: 'b', name: ''}, {name: 'x'}, 5], echo), []);
-    const many = Array.from({length: 30}, (_, n) => ({id: `app${n}.desktop`, name: `App ${n}`}));
-    assertEquals(openWithActions(many, echo).length, 12);
-    assertEquals(openWithActions(undefined, echo), []);
-    assertEquals(openWithActions('apps', echo), []);
 });

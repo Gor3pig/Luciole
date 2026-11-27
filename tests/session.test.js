@@ -685,14 +685,6 @@ test('the actions of a result of an unknown source are just Open', async () => {
     assertEquals((await t.controller.actionsFor({key: 'x:1', providerId: 'gone', result: result('1', 'X')})).map(action => action.id), ['open']);
 });
 
-test('a submenu lists what its source says, without submenus inside it', async () => {
-    const t = menuSetup({subActions: async () => [{id: 'a', label: 'A'}, {id: 'b', label: 'B', submenu: true}]});
-    const choices = await t.controller.subActionsFor(t.item, {id: 'open-with', submenu: true});
-    assertEquals(choices.map(choice => choice.id), ['a']);
-    assertEquals(await t.controller.subActionsFor(t.item, {id: 'open-with'}), [], 'only an action that leads to a submenu');
-    assertEquals(await t.controller.subActionsFor(t.item, null), []);
-});
-
 test('a copy action only writes to the clipboard, and gives its confirmation', async () => {
     const t = menuSetup();
     await t.controller.search('fire');

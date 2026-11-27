@@ -203,7 +203,6 @@ test('fuzz: whatever a source hands over as actions, only well-formed, bounded, 
                     label: random.chance(0.9) ? random.string(ALPHABETS.everything, random.int(0, 30)) : randomJson(random),
                     hint: random.chance(0.3) ? random.string(ALPHABETS.everything, 8) : undefined,
                     copy: random.chance(0.3) ? random.string(ALPHABETS.everything, random.chance(0.05) ? MAX_COPY_CHARS + 5 : 20) : randomJson(random),
-                    submenu: random.chance(0.3) ? random.pick([true, false, 1, 'yes', null]) : undefined,
                     confirmation: random.chance(0.3) ? random.string(ALPHABETS.everything, 12) : undefined,
                 }
                 : randomJson(random)));
@@ -214,26 +213,22 @@ test('fuzz: whatever a source hands over as actions, only well-formed, bounded, 
             assert(typeof action.id === 'string' && action.id !== '' && !ids.has(action.id), `bad id ${JSON.stringify(action.id)}`);
             ids.add(action.id);
             assert(typeof action.label === 'string' && action.label !== '' && !/\p{Cc}/u.test(action.label), `bad label ${JSON.stringify(action.label)}`);
-            assert(!('submenu' in action) || action.submenu === true, 'a submenu that is not exactly true');
             assert(!('copy' in action) || (typeof action.copy === 'string' && action.copy !== '' && action.copy.length <= MAX_COPY_CHARS), 'bad copy text');
         }
     });
 });
 
-test('fuzz: whatever is done to the menu, the highlight stays on an action of the level shown', () => {
+test('fuzz: whatever is done to the menu, the highlight stays on one of its actions', () => {
     forAll('ActionMenu', random => {
         const menu = new ActionMenu();
         const actions = n => Array.from({length: n}, (_, i) => ({id: `a${i}`, label: `A${i}`}));
         for (let step = random.int(1, 40); step > 0; step--) {
-            switch (random.int(0, 6)) {
+            switch (random.int(0, 4)) {
             case 0: menu.open('t', random.chance(0.2) ? [] : actions(random.int(1, 5))); break;
-            case 1: menu.push('s', random.chance(0.2) ? [] : actions(random.int(1, 5))); break;
-            case 2: menu.back(); break;
-            case 3: menu.move(random.int(-9, 9)); break;
-            case 4: menu.select(random.int(-2, 8)); break;
+            case 1: menu.move(random.int(-9, 9)); break;
+            case 2: menu.select(random.int(-2, 8)); break;
             default: if (random.chance(0.1)) menu.close();
             }
-            assert(menu.depth <= 2 || menu.depth >= 0, 'depth');
             if (menu.isOpen) {
                 assert(menu.index >= 0 && menu.index < menu.actions.length, `index ${menu.index} outside ${menu.actions.length} actions`);
                 assert(menu.selected === menu.actions[menu.index] || JSON.stringify(menu.selected) === JSON.stringify(menu.actions[menu.index]), 'selected is not the indexed action');

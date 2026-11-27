@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-27 16:37+0100\n"
+"POT-Creation-Date: 2026-11-27 18:34+0100\n"
 "PO-Revision-Date: 2026-11-25 20:00+0100\n"
 "Last-Translator: Luciole contributors\n"
 "Language-Team: en <>\n"
@@ -409,10 +409,6 @@ msgstr "File copied"
 msgid "Open a Terminal in Its Folder"
 msgstr "Open a Terminal in Its Folder"
 
-#: src/providers/files-query.js
-msgid "Default"
-msgstr "Default"
-
 #: src/ui/launcher.js
 msgid "All"
 msgstr "All"
@@ -467,3 +463,6 @@ msgstr "Luciole search"
 #: src/ui/results-view.js
 msgid "Top Hit"
 msgstr "Top Hit"
+
+#~ msgid "Default"
+#~ msgstr "Default"

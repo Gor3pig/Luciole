@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-27 16:37+0100\n"
+"POT-Creation-Date: 2026-11-27 18:34+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -399,10 +399,6 @@ msgstr ""
 
 #: src/providers/files-query.js
 msgid "Open a Terminal in Its Folder"
-msgstr ""
-
-#: src/providers/files-query.js
-msgid "Default"
 msgstr ""
 
 #: src/ui/launcher.js

@@ -7,7 +7,7 @@ import Tracker from 'gi://Tracker';
 
 import {Provider} from '../core/provider.js';
 import {fileIsOfType} from '../core/type-filter.js';
-import {buildFtsTerms, fileActionList, findTerminal, isLocalFileUri, OPEN_WITH_PREFIX, openWithActions, pathOfUrl, rowsToResults} from './files-query.js';
+import {buildFtsTerms, fileActionList, findTerminal, isLocalFileUri, pathOfUrl, rowsToResults} from './files-query.js';
 
 const LOCALSEARCH_BUS_NAME = 'org.freedesktop.LocalSearch3';
 
@@ -85,34 +85,42 @@ function uriExists(uri, cancellable) {
     });
 }
 
-/** The content type of a file, asked without blocking. */
-function contentTypeOf(uri, cancellable) {
+// Linux open() flags: a handle on the file itself (a file or a folder), not on its content, never
+// passed on to programs started later.
+const O_PATH = 0o10000000;
+const O_CLOEXEC = 0o2000000;
+
+// GNOME's own "Open With" window: the desktop portal asked to open the file with ask set, so the user
+// chooses among all the applications that can (and may make one the default). The portal takes the
+// file as a handle, not as an address; the handle is closed once the request is sent.
+function openWithChooser(uri, cancellable) {
     return new Promise((resolve, reject) => {
-        Gio.File.new_for_uri(uri).query_info_async('standard::content-type', Gio.FileQueryInfoFlags.NONE,
-            GLib.PRIORITY_DEFAULT, cancellable, (file, result) => {
+        const fd = GLib.open(Gio.File.new_for_uri(uri).get_path(), O_PATH | O_CLOEXEC, 0);
+        if (fd < 0) {
+            reject(new Error('the file cannot be opened'));
+            return;
+        }
+        const handles = Gio.UnixFDList.new();
+        try {
+            handles.append(fd);
+        } catch (error) {
+            reject(error);
+            return;
+        } finally {
+            GLib.close(fd);
+        }
+        Gio.DBus.session.call_with_unix_fd_list('org.freedesktop.portal.Desktop', '/org/freedesktop/portal/desktop',
+            'org.freedesktop.portal.OpenURI', 'OpenFile',
+            new GLib.Variant('(sha{sv})', ['', 0, {ask: new GLib.Variant('b', true)}]),
+            null, Gio.DBusCallFlags.NONE, 5000, handles, cancellable, (bus, result) => {
                 try {
-                    resolve(file.query_info_finish(result).get_content_type());
+                    bus.call_with_unix_fd_list_finish(result);
+                    resolve();
                 } catch (error) {
                     reject(error);
                 }
             });
     });
-}
-
-/** The applications that can open a file: [{id, name, isDefault, launch(uri)}]. */
-async function appsForUri(uri, cancellable) {
-    const type = await contentTypeOf(uri, cancellable);
-    if (!type)
-        return [];
-    const defaultId = Gio.AppInfo.get_default_for_type(type, false)?.get_id() ?? null;
-    return Gio.AppInfo.get_all_for_type(type)
-        .filter(app => app.should_show() && app.get_id())
-        .map(app => ({
-            id: app.get_id(),
-            name: app.get_name(),
-            isDefault: app.get_id() === defaultId,
-            launch: target => app.launch_uris([target], null),
-        }));
 }
 
 // The desktop's file manager (Files) shows a file in its folder, selected: the standard
@@ -242,7 +250,7 @@ export class FilesProvider extends Provider {
     #openConnection;
     #open;
     #exists;
-    #appsFor;
+    #openWith;
     #showItem;
     #copyFile;
     #spawn;
@@ -267,20 +275,20 @@ export class FilesProvider extends Provider {
      * @param {(cancellable: Gio.Cancellable) => Promise<object>} [options.openConnection] - for tests
      * @param {(uri: string, cancellable: Gio.Cancellable) => Promise<void>} [options.openUri] - for tests
      * @param {(uri: string, cancellable: Gio.Cancellable) => Promise<boolean>} [options.exists] - for tests
-     * @param {(uri: string, cancellable: Gio.Cancellable) => Promise<Array<{id: string, name: string, isDefault: boolean, launch: (uri: string) => void}>>} [options.appsFor] - for tests
+     * @param {(uri: string, cancellable: Gio.Cancellable) => Promise<void>} [options.openWith] - GNOME's "Open With" window, for tests
      * @param {(uri: string, cancellable: Gio.Cancellable) => Promise<void>} [options.showItem] - for tests
      * @param {(uri: string) => void} [options.copyFile] - puts a file on the clipboard, for Files to paste
      * @param {(argv: string[]) => void} [options.spawn] - starts a program from its arguments, no shell
      * @param {(program: string) => string | null} [options.findProgram] - a program's full path, or null
      */
-    constructor({kind = 'files', openConnection = openLocalSearch, openUri: open = openUri, exists = uriExists, appsFor = appsForUri, showItem = showItemInFolder,
+    constructor({kind = 'files', openConnection = openLocalSearch, openUri: open = openUri, exists = uriExists, openWith = openWithChooser, showItem = showItemInFolder,
         copyFile = unavailable, spawn = unavailable, findProgram = program => GLib.find_program_in_path(program)} = {}) {
         super();
         this.#kind = kind === 'folders' ? 'folders' : 'files';
         this.#openConnection = openConnection;
         this.#open = open;
         this.#exists = exists;
-        this.#appsFor = appsFor;
+        this.#openWith = openWith;
         this.#showItem = showItem;
         this.#copyFile = copyFile;
         this.#spawn = spawn;
@@ -431,21 +439,15 @@ export class FilesProvider extends Provider {
 
     /** The menu actions of a file, besides Open. */
     async actions(result) {
-        return fileActionList(result.data?.url, this.#gettext, {
+        const url = result.data?.url;
+        const actions = fileActionList(url, this.#gettext, {
             folder: result.data?.folder === true,
             terminal: findTerminal(this.#findProgram) !== null,
         });
-    }
-
-    /** What "Open With" leads to: the applications that can open this file. */
-    async subActions(result, action) {
-        const url = result.data?.url;
-        if (action.id !== 'open-with' || !isLocalFileUri(url))
-            return [];
         // A file no longer there (the index lags behind) has nothing to be opened with.
-        if (!await this.#exists(url, this.#lifetime))
-            return [];
-        return openWithActions(await this.#appsFor(url, this.#lifetime), this.#gettext);
+        if (actions.length > 0 && !await this.#exists(url, this.#lifetime))
+            return actions.filter(action => action.id !== 'open-with');
+        return actions;
     }
 
     async activateAction(result, action) {
@@ -462,18 +464,13 @@ export class FilesProvider extends Provider {
             if (!terminal)
                 throw new Error('no terminal is installed');
             this.#spawn(terminal.argvFor(pathOfUrl(folder)));
-        } else if (action.id.startsWith(OPEN_WITH_PREFIX)) {
-            // The file must still be there, and the application one of those that can open it:
-            // an identifier is never trusted on its own.
-            const url = result.data.url;
+        } else if (action.id === 'open-with') {
+            const url = result.data?.url;
             if (!isLocalFileUri(url))
                 throw new Error('refusing to open an address that is not a local file');
             if (!await this.#exists(url, this.#lifetime))
                 throw new Error('the file is no longer there');
-            const app = (await this.#appsFor(url, this.#lifetime)).find(candidate => `${OPEN_WITH_PREFIX}${candidate.id}` === action.id);
-            if (!app)
-                throw new Error('that application cannot open this file');
-            app.launch(url);
+            await this.#openWith(url, this.#lifetime);
         } else {
             throw new Error(`unknown action ${action.id}`);
         }

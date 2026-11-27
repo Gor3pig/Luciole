@@ -251,16 +251,6 @@ export class SearchController {
         return typeof uri === 'string' && uri.startsWith('file:///') ? uri : null;
     }
 
-    /** What a submenu action ("Open With") leads to. An empty list when there is nothing. */
-    async subActionsFor(item, action) {
-        const provider = this.#getProviders().find(p => p.id === item.providerId);
-        if (!provider?.subActions || !action?.submenu)
-            return [];
-        const offered = await this.#log.guardAsync(`listing ${action.id} for ${item.key}`,
-            () => provider.subActions(item.result, action), []);
-        return cleanActions(offered).filter(candidate => !candidate.submenu);
-    }
-
     /**
      * Runs one action of a result's menu. Resolves to {ok, confirmation}: whether it worked, and the
      * text to show for a copy. Copying only writes to the clipboard.

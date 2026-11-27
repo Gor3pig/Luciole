@@ -18,7 +18,7 @@ source is handled. It also lists what is *not* covered yet.
 | Network | None. Nothing is sent anywhere: no telemetry, no web search, no update check. |
 | Reads | The installed applications (through GIO), the file index of the desktop search service (read-only queries), its own settings (GSettings) and its own history files. |
 | Writes | Its settings, and two history files in the user's data directory (`luciole/frecency.json` and `luciole/queries.json`), created readable by the user only. |
-| Runs | Applications the user chooses, through GIO, and the actions such an application declares itself in its desktop file. Files and folders the user chooses, through the default handler for their address, or through an application the user picked in "Open With" among those that can open the file. A terminal of GNOME (Ptyxis, Console or GNOME Terminal) when the user chooses to open one in a folder. Nothing else is ever executed. |
+| Runs | Applications the user chooses, through GIO, and the actions such an application declares itself in its desktop file. Files and folders the user chooses, through the default handler for their address. "Open With" hands the file to GNOME's own application chooser (the desktop portal, `org.freedesktop.portal.OpenURI`, asked to let the user choose): the user picks the application there, and Luciole never lists or starts it itself. A terminal of GNOME (Ptyxis, Console or GNOME Terminal) when the user chooses to open one in a folder. Nothing else is ever executed. |
 | Clipboard | Written to only when the user asks: Enter on a calculation (the answer), "Copy Path" or "Copy Name" (the path or name of a local file), Ctrl+C or "Copy File" / "Copy Folder" (the address of a local file or folder, in the form Files pastes). Never read. |
 | Other processes | None started by the extension on its own. GNOME's file previewer is started by the session bus when the user asks for a preview; a terminal when the user asks for one. |
 
@@ -73,9 +73,9 @@ duplicates).
 * **The menu of actions is checked like any other data.** What a source offers as actions is
   cleaned (texts like result names, at most 24 actions, no duplicate id, copied text capped) before
   it is shown. An action is only ever run by the source that offered it, which refuses any
-  identifier it did not offer: an application action must be one the application declares, an
-  "Open With" application one of those listed for that file, and the file must still exist and be
-  local. Nothing typed by the user is part of an action.
+  identifier it did not offer: an application action must be one the application declares, and
+  for "Open With" the file must still exist and be local; it is passed to the desktop portal as an
+  open handle on that file, never as a text the portal would have to trust. Nothing typed by the user is part of an action.
 * **The calculator reads text, it never runs it.** A calculation or conversion typed in the field
   is read by a small parser of our own (`src/core/calc.js`), not by `eval` or `Function`. It
   accepts digits, a few operators, brackets, a short list of named functions and unit names, and
