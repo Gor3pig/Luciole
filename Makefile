@@ -9,11 +9,11 @@ SCHEMA  := schemas/org.gnome.shell.extensions.luciole.gschema.xml
 # Every source directory of the extension except those pack handles itself.
 DIRS    := $(patsubst $(SRC)/%/,%,$(wildcard $(SRC)/*/))
 # Files beyond the ones pack picks up by itself (metadata.json, extension.js, prefs.js,
-# stylesheet.css, schemas, po): the dark stylesheet and every source directory.
+# stylesheet.css, schemas, po): the dark and light stylesheets and every source directory.
 # Translations are compiled by pack itself from src/po; src/locale is for local runs only.
 # The icon shown in the preferences (a copy of the 128 px one from data/icons, see `make icon`).
 ICON    := luciole-128x128.png
-EXTRA   := stylesheet-dark.css $(ICON) $(filter-out schemas po locale,$(DIRS))
+EXTRA   := stylesheet-dark.css stylesheet-light.css $(ICON) $(filter-out schemas po locale,$(DIRS))
 PACK_ARGS := --force --out-dir=$(DIST) --schema=$(SCHEMA) \
 	$(foreach d,$(EXTRA),--extra-source=$(d)) \
 	$(if $(wildcard $(SRC)/po),--podir=po)

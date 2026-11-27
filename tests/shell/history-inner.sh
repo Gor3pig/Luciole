@@ -158,6 +158,11 @@ arrows)
     expect "up again" firefox "1 3"
     escape
     expect "Escape in the history clears the field" '-' hidden
+    # What is typed next arrives whole (the selection of the recalled search must not swallow it).
+    typed ab
+    expect "typing after Escape in the history" ab hidden
+    escape
+    expect "Escape clears what was typed" '-' hidden
     close_launcher
     open_launcher
     press Up

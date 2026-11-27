@@ -215,6 +215,30 @@ if [ "$ENABLE" = 1 ]; then
     escape
     wait_count 'closed' $((CLOSED + 1)) || fail "the launcher did not close after re-enabling"
 
+    # The style follows the session while it runs: dark, light, then dark again (the shell reloads
+    # an extension's stylesheet only if its name says which style it is for).
+    panel_bg() {
+        shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-panel')) { const c = a.get_theme_node().get_background_color(); return (c.red + c.green + c.blue > 382 ? 'light' : 'dark') + ' ' + [c.red, c.green, c.blue, c.alpha].join(','); } for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
+    }
+    style_now() { # style_now <color-scheme>: the style Luciole's window shows under it
+        gsettings set org.gnome.desktop.interface color-scheme "$1" >/dev/null 2>&1
+        sleep 0.8
+        OPENED=$(count opened)
+        combo
+        wait_count 'opened' $((OPENED + 1)) || fail "style: the launcher did not open"
+        sleep 0.3
+        STYLE=$(panel_bg)
+        CLOSED=$(count closed)
+        escape
+        wait_count 'closed' $((CLOSED + 1)) || fail "style: the launcher did not close"
+        echo "$STYLE"
+    }
+    S1=$(style_now prefer-dark); case "$S1" in dark\ *) ;; *) fail "style: not dark in the dark style ($S1)" ;; esac
+    S2=$(style_now prefer-light); case "$S2" in light\ *) ;; *) fail "style: not light after switching to the light style ($S2)" ;; esac
+    S3=$(style_now prefer-dark); case "$S3" in dark\ *) ;; *) fail "style: still light after switching back to the dark style ($S3)" ;; esac
+    gsettings reset org.gnome.desktop.interface color-scheme >/dev/null 2>&1
+    echo "style: follows dark, light and dark again while the session runs"
+
     # Screen lock: an open launcher closes, and the shortcut does nothing while locked.
     LOCK_HINT_BEFORE=$(busctl get-property org.freedesktop.login1 /org/freedesktop/login1/session/auto \
         org.freedesktop.login1.Session LockedHint 2>&1)

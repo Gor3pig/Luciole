@@ -66,6 +66,12 @@
    "label": "in the list of recent items the up arrow brings a search back",
    "old": "(entry.get_text() === '' && this.#selectedIndex() <= 0)",
    "new": "entry.get_text() === ''"
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "Escape leaves the selection of a remembered search behind",
+   "old": "                entry.set_text('');\n                text.set_selection(0, 0);\n                text.set_cursor_position(-1);",
+   "new": "                entry.set_text('');"
   }
  ]
 }

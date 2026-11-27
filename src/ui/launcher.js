@@ -1091,11 +1091,16 @@ export class Launcher {
         overlay.connect('key-press-event', (_actor, event) => {
             if (event.get_key_symbol() !== Clutter.KEY_Escape)
                 return Clutter.EVENT_PROPAGATE;
-            // Escape clears the text first, then closes.
-            if (entry.get_text() !== '')
+            // Escape clears the text first, then closes. A selection (a remembered search is
+            // brought back selected) is dropped too: left behind on the empty field, it would hide
+            // the cursor and swallow the next key typed.
+            if (entry.get_text() !== '') {
                 entry.set_text('');
-            else
+                text.set_selection(0, 0);
+                text.set_cursor_position(-1);
+            } else {
                 this.close();
+            }
             return Clutter.EVENT_STOP;
         });
 

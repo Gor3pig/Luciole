@@ -19,7 +19,7 @@ make pack >/dev/null 2>&1 || { echo "FAIL: make pack failed"; exit 1; }
 FILES=$(unzip -Z1 "$ZIP" | grep -v '/$' | sort)
 
 fail=0
-for needed in metadata.json extension.js prefs.js stylesheet.css stylesheet-dark.css \
+for needed in metadata.json extension.js prefs.js stylesheet.css stylesheet-dark.css stylesheet-light.css \
     luciole-128x128.png schemas/org.gnome.shell.extensions.luciole.gschema.xml locale/fr/LC_MESSAGES/luciole.mo \
     locale/en/LC_MESSAGES/luciole.mo core/session.js ui/launcher.js providers/files.js shell/compat.js; do
     echo "$FILES" | grep -qx "$needed" || { echo "FAIL: $needed is missing from the package"; fail=1; }

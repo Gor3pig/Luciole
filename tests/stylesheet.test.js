@@ -107,3 +107,10 @@ test('in both themes the window is not dimmed unless the backdrop option asks fo
         assertEquals(declared(css, '.luciole-backdrop-standard', 'background-color'), 'rgba(0, 0, 0, 0.5)', `${name}: standard`);
     }
 });
+
+test('the light stylesheet is also given under its own name, unchanged', () => {
+    // GNOME Shell reloads an extension's stylesheet when the style changes only if its file name
+    // says which style it is for: without stylesheet-light.css, it would stay light after the
+    // session went back to dark. stylesheet.css stays as what the shell falls back to.
+    assertEquals(readSource('stylesheet-light.css'), readSource('stylesheet.css'));
+});

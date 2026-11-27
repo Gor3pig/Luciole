@@ -2009,6 +2009,12 @@
    "label": "the symbol of a unit is never translated",
    "old": "            result: `${output} ${symbol(to.symbol)}`,",
    "new": "            result: `${output} ${to.symbol}`,"
+  },
+  {
+   "file": "src/stylesheet-light.css",
+   "label": "the light stylesheet under its own name drifts from stylesheet.css",
+   "old": ".luciole-row-content {\n    spacing: 12px;",
+   "new": ".luciole-row-content {\n    spacing: 10px;"
   }
  ]
 }
