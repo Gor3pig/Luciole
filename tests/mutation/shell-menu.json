@@ -1,5 +1,5 @@
 {
- "description": "Mutants for the menu of actions in the live launcher (GNOME's own menu: moving in it, Escape and the clicks are GNOME's, not listed). Not listed because GNOME does it too: giving the keyboard back to the field when the menu closes (the shell's modal stack restores it first). Not listed because equivalent or out of reach: the staleness check of an answer (the gap between asking and the answer is too short to close the window inside it, in a test), and forgetting the menu when closing (opening forgets it too). Not listed because it cannot be provoked in a live shell: a copy that fails (the clipboard always works there); it is covered by the unit tests of the controller. Also not listed because equivalent: the guard on Enter during the confirmation (a field that is not editable does not send Enter at all). Each mutant runs only the part of tests/shell/files.sh that covers it (FILES_PARTS); the whole script runs in the gate. A preview already on screen is noticed twice (its Visible state read after ShowFile, and its window at the timeout): the mutant removes both.",
+ "description": "Mutants for the menu of actions in the live launcher (GNOME's own menu: moving in it, Escape and the clicks are GNOME's, not listed). Not listed because GNOME does it too: giving the keyboard back to the field when the menu closes (the shell's modal stack restores it first). Not listed because equivalent or out of reach: the staleness check of an answer (the gap between asking and the answer is too short to close the window inside it, in a test), and forgetting the menu when closing (opening forgets it too). Not listed because it cannot be provoked in a live shell: a copy that fails (the clipboard always works there); it is covered by the unit tests of the controller. Also not listed because equivalent: the guard on Enter during the confirmation (a field that is not editable does not send Enter at all). Each mutant runs only the part of tests/shell/files.sh that covers it (FILES_PARTS); the whole script runs in the gate. A preview already on screen is noticed twice (its Visible state read after ShowFile, and its window at the timeout): the mutant removes both. Not listed because it cannot be provoked: typing leaving the menu (GNOME's menu holds the keyboard while it is open; the call stays for text typed while a chosen action is still running).",
  "slow": true,
  "timeout": 400,
  "command": [
@@ -21,18 +21,6 @@
   },
   {
    "file": "src/ui/launcher.js",
-   "label": "typing does not leave the menu",
-   "old": "            // What is typed changes the search: the menu of the old result goes away.\n            this.#closeMenu();",
-   "new": "            // What is typed changes the search: the menu of the old result goes away.",
-   "command": [
-    "env",
-    "FILES_PARTS=menu",
-    "sh",
-    "tests/shell/files.sh"
-   ]
-  },
-  {
-   "file": "src/ui/launcher.js",
    "label": "the results do not come back after the menu",
    "old": "        this.#menuBox.hide();\n        this.#view.actor.show();",
    "new": "        this.#menuBox.hide();",
@@ -45,12 +33,12 @@
   },
   {
    "file": "src/ui/launcher.js",
-   "label": "the results stay shown behind the menu",
+   "label": "the results stay shown behind the confirmation",
    "old": "        this.#view.actor.hide();\n        this.#menuBox.show();",
    "new": "        this.#menuBox.show();",
    "command": [
     "env",
-    "FILES_PARTS=menu",
+    "FILES_PARTS=calc",
     "sh",
     "tests/shell/files.sh"
    ]

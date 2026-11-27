@@ -555,6 +555,7 @@ CLOSED_CALC=$(launcher_closed_count)
 press Return
 sleep 0.1
 [ "$(confirmation_shown)" = yes ] || fail "calculator: no confirmation after Enter on the answer"
+[ "$(results_visible)" = false ] || fail "calculator: the results are still shown behind the confirmation"
 [ "$(clipboard_text)" = "8" ] || fail "calculator: the clipboard holds '$(clipboard_text)', expected 8"
 wait_log "[Luciole] closed" $((CLOSED_CALC + 1)) || fail "calculator: the window did not close after the confirmation"
 echo "ok: a calculation is answered first; Enter copies the answer, confirms, then closes"
