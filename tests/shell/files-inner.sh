@@ -754,8 +754,17 @@ i=0; while [ "$i" -lt 20 ]; do set -- $(result_row_center 1); [ "$#" = 2 ] && br
 SECOND=$(shell_eval "(function() { const rows = []; (function walk(a) { if (a.style_class === 'luciole-row' && a.visible) rows.push(a); a.get_children().forEach(walk); })(global.stage); return rows[1] ? rows[1].get_accessible_name?.() ?? '' : ''; })()")
 [ -n "$SECOND" ] || fail "right click: the second row has no name"
 pointer "$1" "$2"
-send rclick
-sleep 0.6
+# A click that lands while the list is redrawn (the files arrive after the applications) is lost:
+# up to three tries, the row's place read again each time.
+tries=0
+while [ "$tries" -lt 3 ]; do
+    send rclick
+    i=0; while [ "$i" -lt 10 ] && [ "$(menu_state)" = hidden ]; do sleep 0.1; i=$((i + 1)); done
+    [ "$(menu_state)" != hidden ] && break
+    tries=$((tries + 1))
+    set -- $(result_row_center 1)
+    [ "$#" = 2 ] && pointer "$1" "$2"
+done
 [ "$(menu_state)" != hidden ] || fail "right click: no menu of actions"
 TITLE=$(menu_title)
 [ "$TITLE" != none ] && [ -n "$TITLE" ] || fail "right click: the menu has no title"
