@@ -906,6 +906,7 @@ clear_entry 8
 typed rapport
 wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
 rm -f "$TERMINAL_RECORD"
+CLOSED_TERM=$(launcher_closed_count)
 sleep 0.3
 chord Control_L+k
 wait_menu || fail "terminal: Ctrl+K did not open the menu"
@@ -916,11 +917,10 @@ press Return
 i=0; while [ ! -s "$TERMINAL_RECORD" ] && [ "$i" -lt 50 ]; do sleep 0.1; i=$((i + 1)); done
 [ "$(cat "$TERMINAL_RECORD" 2>/dev/null)" = "$(printf -- '--new-window\n--working-directory=%s' "$WORK/docs")" ] ||
     fail "terminal: the terminal was asked '$(cat "$TERMINAL_RECORD" 2>/dev/null)'"
-echo "ok: a terminal opens in the file's folder, its folder given as one argument"
+wait_log "[Luciole] closed" $((CLOSED_TERM + 1)) || fail "terminal: the window did not close once the terminal was asked for"
+echo "ok: a terminal opens in the file's folder, its folder given as one argument, and the window closes"
 sleep 0.4
-OPENED_NOW=$(grep -cF "[Luciole] opened" "$LOG")
-CLOSED_NOW=$(grep -cF "[Luciole] closed" "$LOG")
-[ $((OPENED_NOW - CLOSED_NOW)) = 0 ] && reopen_launcher
+reopen_launcher
 clear_entry 8
 
 # Under the pointer a row takes a light tint, unlike the chosen one; the chosen one under the pointer
