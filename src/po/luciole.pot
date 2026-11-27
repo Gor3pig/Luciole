@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-27 09:20+0100\n"
+"POT-Creation-Date: 2026-11-27 13:17+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -57,7 +57,7 @@ msgstr ""
 msgid "Text"
 msgstr ""
 
-#: src/core/type-filter.js
+#: src/core/type-filter.js src/prefs.js src/providers/files.js
 msgid "Folders"
 msgstr ""
 
@@ -322,15 +322,11 @@ msgid "Show in Folder"
 msgstr ""
 
 #: src/providers/files-query.js
+msgid "Show in Parent Folder"
+msgstr ""
+
+#: src/providers/files-query.js
 msgid "Ctrl+Enter"
-msgstr ""
-
-#: src/providers/files-query.js
-msgid "Preview"
-msgstr ""
-
-#: src/providers/files-query.js
-msgid "Space"
 msgstr ""
 
 #: src/providers/files-query.js
@@ -351,6 +347,14 @@ msgstr ""
 
 #: src/providers/files-query.js
 msgid "Open With…"
+msgstr ""
+
+#: src/providers/files-query.js
+msgid "Preview"
+msgstr ""
+
+#: src/providers/files-query.js
+msgid "Space"
 msgstr ""
 
 #: src/providers/files-query.js

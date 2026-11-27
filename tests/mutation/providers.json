@@ -225,14 +225,14 @@
   {
    "file": "src/providers/files.js",
    "label": "results not ordered",
-   "old": "ORDER BY DESC(?rank)\nLIMIT 40`;",
-   "new": "LIMIT 40`;"
+   "old": "    FILTER NOT EXISTS { ?folder nie:isStoredAs ?f ; a nfo:Folder }\n}\nORDER BY DESC(?rank)\nLIMIT 40`;",
+   "new": "    FILTER NOT EXISTS { ?folder nie:isStoredAs ?f ; a nfo:Folder }\n}\nLIMIT 40`;"
   },
   {
    "file": "src/providers/files.js",
    "label": "limit of one",
-   "old": "LIMIT 40`",
-   "new": "LIMIT 1`"
+   "old": "    FILTER NOT EXISTS { ?folder nie:isStoredAs ?f ; a nfo:Folder }\n}\nORDER BY DESC(?rank)\nLIMIT 40`",
+   "new": "    FILTER NOT EXISTS { ?folder nie:isStoredAs ?f ; a nfo:Folder }\n}\nORDER BY DESC(?rank)\nLIMIT 1`"
   },
   {
    "file": "src/providers/files.js",
@@ -347,6 +347,72 @@
    "label": "Open With lists applications for a file no longer there",
    "old": "        if (!await this.#exists(url, this.#lifetime))\n            return [];\n        return openWithActions(",
    "new": "        return openWithActions("
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "Files lists folders too",
+   "old": "       fts:match ~terms .\n    FILTER NOT EXISTS { ?folder nie:isStoredAs ?f ; a nfo:Folder }\n}",
+   "new": "       fts:match ~terms .\n}"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "Folders lists files too",
+   "old": "    ?folder nie:isStoredAs ?f ; a nfo:Folder .\n}",
+   "new": "}"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "a folder found by type is not known as a folder",
+   "old": "                        folder: folders || (typed && cursor.is_bound(4) && cursor.get_string(4)[0] === 'inode/directory'),",
+   "new": "                        folder: folders,"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "Folders answers a search of one type of file",
+   "old": "        if (typeFilter !== null && this.#kind === 'folders')\n            return [];\n",
+   "new": ""
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "the Folders source calls itself Files",
+   "old": "        return this.#kind === 'folders' ? _('Folders') : _('Files');",
+   "new": "        return _('Files');"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "folders come before files",
+   "old": "        return this.#kind === 'folders' ? 22 : 20;",
+   "new": "        return this.#kind === 'folders' ? 18 : 20;"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "a folder has a file icon",
+   "old": "            icon: folder ? FOLDER_ICON : iconFor(row.name),",
+   "new": "            icon: iconFor(row.name),"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "a folder is offered a preview",
+   "old": "            previewable: !folder && isLocalFileUri(row.url),",
+   "new": "            previewable: isLocalFileUri(row.url),"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "a folder has the actions of a file",
+   "old": "    if (folder) {\n        return [",
+   "new": "    if (false) {\n        return ["
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "a folder is remembered as a file",
+   "old": "            frecencyKey: `${source}:${row.url}`,",
+   "new": "            frecencyKey: `files:${row.url}`,"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "a folder is given a file's actions by its source",
+   "old": "        return fileActionList(result.data?.url, this.#gettext, {folder: result.data?.folder === true});",
+   "new": "        return fileActionList(result.data?.url, this.#gettext);"
   }
  ]
 }

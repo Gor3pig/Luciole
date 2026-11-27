@@ -116,9 +116,10 @@ export function isExcludedType(name, types) {
  * @param {string[]} [options.excludedFolders]
  * @param {string[]} [options.excludedTypes]
  * @param {(name: string) => unknown} [options.iconFor]
+ * @param {string} [options.source] - the source's id, for what it remembers of a result
  * @returns {import('../core/provider.js').Result[]}
  */
-export function rowsToResults(rows, {home, excludedFolders = [], excludedTypes = [], iconFor = () => undefined}) {
+export function rowsToResults(rows, {home, excludedFolders = [], excludedTypes = [], iconFor = () => undefined, source = 'files'}) {
     const kept = rows.filter(row =>
         row.url && row.name &&
         !isExcluded(row.url, excludedFolders, home) &&
@@ -130,23 +131,26 @@ export function rowsToResults(rows, {home, excludedFolders = [], excludedTypes =
         if (seen.has(row.url))
             continue;
         seen.add(row.url);
+        const folder = row.folder === true;
         results.push({
             id: row.url,
             title: row.name,
             subtitle: displayFolder(row.url, home),
-            icon: iconFor(row.name),
+            icon: folder ? FOLDER_ICON : iconFor(row.name),
             providerScore: best > 0 ? row.rank / best : 1,
-            frecencyKey: `files:${row.url}`,
+            frecencyKey: `${source}:${row.url}`,
             dedupeKey: row.url,
-            data: {url: row.url, parentUrl: parentUrl(row.url)},
-            // A local file can be shown in GNOME's previewer.
-            previewable: isLocalFileUri(row.url),
+            data: {url: row.url, parentUrl: parentUrl(row.url), folder},
+            // A local file can be shown in GNOME's previewer; a folder is opened instead.
+            previewable: !folder && isLocalFileUri(row.url),
         });
     }
     return results;
 }
 
 export const OPEN_WITH_PREFIX = 'open-with:';
+// The theme's icon for a folder, as Files shows it.
+export const FOLDER_ICON = 'folder';
 const MAX_OPEN_WITH = 12;
 
 /** The last part of a path or an address, decoded: "file:///a/b%20c.odt" -> "b c.odt". */
@@ -156,16 +160,26 @@ export function baseName(url) {
 }
 
 /**
- * The actions offered for a file, besides "Open" (which every result has). Only a local file has
- * any: nothing else can be copied as a path or handed to an application.
+ * The actions offered for a file or a folder, besides "Open" (which every result has). Only a local
+ * one has any: nothing else can be copied as a path or handed to an application. A folder is not
+ * previewed (it is opened), and is shown in the folder that holds it.
  *
  * @param {string} url
  * @param {(text: string) => string} gettext
+ * @param {{folder?: boolean}} [options]
  */
-export function fileActionList(url, gettext) {
+export function fileActionList(url, gettext, {folder = false} = {}) {
     if (!isLocalFileUri(url))
         return [];
     const _ = gettext;
+    if (folder) {
+        return [
+            {id: 'open-folder', label: _('Show in Parent Folder'), hint: _('Ctrl+Enter')},
+            {id: 'copy-path', label: _('Copy Path'), copy: pathOfUrl(url), confirmation: _('Path copied')},
+            {id: 'copy-name', label: _('Copy Name'), copy: baseName(url), confirmation: _('Name copied')},
+            {id: 'open-with', label: _('Open With…'), submenu: true},
+        ];
+    }
     return [
         {id: 'open-folder', label: _('Show in Folder'), hint: _('Ctrl+Enter')},
         {id: 'preview', label: _('Preview'), hint: _('Space')},

@@ -102,9 +102,19 @@ test('rows become results with a relevance rescaled to the best row', () => {
         id: 'file:///home/me/Documents/a.odt', title: 'a.odt', subtitle: '~/Documents', icon: undefined,
         providerScore: 1, frecencyKey: 'files:file:///home/me/Documents/a.odt',
         dedupeKey: 'file:///home/me/Documents/a.odt',
-        data: {url: 'file:///home/me/Documents/a.odt', parentUrl: 'file:///home/me/Documents'},
+        data: {url: 'file:///home/me/Documents/a.odt', parentUrl: 'file:///home/me/Documents', folder: false},
         previewable: true,
     });
+});
+
+test('a folder has the folder icon, is not previewed, and is remembered under its own source', () => {
+    const [folder] = rowsToResults([{...row('Compta', 5), folder: true}], {home: HOME, iconFor: () => 'text-x-generic', source: 'folders'});
+    assertEquals(folder.icon, 'folder');
+    assertEquals(folder.previewable, false);
+    assertEquals(folder.data.folder, true);
+    assertEquals(folder.frecencyKey, 'folders:file:///home/me/Documents/Compta');
+    const [file] = rowsToResults([row('a.odt', 5)], {home: HOME, iconFor: () => 'text-x-generic'});
+    assertEquals([file.icon, file.previewable, file.data.folder], ['text-x-generic', true, false]);
 });
 
 test('excluded rows and rows without a url or a name are dropped', () => {
@@ -158,6 +168,15 @@ test('a local file has the file actions, in this order, each with what it needs'
     assertEquals(actions[3].confirmation, 'Name copied');
     assert(actions[4].submenu === true, 'Open With leads to a submenu');
     assert(!('copy' in actions[0]) && !('copy' in actions[1]) && !('copy' in actions[4]), 'only the two copy actions copy');
+});
+
+test('a folder has the folder actions: shown in the folder that holds it, never previewed', () => {
+    const actions = fileActionList('file:///home/me/Documents/Compta', echo, {folder: true});
+    assertEquals(actions.map(action => action.id), ['open-folder', 'copy-path', 'copy-name', 'open-with']);
+    assertEquals(actions[0].label, 'Show in Parent Folder');
+    assertEquals(actions[0].hint, 'Ctrl+Enter');
+    assertEquals(actions[1].copy, '/home/me/Documents/Compta');
+    assertEquals(actions[2].copy, 'Compta');
 });
 
 test('the labels are translated', () => {

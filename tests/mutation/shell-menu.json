@@ -792,6 +792,18 @@
     "sh",
     "tests/shell/files.sh"
    ]
+  },
+  {
+   "file": "src/extension.js",
+   "label": "the Folders source is not registered",
+   "old": "        registry.register('folders', () => new FilesProvider({kind: 'folders'}));\n",
+   "new": "",
+   "command": [
+    "env",
+    "FILES_PARTS=folders",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   }
  ]
 }

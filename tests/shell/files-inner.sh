@@ -204,21 +204,21 @@ fresh_start
 typed factu
 wait_last 'results: 2 first=Facture Express query=factu' || fail "categories: the application and the file were not found (last: $(last_results))"
 
-[ "$(chip_info)" = "5 0" ] || fail "categories: expected 3 chips with the first checked, got '$(chip_info)'"
+[ "$(chip_info)" = "6 0" ] || fail "categories: expected 6 chips with the first checked, got '$(chip_info)'"
 echo "ok: the chips are there (All, Applications, Files, Calculator, System), All is chosen"
 chord Control_L+2
 wait_last 'results: 1 first=Facture m.* query=factu' || fail "Ctrl+2 did not restrict to files (last: $(last_results))"
-[ "$(chip_info)" = "5 2" ] || fail "Ctrl+2 did not check the Files chip ('$(chip_info)')"
+[ "$(chip_info)" = "6 2" ] || fail "Ctrl+2 did not check the Files chip ('$(chip_info)')"
 chord Control_L+1
 wait_last 'results: 1 first=Facture Express query=factu' || fail "Ctrl+1 did not restrict to applications (last: $(last_results))"
-[ "$(chip_info)" = "5 1" ] || fail "Ctrl+1 did not check the Applications chip ('$(chip_info)')"
+[ "$(chip_info)" = "6 1" ] || fail "Ctrl+1 did not check the Applications chip ('$(chip_info)')"
 chord Control_L+0
 wait_last 'results: 2 first=Facture Express query=factu' || fail "Ctrl+0 did not bring everything back (last: $(last_results))"
-[ "$(chip_info)" = "5 0" ] || fail "Ctrl+0 did not check the All chip ('$(chip_info)')"
+[ "$(chip_info)" = "6 0" ] || fail "Ctrl+0 did not check the All chip ('$(chip_info)')"
 echo "ok: Ctrl+2 files only, Ctrl+1 applications only, Ctrl+0 everything"
-chord Control_L+5
+chord Control_L+6
 sleep 0.4
-[ "$(chip_info)" = "5 0" ] || fail "Ctrl+5 changed the category although there is no fifth source ('$(chip_info)')"
+[ "$(chip_info)" = "6 0" ] || fail "Ctrl+6 changed the category although there is no sixth source ('$(chip_info)')"
 [ "$(wc -l <"$WORK/closed-count" 2>/dev/null || echo 0)" = 0 ] || true
 echo "ok: a digit with no source behind it does nothing"
 
@@ -228,7 +228,7 @@ pointer "$1" "$2"
 sleep 0.3
 click
 wait_last 'results: 1 first=Facture m.* query=factu' || fail "a click on the Files chip did not restrict to files (last: $(last_results))"
-[ "$(chip_info)" = "5 2" ] || fail "the click did not check the Files chip ('$(chip_info)')"
+[ "$(chip_info)" = "6 2" ] || fail "the click did not check the Files chip ('$(chip_info)')"
 [ "$(grep -cF "[Luciole] closed" "$LOG")" = "$CLOSED_BEFORE" ] || fail "a click on a chip closed the launcher"
 typed ab
 sleep 0.3
@@ -256,7 +256,7 @@ sleep 0.4
 combo
 wait_log "[Luciole] opened" 2 || fail "the launcher did not reopen"
 sleep 0.4
-[ "$(chip_info)" = "5 0" ] || fail "reopening did not start on All ('$(chip_info)')"
+[ "$(chip_info)" = "6 0" ] || fail "reopening did not start on All ('$(chip_info)')"
 [ "$(empty_hint_shown)" = false ] || fail "the hint shows on a fresh opening"
 echo "ok: reopening starts on All"
 typed quok
@@ -284,10 +284,10 @@ chord Control_L+0
 sleep 0.3
 send "code Control_L+3"
 sleep 0.5
-[ "$(chip_info)" = "5 2" ] || fail "Ctrl and the key in the position of 2 did not choose Files on a French keyboard ('$(chip_info)')"
+[ "$(chip_info)" = "6 2" ] || fail "Ctrl and the key in the position of 2 did not choose Files on a French keyboard ('$(chip_info)')"
 send "code Control_L+2"
 sleep 0.5
-[ "$(chip_info)" = "5 1" ] || fail "Ctrl and the key in the position of 1 did not choose Applications on a French keyboard ('$(chip_info)')"
+[ "$(chip_info)" = "6 1" ] || fail "Ctrl and the key in the position of 1 did not choose Applications on a French keyboard ('$(chip_info)')"
 echo "ok: on a French keyboard the shortcuts are the digit-row keys, whatever they type"
 gsettings reset org.gnome.desktop.input-sources sources
 chord Control_L+0
@@ -334,9 +334,9 @@ sleep 0.4
 reopen_launcher
 typed "wifi"
 wait_last 'results: 1 first=Wi-Fi query=wifi' || fail "the Wi-Fi panel was not found (last: $(last_results))"
-chord Control_L+4
+chord Control_L+5
 sleep 0.5
-[ "$(chip_info)" = "5 4" ] || fail "Ctrl+4 did not check the System chip ('$(chip_info)')"
+[ "$(chip_info)" = "6 5" ] || fail "Ctrl+5 did not check the System chip ('$(chip_info)')"
 wait_last 'results: 1 first=Wi-Fi query=wifi' || fail "the System category lost the panel (last: $(last_results))"
 chord Control_L+0
 clear_entry 4
@@ -492,7 +492,7 @@ press Return
 sleep 0.6
 [ "$(type_label)" = PDF ] || fail "type filter: choosing PDF did not put the label in the field ('$(type_label)')"
 [ "$(entry_text_length)" = 0 ] || fail "type filter: the field should hold only the words ($(entry_text_length) characters)"
-[ "$(chip_info)" = "5 2" ] || fail "type filter: the Files category was not chosen with the type ('$(chip_info)')"
+[ "$(chip_info)" = "6 2" ] || fail "type filter: the Files category was not chosen with the type ('$(chip_info)')"
 typed quok
 wait_last 'results: 0 first=- query=/pdf quok' || fail "type filter: /pdf quok should find nothing: the quokka files are images and documents (last: $(last_results))"
 clear_entry 4
@@ -504,7 +504,7 @@ sleep 0.3
 press BackSpace
 sleep 0.5
 [ "$(type_label)" = hidden ] || fail "type filter: Backspace at the start did not take the type away ('$(type_label)')"
-[ "$(chip_info)" = "5 0" ] || fail "type filter: the category did not come back to All ('$(chip_info)')"
+[ "$(chip_info)" = "6 0" ] || fail "type filter: the category did not come back to All ('$(chip_info)')"
 typed "/images quok"
 wait_last 'results: 1 first=quokka-photo.png query=/images quok' || fail "type filter: typing /images quok did not find only the image (last: $(last_results))"
 [ "$(type_label)" = Images ] || fail "type filter: typing '/images ' did not make the label ('$(type_label)')"
@@ -541,7 +541,7 @@ wait_last 'results: 1 first=Facture mars.pdf query=/pdf facture' || fail "type f
 chord Control_L+1
 sleep 0.6
 [ "$(type_label)" = hidden ] || fail "type filter: choosing Applications kept the PDF label"
-[ "$(chip_info)" = "5 1" ] || fail "type filter: the Applications chip is not the chosen one ('$(chip_info)')"
+[ "$(chip_info)" = "6 1" ] || fail "type filter: the Applications chip is not the chosen one ('$(chip_info)')"
 wait_last 'results: 1 first=Facture Express query=facture$' || fail "type filter: Applications should search 'facture' among applications (last: $(last_results))"
 chord Control_L+0
 sleep 0.4
@@ -633,10 +633,10 @@ sleep 0.4
 reopen_launcher
 typed "2+2"
 wait_last 'results: 1 first=4 query=2\+2' || fail "no answer for 2+2 (last: $(last_results))"
-chord Control_L+3
+chord Control_L+4
 sleep 0.5
 wait_last 'results: 1 first=4 query=2\+2' || fail "the Calculator category lost the answer"
-[ "$(chip_info)" = "5 3" ] || fail "Ctrl+3 did not check the Calculator chip ('$(chip_info)')"
+[ "$(chip_info)" = "6 4" ] || fail "Ctrl+4 did not check the Calculator chip ('$(chip_info)')"
 chord Control_L+1
 sleep 0.3
 wait_last 'results: 0 first=- query=2\+2' || fail "applications only should not answer a calculation (last: $(last_results))"
@@ -646,6 +646,47 @@ typed "2026-11-26"
 wait_last 'results: 0 first=- query=2026-11-26' || fail "a date was taken for a calculation (last: $(last_results))"
 echo "ok: the Calculator category, and a date is left alone"
 clear_entry 10
+sleep 0.3
+fi
+
+if part folders; then
+fresh_start
+# Folders: a section and a category of their own, the folder icon, their own menu, no preview.
+# section_titles: the headings of the list, in order; row_icons: each row's icon name.
+section_titles() {
+    shell_eval "(function() { const t = []; (function w(a) { if ((a.style_class || '') === 'luciole-section-title' && a.visible) t.push(a.text); a.get_children().forEach(w); })(global.stage); return t.join(';'); })()"
+}
+row_icons() {
+    shell_eval "(function() { const t = []; (function w(a) { if ((a.style_class || '') === 'luciole-row-icon' && a.mapped) t.push(a.icon_name || (a.gicon ? a.gicon.to_string() : '?')); a.get_children().forEach(w); })(global.stage); return t.join(';'); })()"
+}
+clear_entry 8
+typed pinson
+wait_last 'results: 3 first=.*query=pinson' || fail "folders: expected the two folders and the file (last: $(last_results))"
+case ";$(section_titles);" in *";Dossiers;"*) ;; *) fail "folders: no section of their own ('$(section_titles)')" ;; esac
+case "$(row_icons)" in *folder*) ;; *) fail "folders: no row has the folder icon ('$(row_icons)')" ;; esac
+grep -F '[Luciole] results:' "$LOG" | tail -n 1 | grep -q 'pinsonnet-cache' && fail "folders: a hidden folder was listed"
+echo "ok: folders have a section of their own ($(section_titles)) and the folder icon"
+chord Control_L+3
+wait_last 'results: 2 first=Pinsonnet.* query=pinson' || fail "folders: Ctrl+3 did not keep the folders only (last: $(last_results))"
+[ "$(chip_info)" = "6 3" ] || fail "folders: Ctrl+3 did not check the Folders chip ('$(chip_info)')"
+echo "ok: Ctrl+3 searches folders only"
+chord Control_L+k
+wait_menu || fail "folders: Ctrl+K did not open the menu of a folder"
+case "$(menu_state)" in *"Afficher dans le dossier parent"*) ;; *) fail "folders: the menu of a folder does not show it in its parent folder ('$(menu_state)')" ;; esac
+case "$(menu_state)" in *"Aperçu"*) fail "folders: a folder offers a preview ('$(menu_state)')" ;; esac
+escape
+sleep 0.4
+LENGTH=$(entry_text_length)
+HIDDEN=$(grep -cF "hidden for the preview" "$LOG")
+press Down
+press Up
+typed " "
+sleep 0.6
+[ "$(grep -cF "hidden for the preview" "$LOG")" = "$HIDDEN" ] || fail "folders: Space on a folder tried to preview it"
+[ "$(entry_text_length)" = $((LENGTH + 1)) ] || fail "folders: the space typed on a folder did not reach the field"
+echo "ok: a folder has its own menu, and Space on it types a space"
+chord Control_L+0
+clear_entry 8
 sleep 0.3
 fi
 

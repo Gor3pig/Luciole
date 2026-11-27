@@ -20,7 +20,22 @@ WHERE {
        nie:url ?url ;
        nfo:fileName ?name ;
        nfo:fileLastModified ?modified ;
-       fts:match ~terms
+       fts:match ~terms .
+    FILTER NOT EXISTS { ?folder nie:isStoredAs ?f ; a nfo:Folder }
+}
+ORDER BY DESC(?rank)
+LIMIT 40`;
+
+// The same for folders only: the index keeps a folder as a file whose content is an nfo:Folder.
+const FOLDERS_QUERY = `
+SELECT ?url ?name ?modified (fts:rank(?f) AS ?rank)
+WHERE {
+    ?f a nfo:FileDataObject ;
+       nie:url ?url ;
+       nfo:fileName ?name ;
+       nfo:fileLastModified ?modified ;
+       fts:match ~terms .
+    ?folder nie:isStoredAs ?f ; a nfo:Folder .
 }
 ORDER BY DESC(?rank)
 LIMIT 40`;
@@ -134,11 +149,11 @@ function openUri(uri, cancellable) {
  *
  * @returns {Promise<Array<{url: string, name: string, modified: string, rank: number}>>}
  */
-function runQuery(connection, terms, cancellable, {typed = false} = {}) {
+function runQuery(connection, terms, cancellable, {typed = false, folders = false} = {}) {
     return new Promise((resolve, reject) => {
         let statement;
         try {
-            statement = connection.query_statement(typed ? TYPED_QUERY : QUERY, null);
+            statement = connection.query_statement(typed ? TYPED_QUERY : folders ? FOLDERS_QUERY : QUERY, null);
             statement.bind_string('terms', terms);
         } catch (error) {
             reject(error);
@@ -176,6 +191,8 @@ function runQuery(connection, terms, cancellable, {typed = false} = {}) {
                         modified: cursor.get_string(2)[0],
                         rank: cursor.get_double(3),
                         ...(typed ? {mime: cursor.is_bound(4) ? cursor.get_string(4)[0] : null} : {}),
+                        // A folder: found by the folders' query, or known by its type.
+                        folder: folders || (typed && cursor.is_bound(4) && cursor.get_string(4)[0] === 'inode/directory'),
                     });
                     readNext();
                 } catch (error) {
@@ -233,17 +250,21 @@ export class FilesProvider extends Provider {
     // still holds a cursor (or is about to query) crashes the process or hangs it, so
     // destroy() waits for them all.
     #running = new Set();
+    // 'files', or 'folders': the same index, the folders in a source of their own.
+    #kind;
 
     /**
      * @param {object} [options]
+     * @param {'files' | 'folders'} [options.kind] - which of the two this source lists
      * @param {(cancellable: Gio.Cancellable) => Promise<object>} [options.openConnection] - for tests
      * @param {(uri: string, cancellable: Gio.Cancellable) => Promise<void>} [options.openUri] - for tests
      * @param {(uri: string, cancellable: Gio.Cancellable) => Promise<boolean>} [options.exists] - for tests
      * @param {(uri: string, cancellable: Gio.Cancellable) => Promise<Array<{id: string, name: string, isDefault: boolean, launch: (uri: string) => void}>>} [options.appsFor] - for tests
      * @param {(uri: string, cancellable: Gio.Cancellable) => Promise<void>} [options.showItem] - for tests
      */
-    constructor({openConnection = openLocalSearch, openUri: open = openUri, exists = uriExists, appsFor = appsForUri, showItem = showItemInFolder} = {}) {
+    constructor({kind = 'files', openConnection = openLocalSearch, openUri: open = openUri, exists = uriExists, appsFor = appsForUri, showItem = showItemInFolder} = {}) {
         super();
+        this.#kind = kind === 'folders' ? 'folders' : 'files';
         this.#openConnection = openConnection;
         this.#open = open;
         this.#exists = exists;
@@ -252,16 +273,17 @@ export class FilesProvider extends Provider {
     }
 
     get id() {
-        return 'files';
+        return this.#kind;
     }
 
     get name() {
         const _ = this.#gettext ?? (text => text);
-        return _('Files');
+        return this.#kind === 'folders' ? _('Folders') : _('Files');
     }
 
+    // Folders come right after files.
     get priority() {
-        return 20;
+        return this.#kind === 'folders' ? 22 : 20;
     }
 
     // A file that matches as well as an application is less likely to be what
@@ -326,7 +348,11 @@ export class FilesProvider extends Provider {
         if (!connection || this.#destroyed || cancellable.is_cancelled())
             return [];
 
-        let rows = await runQuery(connection, terms, cancellable, {typed: typeFilter !== null});
+        // A type of file ("/pdf", "/folders") is a search of Files alone: folders are in it when
+        // asked for.
+        if (typeFilter !== null && this.#kind === 'folders')
+            return [];
+        let rows = await runQuery(connection, terms, cancellable, {typed: typeFilter !== null, folders: this.#kind === 'folders'});
         if (typeFilter !== null)
             rows = keepType(rows, typeFilter);
         return rowsToResults(rows, {
@@ -334,6 +360,7 @@ export class FilesProvider extends Provider {
             excludedFolders: this.#settings.get_strv('excluded-folders'),
             excludedTypes: this.#settings.get_strv('excluded-types'),
             iconFor: iconForName,
+            source: this.#kind,
         });
     }
 
@@ -382,7 +409,7 @@ export class FilesProvider extends Provider {
 
     /** The menu actions of a file, besides Open. */
     async actions(result) {
-        return fileActionList(result.data?.url, this.#gettext);
+        return fileActionList(result.data?.url, this.#gettext, {folder: result.data?.folder === true});
     }
 
     /** What "Open With" leads to: the applications that can open this file. */

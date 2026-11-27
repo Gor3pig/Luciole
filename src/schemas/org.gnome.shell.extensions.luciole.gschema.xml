@@ -10,12 +10,12 @@
     </key>
 
     <key name="providers-enabled" type="as">
-      <default>["apps", "files", "calc", "system"]</default>
+      <default>["apps", "files", "folders", "calc", "system"]</default>
       <summary>Enabled result providers</summary>
     </key>
 
     <key name="providers-order" type="as">
-      <default>["apps", "files", "calc", "system"]</default>
+      <default>["apps", "files", "folders", "calc", "system"]</default>
       <summary>Display order of result providers</summary>
     </key>
 

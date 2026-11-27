@@ -23,6 +23,7 @@ const SHORTCUT_SCHEMAS = [
 const PROVIDERS = [
     {id: 'apps', title: () => _('Applications')},
     {id: 'files', title: () => _('Files')},
+    {id: 'folders', title: () => _('Folders')},
     {id: 'calc', title: () => _('Calculator')},
     {id: 'system', title: () => _('System')},
 ];

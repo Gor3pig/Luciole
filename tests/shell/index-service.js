@@ -21,6 +21,11 @@ const FILES = [
     ['/home/tester/Images', 'quokka-photo.png'],
     ['/home/tester/.cache', 'quokka-cache.txt'],
     ['/home/tester/projet/node_modules/lib', 'quokka.js'],
+    // Folders end with "/": kept as a file whose content is an nfo:Folder, as LocalSearch does.
+    ['/home/tester/Documents', 'Pinsonnet/'],
+    ['/home/tester/Documents/Archives', 'Pinsonnet 2025/'],
+    ['/home/tester/Documents/Pinsonnet', 'pinsonnet-mars.ods'],
+    ['/home/tester/.cache', 'pinsonnet-cache/'],
 ];
 
 // INDEX_DEMO=en or fr: made-up everyday files instead, for the screenshots of the README.
@@ -30,12 +35,14 @@ const DEMO = {
         ['/home/tester/Documents', 'Invoice March.pdf'], ['/home/tester/Documents', 'Invoice February.pdf'],
         ['/home/tester/Documents', 'Meeting notes.md'], ['/home/tester/Pictures', 'Holiday by the sea.jpg'],
         ['/home/tester/Pictures', 'Profile picture.png'], ['/home/tester/Music', 'Morning playlist.ogg'],
+        ['/home/tester/Documents', 'Invoices/'],
     ],
     fr: [
         ['/home/tester/Documents', 'Plan du projet.odt'], ['/home/tester/Documents', 'Budget 2026.ods'],
         ['/home/tester/Documents', 'Facture mars.pdf'], ['/home/tester/Documents', 'Facture février.pdf'],
         ['/home/tester/Documents', 'Notes de réunion.md'], ['/home/tester/Images', 'Vacances à la mer.jpg'],
         ['/home/tester/Images', 'Photo de profil.png'], ['/home/tester/Musique', 'Playlist du matin.ogg'],
+        ['/home/tester/Documents', 'Factures/'],
     ],
 };
 const demo = DEMO[GLib.getenv('INDEX_DEMO') ?? ''];
@@ -53,11 +60,17 @@ if (realFile)
 
 const database = Tracker.SparqlConnection.new(
     Tracker.SparqlConnectionFlags.NONE, null, Tracker.sparql_get_ontology_nepomuk(), null);
-for (const [folder, name] of FILES) {
+for (const [folder, listed] of FILES) {
+    const isFolder = listed.endsWith('/');
+    const name = isFolder ? listed.slice(0, -1) : listed;
     const url = `file://${folder}/${encodeURIComponent(name)}`;
     database.update(
         `INSERT DATA { <${url}> a nfo:FileDataObject ; nie:url "${url}" ; nfo:fileName "${name}" ; ` +
         'nfo:fileLastModified "2026-11-01T10:00:00Z" . }', null);
+    if (isFolder) {
+        database.update(
+            `INSERT DATA { <${url}#content> a nfo:Folder ; nie:isStoredAs <${url}> ; nie:mimeType "inode/directory" . }`, null);
+    }
 }
 
 const bus = Gio.bus_get_sync(Gio.BusType.SESSION, null);

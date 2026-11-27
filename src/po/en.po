@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-27 09:20+0100\n"
+"POT-Creation-Date: 2026-11-27 13:17+0100\n"
 "PO-Revision-Date: 2026-11-25 20:00+0100\n"
 "Last-Translator: Luciole contributors\n"
 "Language-Team: en <>\n"
@@ -56,7 +56,7 @@ msgstr "PDF"
 msgid "Text"
 msgstr "Text"
 
-#: src/core/type-filter.js
+#: src/core/type-filter.js src/prefs.js src/providers/files.js
 msgid "Folders"
 msgstr "Folders"
 
@@ -330,16 +330,12 @@ msgid "Show in Folder"
 msgstr "Show in Folder"
 
 #: src/providers/files-query.js
+msgid "Show in Parent Folder"
+msgstr "Show in Parent Folder"
+
+#: src/providers/files-query.js
 msgid "Ctrl+Enter"
 msgstr "Ctrl+Enter"
-
-#: src/providers/files-query.js
-msgid "Preview"
-msgstr "Preview"
-
-#: src/providers/files-query.js
-msgid "Space"
-msgstr "Space"
 
 #: src/providers/files-query.js
 msgid "Copy Path"
@@ -360,6 +356,14 @@ msgstr "Name copied"
 #: src/providers/files-query.js
 msgid "Open With…"
 msgstr "Open With…"
+
+#: src/providers/files-query.js
+msgid "Preview"
+msgstr "Preview"
+
+#: src/providers/files-query.js
+msgid "Space"
+msgstr "Space"
 
 #: src/providers/files-query.js
 msgid "Default"

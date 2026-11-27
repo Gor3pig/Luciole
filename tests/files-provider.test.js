@@ -17,15 +17,23 @@ const nextIdle = () => new Promise(resolve => GLib.idle_add(GLib.PRIORITY_DEFAUL
     return GLib.SOURCE_REMOVE;
 }));
 
+// A folder is listed with a trailing "/" in its name here; the index keeps it as a file whose
+// content is an nfo:Folder of type inode/directory, as LocalSearch does.
 function memoryDatabase(files) {
     const connection = Tracker.SparqlConnection.new(
         Tracker.SparqlConnectionFlags.NONE, null, Tracker.sparql_get_ontology_nepomuk(), null);
-    for (const [folder, name] of files) {
+    for (const [folder, listed] of files) {
+        const isFolder = listed.endsWith('/');
+        const name = isFolder ? listed.slice(0, -1) : listed;
         const url = `file://${folder}/${encodeURIComponent(name)}`;
         const escaped = name.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
         connection.update(
             `INSERT DATA { <${url}> a nfo:FileDataObject ; nie:url "${url}" ; nfo:fileName "${escaped}" ; ` +
             'nfo:fileLastModified "2026-11-01T10:00:00Z" . }', null);
+        if (isFolder) {
+            connection.update(
+                `INSERT DATA { <${url}#content> a nfo:Folder ; nie:isStoredAs <${url}> ; nie:mimeType "inode/directory" . }`, null);
+        }
     }
     return connection;
 }
@@ -40,13 +48,14 @@ const FILES = [
     ['/home/me/Documents', 'say "hi" now.txt'],
 ];
 
-function setupProvider({files = FILES, excludedFolders = [], excludedTypes = [], openConnection, missing = [], apps = [], noFileManager = false} = {}) {
+function setupProvider({files = FILES, excludedFolders = [], excludedTypes = [], openConnection, missing = [], apps = [], noFileManager = false, kind = 'files'} = {}) {
     const log = recordingLog();
     const database = openConnection ? null : memoryDatabase(files);
     const opened = [];
     const launched = [];
     const shown = [];
     const provider = new FilesProvider({
+        kind,
         openConnection: openConnection ?? (async () => {
             opened.push(true);
             return database;
@@ -412,6 +421,45 @@ test('a search restricted to a type comes best first too', async () => {
     assertEquals(scores, [...scores].sort((a, b) => b - a));
     assert(scores[0] > scores[2], 'the scores differ, so the order means something');
     t.provider.destroy();
+});
+
+const WITH_FOLDERS = [
+    ['/home/me/Documents', 'Compta/'],
+    ['/home/me/Documents/Archives', 'Compta 2025/'],
+    ['/home/me/Documents/Compta', 'compta-mars.ods'],
+    ['/home/me/.cache', 'compta-cache/'],
+];
+
+test('folders are a source of their own: Files leaves them out, Folders lists only them', async () => {
+    const files = setupProvider({files: WITH_FOLDERS});
+    const folders = setupProvider({files: WITH_FOLDERS, kind: 'folders'});
+    await files.ready;
+    await folders.ready;
+    assertEquals([files.provider.id, folders.provider.id], ['files', 'folders']);
+    assertEquals(folders.provider.name, 'Folders');
+    assert(folders.provider.priority > files.provider.priority, 'folders come after files');
+    assertEquals((await files.search('compta')).map(r => r.title), ['compta-mars.ods']);
+    const found = await folders.search('compta');
+    assertEquals(found.map(r => r.title).sort(), ['Compta', 'Compta 2025'], 'hidden folders are left out too');
+    assert(found.every(r => r.icon === 'folder' && r.data.folder === true && r.previewable === false), 'each is a folder');
+    assertEquals((await folders.provider.actions(found[0])).map(a => a.id), ['open-folder', 'copy-path', 'copy-name', 'open-with']);
+    files.provider.destroy();
+    folders.provider.destroy();
+});
+
+test('"/folders" is a search of Files that finds the folders; the Folders source then stays quiet', async () => {
+    const files = setupProvider({files: WITH_FOLDERS});
+    const folders = setupProvider({files: WITH_FOLDERS, kind: 'folders'});
+    await files.ready;
+    await folders.ready;
+    const typed = (t, typeFilter) => t.provider.search('compta', {cancellable: new Gio.Cancellable(), limit: 6, emit() {}, typeFilter});
+    const found = await typed(files, 'folders');
+    assertEquals(found.map(r => r.title).sort(), ['Compta', 'Compta 2025']);
+    assert(found.every(r => r.data.folder === true && r.icon === 'folder'), 'they are known as folders');
+    assertEquals((await typed(files, 'documents')).map(r => r.data.folder), [false]);
+    assertEquals(await typed(folders, 'folders'), []);
+    files.provider.destroy();
+    folders.provider.destroy();
 });
 
 test('without a file manager to select the file, its folder is opened instead, and the log says so', async () => {
