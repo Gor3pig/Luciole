@@ -137,9 +137,9 @@ Puis ferme et rouvre ta session, et active-la comme ci-dessus.
 ## Réglages
 
 `gnome-extensions prefs luciole@gor3pig.github.io`, ou Extensions › Luciole : le raccourci, les
-sources cherchées et le nombre de résultats de chacune, les dossiers et types de fichiers à
-laisser de côté, les animations, un fond assombri, et la mémoire des recherches (avec un bouton
-pour l'effacer).
+sources cherchées et le nombre de résultats de chacune, l'ouverture d'un résultat d'un simple ou
+d'un double clic, les dossiers et types de fichiers à laisser de côté, les animations, un fond
+assombri, et la mémoire des recherches (avec un bouton pour l'effacer).
 
 <p align="center"><img src="docs/screenshots/dark.fr.png" alt="Luciole en style sombre, avec le filtre des types de fichiers" width="560"></p>
 

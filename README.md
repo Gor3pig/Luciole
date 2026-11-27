@@ -135,9 +135,9 @@ Then log out and back in, and enable it as above.
 ## Settings
 
 `gnome-extensions prefs luciole@gor3pig.github.io`, or Extensions › Luciole: the shortcut, which
-sources are searched and how many results each shows, folders and file types to leave out,
-animations, a dimmed background, and whether searches are remembered (with a button to forget
-them).
+sources are searched and how many results each shows, whether a result opens with a single or a
+double click, folders and file types to leave out, animations, a dimmed background, and whether
+searches are remembered (with a button to forget them).
 
 <p align="center"><img src="docs/screenshots/dark.png" alt="Luciole in the dark style, with the filter of file types" width="560"></p>
 
