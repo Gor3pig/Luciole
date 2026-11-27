@@ -1,9 +1,13 @@
 {
   "uuid": "luciole@gor3pig.github.io",
   "name": "Luciole",
-  "description": "A Spotlight-style launcher: press a shortcut, type, and open applications and files instantly.",
-  "shell-version": ["50", "51"],
+  "description": "A Spotlight-style launcher: one shortcut to find applications, files, settings and answers. Local and private.",
+  "shell-version": [
+    "50",
+    "51"
+  ],
   "gettext-domain": "luciole",
   "settings-schema": "org.gnome.shell.extensions.luciole",
-  "version-name": "0.1.0"
+  "version-name": "1.0.0",
+  "url": "https://github.com/Gor3pig/Luciole"
 }

@@ -1,85 +1,168 @@
-<p align="center">
-  <img src="data/icons/luciole-128x128.png" width="128" height="128" alt="Luciole icon: a firefly glowing in a jar">
-</p>
+<div align="center">
+
+<img src="data/icons/luciole-256x256.png" alt="Luciole" width="160" height="160">
 
 # Luciole
 
-A Spotlight-style launcher for GNOME Shell: press a shortcut, type, and open
-applications and files instantly.
+*Light up what you are looking for.*
 
-Status: early development, not yet published. Everything below works in the
-test environment described in `docs/`; it has not been tried on a wide range of
-systems.
+A Spotlight-style launcher for GNOME: one shortcut, a few letters, and your applications, files,
+settings and answers are there.
 
-## What it does
+[![License: GPL v2+](https://img.shields.io/badge/license-GPL--2.0--or--later-3584e4?style=for-the-badge)](LICENSE)
+[![GNOME](https://img.shields.io/badge/GNOME-50%20%C2%B7%2051-4a86cf?style=for-the-badge&logo=gnome&logoColor=white)](https://www.gnome.org)
+[![GJS](https://img.shields.io/badge/GJS-GNOME%20Shell%20extension-e66100?style=for-the-badge&logo=javascript&logoColor=white)](https://gjs.guide/extensions/)
+[![Latest release](https://img.shields.io/github/v/release/Gor3pig/Luciole?style=for-the-badge&label=version&color=9141ac)](https://github.com/Gor3pig/Luciole/releases/latest)
 
-- **One shortcut** (default `Ctrl+Alt+Space`) opens a floating search field
-  centred on the active monitor. `Esc` closes it.
-- **Results appear while you type**, with the matching letters highlighted:
-  a top hit, then applications, then files. Accents and case do not matter
-  (`ecrire` finds "Éditeur de texte" through its keyword "écrire"), initials work
-  (`gt` finds "GNOME Terminal") and so does typing letters in order (`ff`
-  finds "Firefox").
-- **Applications** include Flatpak ones. Those you open often and recently rank
-  higher.
-- **Files** come from the user's own LocalSearch index (the one GNOME already
-  maintains); Luciole indexes nothing itself.
-- **Keyboard**: `↑` `↓` move, `Tab` / `Shift+Tab` jump between sections, `Enter`
-  opens, `Ctrl+Enter` shows a file in its folder, `Esc` clears then closes.
-- Follows the light and dark appearance, the accent colour and the scale factor
-  of the session. Available in English and French.
+**English** · [Français](README.fr.md)
 
-## Requirements
+[Features](#features) · [Principles](#principles) · [Installation](#installation) · [Keyboard](#keyboard) · [Privacy](#privacy) · [Development](#development)
 
-- GNOME Shell 51 or 50 on Wayland. Both pass the automated shell tests (version 51
-  on Fedora 45, version 50.6 in a Fedora 44 container, headless). Neither has been
-  tried on a wide range of real desktops yet, and version 50 has not been looked at
-  with a screenshot or with a screen reader.
-- `localsearch` (the GNOME file indexer) for file results. Without it the
-  application results keep working and a single warning is logged.
+<img src="docs/screenshots/search.png" alt="Luciole showing applications and files for a few letters" width="720">
 
-## Install from source
+</div>
+
+---
+
+## What is Luciole?
+
+Press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd>, type a few letters: a small window in the
+middle of the screen shows what matches, while you type. <kbd>Enter</kbd> opens it, <kbd>Esc</kbd>
+puts everything away. Luciole is an extension of GNOME Shell: nothing to start, nothing to keep
+open, and it looks like the rest of your desktop.
+
+## Features
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+**Search**<br>Applications and files side by side, accents and case ignored, initials and
+letters in order understood.
+
+</td>
+<td width="33%" valign="top">
+
+**Files**<br>From the index GNOME already keeps; <kbd>/pdf</kbd>, <kbd>/images</kbd>… restrict a
+search to one type of file.
+
+</td>
+<td width="33%" valign="top">
+
+**Calculate**<br>`2+2*3`, `15% of 80`, `5 km to m`, `20 °C to °F`: the answer comes first, and
+<kbd>Enter</kbd> copies it.
+
+</td>
+</tr>
+<tr>
+<td width="33%" valign="top">
+
+**System**<br>Settings panels and the shell's own actions: lock, screenshot, restart… Nothing
+that ends your session is ever chosen for you.
+
+</td>
+<td width="33%" valign="top">
+
+**Preview and act**<br><kbd>Space</kbd> previews a file; <kbd>Ctrl</kbd>+<kbd>K</kbd> shows what
+else you can do: show in folder, copy its path, open with…
+
+</td>
+<td width="33%" valign="top">
+
+**Remember**<br><kbd>↑</kbd> brings back your previous searches, and what you open often comes
+first.
+
+</td>
+</tr>
+</table>
+
+<p align="center">
+<img src="docs/screenshots/menu.png" alt="The menu of actions of a file" width="400">
+<img src="docs/screenshots/calculator.png" alt="A calculation answered in the field" width="400">
+</p>
+
+## Principles
+
+**Local only, no network** · **Nothing typed is ever sent anywhere** · **Made for GNOME** · **Tested in a real shell**
+
+## Installation
+
+Luciole needs **GNOME Shell 50 or 51** on Wayland. File results need **LocalSearch**, the indexer
+GNOME ships with (applications and the rest work without it).
+
+### From a release
+
+1. Download `luciole@gor3pig.github.io.shell-extension.zip` from the
+   [latest release](https://github.com/Gor3pig/Luciole/releases/latest).
+2. Install it:
+
+   ```sh
+   gnome-extensions install --force luciole@gor3pig.github.io.shell-extension.zip
+   ```
+
+3. Log out and back in (GNOME on Wayland loads new extensions at login), then enable it:
+
+   ```sh
+   gnome-extensions enable luciole@gor3pig.github.io
+   ```
+
+### From the source
 
 ```sh
+git clone https://github.com/Gor3pig/Luciole.git
+cd Luciole
 make pack
 gnome-extensions install --force dist/luciole@gor3pig.github.io.shell-extension.zip
 ```
 
-Log out and in again (Wayland cannot reload extensions), then enable it:
+Then log out and back in, and enable it as above.
 
-```sh
-gnome-extensions enable luciole@gor3pig.github.io
-```
+## Keyboard
+
+| Keys | What they do |
+|---|---|
+| <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd> | open or close Luciole (can be changed in the settings) |
+| <kbd>↑</kbd> <kbd>↓</kbd> · <kbd>Tab</kbd> | move in the results · jump to the next section |
+| <kbd>Enter</kbd> · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> | open · show a file in its folder |
+| <kbd>Ctrl</kbd>+<kbd>K</kbd> | the actions of the selected result |
+| <kbd>Space</kbd> or <kbd>Ctrl</kbd>+<kbd>Y</kbd> | preview the selected file |
+| <kbd>Ctrl</kbd>+<kbd>0</kbd> … <kbd>4</kbd> | everything, applications, files, calculator, system |
+| <kbd>↑</kbd> in the empty field | a previous search |
+| <kbd>/</kbd> | a type of file: `/pdf`, `/images`, `/documents`, `/folders`… |
+| <kbd>Esc</kbd> | clear the field, then close |
 
 ## Settings
 
-`gnome-extensions prefs luciole@gor3pig.github.io` opens the preferences: the
-shortcut (with a warning when another GNOME shortcut already uses it), the
-number of results per source, which sources are searched, excluded folders and
-file types, and a button to clear the usage history.
+`gnome-extensions prefs luciole@gor3pig.github.io`, or Extensions › Luciole: the shortcut, which
+sources are searched and how many results each shows, folders and file types to leave out,
+animations, a dimmed background, and whether searches are remembered (with a button to forget
+them).
+
+<p align="center"><img src="docs/screenshots/dark.png" alt="Luciole in the dark style, with the filter of file types" width="560"></p>
 
 ## Privacy
 
-- Nothing leaves the computer: no network access, no telemetry.
-- The usage history (which results you open, to rank them) is kept in
-  `~/.local/share/luciole/frecency.json`, readable by you only, and can be erased
-  from the preferences.
-- Your typing is never inserted in a database query: it is reduced to plain words
-  and passed to the index as a bound value.
+- Nothing leaves your computer: no network access, no telemetry, no account.
+- What you type is reduced to plain words and given to the file index as a value, never as part
+  of a query.
+- What Luciole remembers (the results you open, to rank them, and your last searches) stays in
+  `~/.local/share/luciole/`, readable by you only, and can be erased from the settings.
+
+How every input is handled, and how it is tested, is described in
+[docs/security.md](docs/security.md).
 
 ## Development
 
 ```sh
-make check            # ESLint and unit tests (plain gjs, no shell needed)
-make shell-test       # enable/disable cycles in an isolated headless shell
-make shell-test-ui    # open/close cycles with the real shortcut
-make shell-test-search  shell-test-files  shell-test-degrade
-make capture          # PNG screenshots of the launcher, light and dark
-make pot po locale    # translations
+make check          # ESLint and unit tests (plain gjs, no shell needed)
+make gate           # the quality gate: unit, random-data, mutation and real-shell tests
+make test-gnome50   # the tests on GNOME Shell 50, in a podman container
+make capture        # screenshots of the launcher, light and dark
 ```
 
-The shell tests start their own throw-away GNOME Shell on a private D-Bus
-session with private settings, data and cache directories: the session you are
-logged in to is never touched. See `docs/architecture.md` for how the code is
-organised and how to add a new source of results, and `docs/performance.md` for
-the performance budgets and how they are measured.
+[docs/testing.md](docs/testing.md) explains the tests, [docs/architecture.md](docs/architecture.md)
+the code, and [docs/performance.md](docs/performance.md) the time budgets.
+
+## License
+
+Luciole is free software released under the [GNU GPL v2 or later](LICENSE).
