@@ -58,6 +58,14 @@ printf '[MIME Cache]\ntext/plain=luciole-test-reader.desktop;\n' >"$WORK/data/ap
 mkdir -p "$WORK/docs"
 printf 'a test file\n' >"$WORK/docs/rapport-test.txt"
 export INDEX_REAL_FILE="$WORK/docs/rapport-test.txt"
+# The file manager is a stand-in too, started by the bus when asked: it notes what it is asked to
+# show (in FILEMANAGER_RECORD) and opens nothing; the real one is never started.
+export FILEMANAGER_RECORD="$WORK/shown.txt"
+cat >"$WORK/services/dbus-1/services/org.freedesktop.FileManager1.service" <<SERVICE
+[D-BUS Service]
+Name=org.freedesktop.FileManager1
+Exec=/usr/bin/gjs -m $ROOT/tests/shell/filemanager-service.js $WORK/shown.txt
+SERVICE
 # If our stand-in were late, the bus must not start the real indexer instead.
 cat >"$WORK/services/dbus-1/services/org.freedesktop.LocalSearch3.service" <<SERVICE
 [D-BUS Service]

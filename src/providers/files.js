@@ -99,6 +99,23 @@ async function appsForUri(uri, cancellable) {
         }));
 }
 
+// The desktop's file manager (Files) shows a file in its folder, selected: the standard
+// org.freedesktop.FileManager1 interface, asked with the file's address and nothing else.
+function showItemInFolder(uri, cancellable) {
+    return new Promise((resolve, reject) => {
+        Gio.DBus.session.call('org.freedesktop.FileManager1', '/org/freedesktop/FileManager1',
+            'org.freedesktop.FileManager1', 'ShowItems', new GLib.Variant('(ass)', [[uri], '']),
+            null, Gio.DBusCallFlags.NONE, 5000, cancellable, (bus, result) => {
+                try {
+                    bus.call_finish(result);
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            });
+    });
+}
+
 function openUri(uri, cancellable) {
     return new Promise((resolve, reject) => {
         Gio.AppInfo.launch_default_for_uri_async(uri, null, cancellable, (_source, result) => {
@@ -204,6 +221,7 @@ export class FilesProvider extends Provider {
     #open;
     #exists;
     #appsFor;
+    #showItem;
     #connection = null;
     #connecting = null;
     #destroyed = false;
@@ -222,13 +240,15 @@ export class FilesProvider extends Provider {
      * @param {(uri: string, cancellable: Gio.Cancellable) => Promise<void>} [options.openUri] - for tests
      * @param {(uri: string, cancellable: Gio.Cancellable) => Promise<boolean>} [options.exists] - for tests
      * @param {(uri: string, cancellable: Gio.Cancellable) => Promise<Array<{id: string, name: string, isDefault: boolean, launch: (uri: string) => void}>>} [options.appsFor] - for tests
+     * @param {(uri: string, cancellable: Gio.Cancellable) => Promise<void>} [options.showItem] - for tests
      */
-    constructor({openConnection = openLocalSearch, openUri: open = openUri, exists = uriExists, appsFor = appsForUri} = {}) {
+    constructor({openConnection = openLocalSearch, openUri: open = openUri, exists = uriExists, appsFor = appsForUri, showItem = showItemInFolder} = {}) {
         super();
         this.#openConnection = openConnection;
         this.#open = open;
         this.#exists = exists;
         this.#appsFor = appsFor;
+        this.#showItem = showItem;
     }
 
     get id() {
@@ -331,6 +351,22 @@ export class FilesProvider extends Provider {
         await this.#openChecked(result.data.url);
     }
 
+    // The file's folder, with the file selected by the file manager; only the folder when no file
+    // manager offers that (it is said in the log). The file must still be there either way.
+    async #showInFolder(result) {
+        const url = result.data?.url;
+        if (!isLocalFileUri(url))
+            throw new Error('refusing to show an address that is not a local file');
+        if (!await this.#exists(url, this.#lifetime))
+            throw new Error('the file is no longer there');
+        try {
+            await this.#showItem(url, this.#lifetime);
+        } catch (error) {
+            this.#log?.warn(`no file manager showed the file, opening its folder instead: ${error.message}`);
+            await this.#openChecked(result.data.parentUrl);
+        }
+    }
+
     secondaryActions(_result) {
         const _ = this.#gettext;
         return [{id: 'open-folder', label: _('Show in Folder')}];
@@ -359,7 +395,7 @@ export class FilesProvider extends Provider {
 
     async activateAction(result, action) {
         if (action.id === 'open-folder') {
-            await this.#openChecked(result.data.parentUrl);
+            await this.#showInFolder(result);
         } else if (action.id.startsWith(OPEN_WITH_PREFIX)) {
             // The file must still be there, and the application one of those that can open it:
             // an identifier is never trusted on its own.

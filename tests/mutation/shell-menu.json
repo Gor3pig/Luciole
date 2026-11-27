@@ -660,6 +660,54 @@
      "new": ""
     }
    ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "a right click shows the actions of the result selected before",
+   "old": "        this.#navigated = true;\n        this.#choose(item.key);\n        await this.#openMenu();",
+   "new": "        await this.#openMenu();",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/results-view.js",
+   "label": "a right click opens the result",
+   "old": "            if (button === Clutter.BUTTON_SECONDARY)\n                this.#onContextMenu(item);\n            else\n                this.#onActivate(item);",
+   "new": "            this.#onActivate(item);",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/results-view.js",
+   "label": "a right click does nothing",
+   "old": "            button_mask: St.ButtonMask.ONE | St.ButtonMask.THREE,",
+   "new": "            button_mask: St.ButtonMask.ONE,",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "Show in Folder asks the file manager for the folder only",
+   "old": "'org.freedesktop.FileManager1', 'ShowItems', new GLib.Variant('(ass)', [[uri], ''])",
+   "new": "'org.freedesktop.FileManager1', 'ShowFolders', new GLib.Variant('(ass)', [[uri], ''])",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   }
  ]
 }

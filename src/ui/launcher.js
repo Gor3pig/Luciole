@@ -602,6 +602,17 @@ export class Launcher {
 
     // ---- The menu of actions of the selected result (Ctrl+K) ----
 
+    // A right click on a row: that result is chosen, as with the arrows, and its actions shown.
+    async #openMenuOf(item) {
+        if (!this.#isOpen || this.#confirmTimer || this.#menu.isOpen)
+            return;
+        if (!this.#items.some(candidate => candidate.key === item.key))
+            return;
+        this.#navigated = true;
+        this.#choose(item.key);
+        await this.#openMenu();
+    }
+
     async #openMenu() {
         const item = this.#items.find(candidate => candidate.key === this.#selectedKey);
         if (!item || !this.#isOpen)
@@ -902,6 +913,7 @@ export class Launcher {
         const view = new ResultsView({
             gettext: this.#gettext,
             onActivate: item => this.#activate(item),
+            onContextMenu: item => this.#log.guardAsync('opening the actions menu', () => this.#openMenuOf(item)),
             hintFor: item => this.#rowHint(item),
         });
 

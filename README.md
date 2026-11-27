@@ -49,7 +49,7 @@ search to one type of file.
 </td>
 <td width="33%" valign="top">
 
-**Calculate**<br>`2+2*3`, `15% of 80`, `5 km to m`, `20 °C to °F`: the answer comes first, and
+**Calculate**<br>`2+2*3`, `15% of 80`, `5 km in m`, `20 °C to °F`: the answer comes first, and
 <kbd>Enter</kbd> copies it.
 
 </td>
@@ -63,8 +63,8 @@ that ends your session is ever chosen for you.
 </td>
 <td width="33%" valign="top">
 
-**Preview and act**<br><kbd>Space</kbd> previews a file; <kbd>Ctrl</kbd>+<kbd>K</kbd> shows what
-else you can do: show in folder, copy its path, open with…
+**Preview and act**<br><kbd>Space</kbd> previews a file; <kbd>Ctrl</kbd>+<kbd>K</kbd> or a right click
+shows what else you can do: show in folder, copy its path, open with…
 
 </td>
 <td width="33%" valign="top">
@@ -123,8 +123,8 @@ Then log out and back in, and enable it as above.
 |---|---|
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd> | open or close Luciole (can be changed in the settings) |
 | <kbd>↑</kbd> <kbd>↓</kbd> · <kbd>Tab</kbd> | move in the results · jump to the next section |
-| <kbd>Enter</kbd> · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> | open · show a file in its folder |
-| <kbd>Ctrl</kbd>+<kbd>K</kbd> | the actions of the selected result |
+| <kbd>Enter</kbd> · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> | open · show a file, selected, in its folder |
+| <kbd>Ctrl</kbd>+<kbd>K</kbd> or a right click | the actions of the selected result (or of the one clicked) |
 | <kbd>Space</kbd> or <kbd>Ctrl</kbd>+<kbd>Y</kbd> | preview the selected file |
 | <kbd>Ctrl</kbd>+<kbd>0</kbd> … <kbd>4</kbd> | everything, applications, files, calculator, system |
 | <kbd>↑</kbd> in the empty field | a previous search |

@@ -317,6 +317,30 @@
    "label": "the calculator shows the units in English whatever the language",
    "old": "{decimal: this.#decimal, symbol: shownAs => this.#symbols()[shownAs] ?? shownAs}",
    "new": "{decimal: this.#decimal}"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "the file is not shown selected",
+   "old": "            await this.#showItem(url, this.#lifetime);\n",
+   "new": "            throw new Error('x');\n"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "without a file manager nothing is opened",
+   "old": "            await this.#openChecked(result.data.parentUrl);\n        }\n    }",
+   "new": "            throw error;\n        }\n    }"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "a file that is gone is still shown in its folder",
+   "old": "            throw new Error('refusing to show an address that is not a local file');\n        if (!await this.#exists(url, this.#lifetime))\n            throw new Error('the file is no longer there');\n        try {",
+   "new": "            throw new Error('refusing to show an address that is not a local file');\n        try {"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "any address is shown in a folder",
+   "old": "        if (!isLocalFileUri(url))\n            throw new Error('refusing to show an address that is not a local file');",
+   "new": "        if (false)\n            throw new Error('refusing to show an address that is not a local file');"
   }
  ]
 }

@@ -93,6 +93,9 @@ duplicates).
   chosen with Enter or with Open in the menu of actions, so the shell's own dialog never has to
   share the keyboard with it. A panel is opened only if it is one of the installed
   desktop files named `gnome-*-panel.desktop`. Luciole reads no setting.
+* **Show in Folder hands over only a local file that still exists**, to the desktop's standard
+  file manager interface (`org.freedesktop.FileManager1`, which shows it selected); when none
+  answers, the file's folder is opened instead, under the same checks.
 * **The preview shows only a local file that still exists**, through GNOME's own previewer (the
   one the Files application uses), asked over the session bus with the file's address and nothing
   else. While it is shown, Luciole lets go of the keyboard and gives it to the preview window; it

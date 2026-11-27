@@ -40,11 +40,12 @@ const FILES = [
     ['/home/me/Documents', 'say "hi" now.txt'],
 ];
 
-function setupProvider({files = FILES, excludedFolders = [], excludedTypes = [], openConnection, missing = [], apps = []} = {}) {
+function setupProvider({files = FILES, excludedFolders = [], excludedTypes = [], openConnection, missing = [], apps = [], noFileManager = false} = {}) {
     const log = recordingLog();
     const database = openConnection ? null : memoryDatabase(files);
     const opened = [];
     const launched = [];
+    const shown = [];
     const provider = new FilesProvider({
         openConnection: openConnection ?? (async () => {
             opened.push(true);
@@ -55,6 +56,11 @@ function setupProvider({files = FILES, excludedFolders = [], excludedTypes = [],
         },
         exists: async uri => !missing.includes(uri),
         appsFor: async () => apps.map(app => ({...app, launch: uri => launched.push(`${app.id} ${uri}`)})),
+        showItem: async uri => {
+            if (noFileManager)
+                throw new Error('no file manager on the bus');
+            shown.push(uri);
+        },
     });
     const settings = {
         get_strv: key => (key === 'excluded-folders' ? excludedFolders : excludedTypes),
@@ -62,7 +68,7 @@ function setupProvider({files = FILES, excludedFolders = [], excludedTypes = [],
     };
     const ready = provider.init({settings, log, gettext: text => text});
     const search = query => provider.search(query, {cancellable: new Gio.Cancellable(), limit: 6, emit() {}});
-    return {provider, log, opened, launched, ready, search, database};
+    return {provider, log, opened, launched, shown, ready, search, database};
 }
 
 const titles = results => results.map(r => r.title);
@@ -230,9 +236,9 @@ test('activating a result opens its file; the secondary action opens its folder'
     const [action] = t.provider.secondaryActions(first);
     assertEquals(action.id, 'open-folder');
     await t.provider.activateAction(first, action);
-    assertEquals(t.launched[1], 'file:///home/me/Documents');
+    assertEquals(t.shown, ['file:///home/me/Documents/Facture%20mars.pdf'], 'the file itself, shown selected in its folder');
     assert((await failureOf(t.provider.activateAction(first, {id: 'unknown'})))?.includes('unknown action'), 'an unknown action must be refused');
-    assertEquals(t.launched.length, 2);
+    assertEquals(t.launched.length, 1);
     t.provider.destroy();
 });
 
@@ -398,5 +404,46 @@ test('a search restricted to a type comes best first too', async () => {
     assertEquals(scores.length, 3);
     assertEquals(scores, [...scores].sort((a, b) => b - a));
     assert(scores[0] > scores[2], 'the scores differ, so the order means something');
+    t.provider.destroy();
+});
+
+test('without a file manager to select the file, its folder is opened instead, and the log says so', async () => {
+    const t = setupProvider({noFileManager: true});
+    await t.ready;
+    const [first] = await t.search('facture');
+    await t.provider.activateAction(first, {id: 'open-folder'});
+    assertEquals(t.launched, ['file:///home/me/Documents']);
+    assert(t.log.lines.some(line => line.includes('no file manager showed the file')), 'not logged');
+    t.provider.destroy();
+});
+
+test('a file that is gone is shown neither selected nor through its folder', async () => {
+    const url = 'file:///home/me/Documents/Facture%20mars.pdf';
+    const t = setupProvider({missing: [url]});
+    await t.ready;
+    const failure = await failureOf(t.provider.activateAction({data: {url, parentUrl: 'file:///home/me/Documents'}}, {id: 'open-folder'}));
+    assert(failure?.includes('no longer there'), `no failure reported: ${failure}`);
+    assertEquals(t.shown, []);
+    assertEquals(t.launched, []);
+    t.provider.destroy();
+});
+
+test('an address that is not a local file is never shown in a folder', async () => {
+    const t = setupProvider();
+    await t.ready;
+    for (const url of ['https://example.org/x', 'file://server/share/x', 'smb://host/x', ''])
+        assert((await failureOf(t.provider.activateAction({data: {url, parentUrl: 'file:///home/me'}}, {id: 'open-folder'}))) !== null, `${url} was accepted`);
+    assertEquals(t.shown, []);
+    assertEquals(t.launched, []);
+    t.provider.destroy();
+});
+
+test('without a file manager, a folder address that is not local is not opened either', async () => {
+    const t = setupProvider({noFileManager: true});
+    await t.ready;
+    const url = 'file:///home/me/Documents/Facture%20mars.pdf';
+    for (const parentUrl of ['https://example.org/', 'smb://host/x', ''])
+        assert((await failureOf(t.provider.activateAction({data: {url, parentUrl}}, {id: 'open-folder'}))) !== null, `${parentUrl} was opened`);
+    assertEquals(t.launched, []);
     t.provider.destroy();
 });

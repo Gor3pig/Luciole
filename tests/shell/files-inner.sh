@@ -93,6 +93,13 @@ type_label() {
     shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-type-chip')) return a.visible ? a.text : 'hidden'; for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
 }
 # menu_row_center <index>: where to click to hit that action.
+# result_row_center <index>: where to click to hit that row of results; result_row_title <index>: its title.
+result_row_center() {
+    shell_eval "(function() { const rows = []; (function walk(a) { if (a.style_class === 'luciole-row' && a.visible) rows.push(a); a.get_children().forEach(walk); })(global.stage); const c = rows[$1]; if (!c) return ''; const [x, y] = c.get_transformed_position(); const [w, h] = c.get_transformed_size(); return Math.round(x + w / 2) + ' ' + Math.round(y + h / 2); })()"
+}
+menu_title() {
+    shell_eval "(function find(a) { if (a.style_class === 'luciole-menu-title' && a.mapped) return a.get_text(); for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage) || 'none'"
+}
 menu_row_center() {
     shell_eval "(function find(a) { if (a.style_class === 'luciole-menu') { const rows = a.get_children()[0].get_children().filter(c => c.style_class === 'luciole-menu-row'); const c = rows[$1]; const [x, y] = c.get_transformed_position(); const [w, h] = c.get_transformed_size(); return Math.round(x + w / 2) + ' ' + Math.round(y + h / 2); } for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
 }
@@ -704,6 +711,49 @@ sleep 0.3
 [ "$(menu_state)" = hidden ] || fail "menu: a second Escape did not close the menu"
 [ "$(launcher_closed_count)" = "$CLOSED_NOW" ] || fail "menu: Escape closed the whole window"
 echo "ok: Escape goes back from the submenu, then closes the menu"
+
+# A right click on a row shows the actions of that result (not of the one selected before).
+clear_entry 12
+typed quok
+wait_last 'results: 3 first=.*query=quok' || fail "results did not come back (last: $(last_results))"
+CLOSED_RC=$(launcher_closed_count)
+SECOND=$(grep -F '[Luciole] results:' "$LOG" >/dev/null; shell_eval "(function() { const rows = []; (function walk(a) { if (a.style_class === 'luciole-row' && a.visible) rows.push(a); a.get_children().forEach(walk); })(global.stage); return rows[1] ? rows[1].get_accessible_name?.() ?? '' : ''; })()")
+set -- $(result_row_center 1)
+[ "$#" = 2 ] || fail "right click: the second row was not found"
+pointer "$1" "$2"
+send rclick
+sleep 0.6
+[ "$(menu_state)" != hidden ] || fail "right click: no menu of actions"
+TITLE=$(menu_title)
+[ "$TITLE" != none ] && [ -n "$TITLE" ] || fail "right click: the menu has no title"
+case "$SECOND" in *"$TITLE"*) ;; *) fail "right click: the menu is for '$TITLE', not for the row clicked ('$SECOND')" ;; esac
+grep -F '[Luciole] selected: ' "$LOG" | tail -n 1 | grep -qF "$(printf '%s' "$TITLE" | cut -c1-6)" || fail "right click: the row clicked was not chosen"
+escape
+sleep 0.3
+[ "$(menu_state)" = hidden ] || fail "right click: Escape did not close the menu"
+[ "$(launcher_closed_count)" = "$CLOSED_RC" ] || fail "right click: the window closed"
+pointer 60 650
+send rclick
+wait_log "[Luciole] closed" $((CLOSED_RC + 1)) || fail "right click outside the window did not close it"
+echo "ok: a right click shows the actions of the row clicked; outside the window it closes it"
+sleep 0.4
+reopen_launcher
+CLOSED_NOW=$(launcher_closed_count)
+
+# Show in Folder (Ctrl+Enter) asks the file manager to show the file itself, selected in its folder.
+clear_entry 12
+typed rapport
+wait_last 'results: 1 first=rapport' || fail "the real file was not found (last: $(last_results))"
+CLOSED_SF=$(launcher_closed_count)
+chord Control_L+Return
+wait_log "[Luciole] closed" $((CLOSED_SF + 1)) || fail "show in folder: the window did not close"
+i=0; while ! grep -q "ShowItems" "$FILEMANAGER_RECORD" 2>/dev/null && [ "$i" -lt 50 ]; do sleep 0.1; i=$((i + 1)); done
+grep -qx "ShowItems file://$INDEX_REAL_FILE" "$FILEMANAGER_RECORD" ||
+    fail "show in folder: the file manager was not asked to show the file ($(cat "$FILEMANAGER_RECORD" 2>/dev/null))"
+echo "ok: Show in Folder asks the file manager to show the file itself, selected"
+sleep 0.4
+reopen_launcher
+CLOSED_NOW=$(launcher_closed_count)
 
 # An action that fails (the file of the index is not there) leaves the menu and the window open.
 clear_entry 7

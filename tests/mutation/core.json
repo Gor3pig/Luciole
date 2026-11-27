@@ -1419,8 +1419,8 @@
   {
    "file": "src/core/calc.js",
    "label": "vers is not read",
-   "old": "const TO_WORDS = new Set(['en', 'vers', 'to']);",
-   "new": "const TO_WORDS = new Set(['en', 'to']);"
+   "old": "new Set(['en', 'vers', 'to', 'in'])",
+   "new": "new Set(['en', 'to', 'in'])"
   },
   {
    "file": "src/core/units.js",
@@ -2015,6 +2015,12 @@
    "label": "the light stylesheet under its own name drifts from stylesheet.css",
    "old": ".luciole-row-content {\n    spacing: 12px;",
    "new": ".luciole-row-content {\n    spacing: 10px;"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "\"in\" does not separate a conversion",
+   "old": "new Set(['en', 'vers', 'to', 'in'])",
+   "new": "new Set(['en', 'vers', 'to'])"
   }
  ]
 }

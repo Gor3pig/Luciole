@@ -25,7 +25,9 @@ const FUNCTIONS = new Map([
     ['ln', Math.log], ['log', Math.log10], ['exp', Math.exp],
 ]);
 const CONSTANTS = new Map([['pi', Math.PI], ['π', Math.PI], ['e', Math.E]]);
-const TO_WORDS = new Set(['en', 'vers', 'to']);
+// What separates a conversion ("5 km en m"). "in" is also the inch: every one of these words is
+// tried in turn, and only one with a unit before it and a unit after it separates ("10 in in cm").
+const TO_WORDS = new Set(['en', 'vers', 'to', 'in']);
 
 const SPACES = /[\s\u00a0\u202f]/u;
 const LETTER = /[\p{L}°µ]/u;

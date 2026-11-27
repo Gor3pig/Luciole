@@ -17,6 +17,8 @@
 //   type <text>      types the characters one by one
 //   pointer <x> <y>  puts the pointer at x, y (first in the top-left corner, then moves by x, y)
 //   click            presses and releases the left button where the pointer is
+//   rclick           the same with the right button
+//   move <dx> <dy>   moves the pointer by dx, dy from where it is
 //   quit             stops the helper
 // It writes "ready" once the session is started.
 
@@ -31,6 +33,7 @@ const KEY_CONTROL_L = 65507;
 const KEY_ALT_L = 65513;
 const KEY_SPACE = 32;
 const BTN_LEFT = 0x110;
+const BTN_RIGHT = 0x111;
 const KEY_ESCAPE = 65307;
 const NAMED_KEYS = {
     Down: 65364, Up: 65362, Return: 65293, BackSpace: 65288, Escape: KEY_ESCAPE, Tab: 65289,
@@ -77,6 +80,17 @@ const commands = {
     click() {
         for (const pressed of [true, false])
             call(sessionPath, sessionIface, 'NotifyPointerButton', new GLib.Variant('(ib)', [BTN_LEFT, pressed]), null);
+    },
+    rclick() {
+        for (const pressed of [true, false])
+            call(sessionPath, sessionIface, 'NotifyPointerButton', new GLib.Variant('(ib)', [BTN_RIGHT, pressed]), null);
+    },
+    // Moves the pointer by dx, dy from where it is (without passing through a screen corner).
+    move(spec) {
+        const [dx, dy] = spec.split(' ').map(Number);
+        if (!Number.isFinite(dx) || !Number.isFinite(dy))
+            throw new Error(`bad move: ${spec}`);
+        moveBy(dx, dy);
     },
     combo() {
         key(KEY_CONTROL_L, true);

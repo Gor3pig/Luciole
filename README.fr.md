@@ -63,8 +63,8 @@ d'écran, redémarrer… Rien de ce qui ferme ta session n'est choisi à ta plac
 </td>
 <td width="33%" valign="top">
 
-**Aperçu et actions**<br><kbd>Espace</kbd> affiche un aperçu du fichier ; <kbd>Ctrl</kbd>+<kbd>K</kbd>
-montre ce qu'on peut en faire : afficher dans le dossier, copier le chemin, ouvrir avec…
+**Aperçu et actions**<br><kbd>Espace</kbd> affiche un aperçu du fichier ; <kbd>Ctrl</kbd>+<kbd>K</kbd> ou un
+clic droit montre ce qu'on peut en faire : afficher dans le dossier, copier le chemin, ouvrir avec…
 
 </td>
 <td width="33%" valign="top">
@@ -124,8 +124,8 @@ Puis ferme et rouvre ta session, et active-la comme ci-dessus.
 |---|---|
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Espace</kbd> | ouvrir ou fermer Luciole (modifiable dans les réglages) |
 | <kbd>↑</kbd> <kbd>↓</kbd> · <kbd>Tab</kbd> | se déplacer dans les résultats · passer à la section suivante |
-| <kbd>Entrée</kbd> · <kbd>Ctrl</kbd>+<kbd>Entrée</kbd> | ouvrir · afficher un fichier dans son dossier |
-| <kbd>Ctrl</kbd>+<kbd>K</kbd> | les actions du résultat choisi |
+| <kbd>Entrée</kbd> · <kbd>Ctrl</kbd>+<kbd>Entrée</kbd> | ouvrir · afficher un fichier, sélectionné, dans son dossier |
+| <kbd>Ctrl</kbd>+<kbd>K</kbd> ou clic droit | les actions du résultat choisi (ou de celui cliqué) |
 | <kbd>Espace</kbd> ou <kbd>Ctrl</kbd>+<kbd>Y</kbd> | aperçu du fichier choisi |
 | <kbd>Ctrl</kbd>+<kbd>0</kbd> … <kbd>4</kbd> | tout, applications, fichiers, calculatrice, système |
 | <kbd>↑</kbd> dans le champ vide | une recherche précédente |

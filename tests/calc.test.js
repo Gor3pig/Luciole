@@ -216,3 +216,13 @@ test('the symbol of a unit is shown the way the caller writes it (translated)', 
     assertEquals(shown.full, '1 Go = 1000 Mo');
     assertEquals(evaluateQuery('5 km en m', {symbol: name => french[name] ?? name}).result, '5000 m', 'others unchanged');
 });
+
+test('"in" separates a conversion, and is still the inch where it is a unit', () => {
+    assertEquals(evaluateQuery('5 km in m')?.result, '5000 m');
+    assertEquals(evaluateQuery('20 °C in °F')?.result, '68 °F');
+    assertEquals(evaluateQuery('10 in in cm')?.result, '25.4 cm', 'the first "in" is the inch, the second separates');
+    assertEquals(evaluateQuery('2 in to cm')?.result, '5.08 cm');
+    assertEquals(evaluateQuery('5 km in mi')?.result, '3.106855961 mi');
+    for (const text of ['5 in', '3 in', 'in', 'in m', '5 km in', 'five in m', 'log in', 'sign in'])
+        assertEquals(evaluateQuery(text), null, text);
+});

@@ -23,14 +23,16 @@ export class ResultsView {
     #box;
     #gettext;
     #onActivate;
+    #onContextMenu;
     #hintFor;
     // A short note at the end of the selected row ("Space: preview"), by key.
     #hints = new Map();
     #rows = new Map();
 
-    constructor({gettext, onActivate, hintFor = () => null}) {
+    constructor({gettext, onActivate, onContextMenu = () => {}, hintFor = () => null}) {
         this.#gettext = gettext;
         this.#onActivate = onActivate;
+        this.#onContextMenu = onContextMenu;
         this.#hintFor = hintFor;
         this.#box = new St.BoxLayout({
             style_class: 'luciole-results',
@@ -183,9 +185,16 @@ export class ResultsView {
             can_focus: false,
             x_expand: true,
             child: content,
+            // The left button opens the result, the right one shows its actions.
+            button_mask: St.ButtonMask.ONE | St.ButtonMask.THREE,
         });
         describeResult(row, result.title, result.subtitle);
-        row.connect('clicked', () => this.#onActivate(item));
+        row.connect('clicked', (_row, button) => {
+            if (button === Clutter.BUTTON_SECONDARY)
+                this.#onContextMenu(item);
+            else
+                this.#onActivate(item);
+        });
 
         this.#rows.set(item.key, row);
         this.#hints.set(item.key, {label: hint, item});
