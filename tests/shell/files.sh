@@ -90,7 +90,7 @@ SHELL_EXTRA_ARGS=--unsafe-mode XDG_DATA_HOME="$WORK/data" XDG_CONFIG_HOME="$WORK
     >"$WORK/out.txt" 2>&1 || true
 
 # Set KEEP_OUTPUT=<file> to keep the whole output for debugging.
-[ -z "${KEEP_OUTPUT:-}" ] || cp "$WORK/out.txt" "$KEEP_OUTPUT"
+[ -z "${KEEP_OUTPUT:-}" ] || { cp "$WORK/out.txt" "$KEEP_OUTPUT"; cp "$WORK/shell.log" "$KEEP_OUTPUT.shell.log"; }
 
 grep -E '^(ok:|FAIL|PASS|preview|keystroke to|log lines|----)|\[Luciole\]|JS ERROR|CRITICAL' "$WORK/out.txt" | grep -vE 'DEBUG.*\[Luciole\] (perf|results|apps index|opened|closed|enabled|search ready)' || true
 grep -q '^PASS$' "$WORK/out.txt"

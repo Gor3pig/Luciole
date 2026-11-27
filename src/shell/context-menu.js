@@ -30,6 +30,7 @@ export class ContextMenu {
     #anchor = null;
     #closing = false;
     #idleId = 0;
+    #relayoutId = 0;
 
     /**
      * @param {object} options
@@ -116,7 +117,15 @@ export class ContextMenu {
         const area = Main.layoutManager.getWorkAreaForMonitor(monitorAt(x, y));
         const anchor = menuAnchor({y, height}, natural + growing, floor, {top: area.y, bottom: area.y + area.height});
         Main.layoutManager.setDummyCursorGeometry(x, anchor.y, 0, anchor.height);
-        this.#menu.actor.queue_relayout();
+        // GNOME places the menu where its anchor was when it was last laid out: once the anchor
+        // has moved (the next cycle), the menu is laid out again to follow it.
+        if (!this.#relayoutId) {
+            this.#relayoutId = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+                this.#relayoutId = 0;
+                this.#menu?.actor.queue_relayout();
+                return GLib.SOURCE_REMOVE;
+            });
+        }
     }
 
     /**
@@ -161,6 +170,10 @@ export class ContextMenu {
         if (this.#idleId) {
             GLib.source_remove(this.#idleId);
             this.#idleId = 0;
+        }
+        if (this.#relayoutId) {
+            GLib.source_remove(this.#relayoutId);
+            this.#relayoutId = 0;
         }
         const menu = this.#menu;
         this.#menu = null;

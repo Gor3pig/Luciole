@@ -872,6 +872,9 @@ sleep 0.6
 set -- $(menu_state)
 [ "$1" -ge 1 ] && [ "$1" != 8 ] || fail "menu: Open With did not list applications ('$(menu_state)')"
 case "$(menu_state)" in *"Lecteur Luciole de test"*) ;; *) fail "menu: Open With does not offer the test reader ('$(menu_state)')" ;; esac
+# Unfolded, the menu stays whole on screen (it grew; it is moved up when it would run past the bottom).
+set -- $(actor_geometry luciole-context-menu)
+[ $(($2 + $4)) -le 720 ] || fail "menu: unfolded, the menu runs past the bottom of the screen (y=$2, height=$4)"
 echo "ok: Open With unfolds the applications that open the file ($1 here: $(menu_state))"
 press Left
 sleep 0.4

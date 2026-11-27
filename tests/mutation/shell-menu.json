@@ -936,6 +936,18 @@
     "sh",
     "tests/shell/files.sh"
    ]
+  },
+  {
+   "file": "src/shell/context-menu.js",
+   "label": "the menu does not follow its anchor when it grows",
+   "old": "                this.#menu?.actor.queue_relayout();\n",
+   "new": "",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   }
  ]
 }
