@@ -8,6 +8,6 @@
   ],
   "gettext-domain": "luciole",
   "settings-schema": "org.gnome.shell.extensions.luciole",
-  "version-name": "1.0.1",
+  "version-name": "1.0.2",
   "url": "https://github.com/Gor3pig/Luciole"
 }
