@@ -1,13 +1,13 @@
 {
   "uuid": "luciole@gor3pig.github.io",
   "name": "Luciole",
-  "description": "A Spotlight-style launcher: one shortcut (Ctrl+Alt+Space) to find applications, files, Settings panels and answers to calculations.\n\nLocal and private: no network access. Luciole writes to the clipboard only when you ask it to: Enter on a calculation copies the answer, and the menu of actions can copy a file's path or name.",
+  "description": "A Spotlight-style launcher: one shortcut (Ctrl+Alt+Space) to find applications, files, folders, Settings panels and answers to calculations.\n\nLocal and private: no network access. Luciole writes to the clipboard only when you ask it to: Enter on a calculation copies the answer, Ctrl+C copies the chosen file or folder for Files to paste, and the menu of actions can copy a file's path or name.",
   "shell-version": [
     "50",
     "51"
   ],
   "gettext-domain": "luciole",
   "settings-schema": "org.gnome.shell.extensions.luciole",
-  "version-name": "1.0.5",
+  "version-name": "1.1.0",
   "url": "https://github.com/Gor3pig/Luciole"
 }

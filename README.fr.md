@@ -43,8 +43,8 @@ majuscules ; les initiales et les lettres dans l'ordre suffisent.
 </td>
 <td width="33%" valign="top">
 
-**Fichiers**<br>Depuis l'index que GNOME tient déjà ; <kbd>/pdf</kbd>, <kbd>/images</kbd>…
-limitent une recherche à un type de fichier.
+**Fichiers et dossiers**<br>Depuis l'index que GNOME tient déjà, les dossiers dans leur propre
+section ; <kbd>/pdf</kbd>, <kbd>/images</kbd>… limitent une recherche à un type de fichier.
 
 </td>
 <td width="33%" valign="top">
@@ -64,7 +64,8 @@ d'écran, redémarrer… Rien de ce qui ferme ta session n'est choisi à ta plac
 <td width="33%" valign="top">
 
 **Aperçu et actions**<br><kbd>Espace</kbd> affiche un aperçu du fichier ; <kbd>Ctrl</kbd>+<kbd>K</kbd> ou un
-clic droit montre ce qu'on peut en faire : afficher dans le dossier, copier le chemin, ouvrir avec…
+clic droit ouvre son menu, comme dans Fichiers : afficher dans le dossier, le copier, ouvrir un
+terminal à cet endroit, ouvrir avec…
 
 </td>
 <td width="33%" valign="top">
@@ -125,9 +126,10 @@ Puis ferme et rouvre ta session, et active-la comme ci-dessus.
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Espace</kbd> | ouvrir ou fermer Luciole (modifiable dans les réglages) |
 | <kbd>↑</kbd> <kbd>↓</kbd> · <kbd>Tab</kbd> | se déplacer dans les résultats · passer à la section suivante |
 | <kbd>Entrée</kbd> · <kbd>Ctrl</kbd>+<kbd>Entrée</kbd> | ouvrir · afficher un fichier, sélectionné, dans son dossier |
-| <kbd>Ctrl</kbd>+<kbd>K</kbd> ou clic droit | les actions du résultat choisi (ou de celui cliqué) |
+| <kbd>Ctrl</kbd>+<kbd>K</kbd>, <kbd>→</kbd> en fin de champ, ou clic droit | le menu du résultat choisi (ou de celui cliqué) |
+| <kbd>Ctrl</kbd>+<kbd>C</kbd> | copier le fichier ou le dossier choisi, pour le coller dans Fichiers |
 | <kbd>Espace</kbd> ou <kbd>Ctrl</kbd>+<kbd>Y</kbd> | aperçu du fichier choisi |
-| <kbd>Ctrl</kbd>+<kbd>0</kbd> … <kbd>4</kbd> | tout, applications, fichiers, calculatrice, système |
+| <kbd>Ctrl</kbd>+<kbd>0</kbd> … <kbd>5</kbd> | tout, applications, fichiers, dossiers, calculatrice, système |
 | <kbd>↑</kbd> dans le champ vide | une recherche précédente |
 | <kbd>/</kbd> | un type de fichier : `/pdf`, `/images`, `/documents`, `/dossiers`… |
 | <kbd>Échap</kbd> | vider le champ, puis fermer |

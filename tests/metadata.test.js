@@ -16,6 +16,9 @@ function metadata() {
 test('the description says when the clipboard is written, as extensions.gnome.org requires', () => {
     const {description} = metadata();
     assert(/clipboard/i.test(description), 'the clipboard is not mentioned');
+    // Every way Luciole writes to it is named.
+    for (const way of ['Enter on a calculation', 'Ctrl+C copies the chosen file or folder', "a file's path or name"])
+        assert(description.includes(way), `the description does not say "${way}"`);
     assert(description.length < 600, 'a reasonable length');
 });
 

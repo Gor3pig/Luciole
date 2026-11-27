@@ -18,9 +18,9 @@ source is handled. It also lists what is *not* covered yet.
 | Network | None. Nothing is sent anywhere: no telemetry, no web search, no update check. |
 | Reads | The installed applications (through GIO), the file index of the desktop search service (read-only queries), its own settings (GSettings) and its own history files. |
 | Writes | Its settings, and two history files in the user's data directory (`luciole/frecency.json` and `luciole/queries.json`), created readable by the user only. |
-| Runs | Applications the user chooses, through GIO, and the actions such an application declares itself in its desktop file. Files and folders the user chooses, through the default handler for their address, or through an application the user picked in "Open With" among those that can open the file. Nothing else is ever executed. |
-| Clipboard | Written to when the user chooses "Copy Path" or "Copy Name" (the path or name of a local file). Never read. |
-| Other processes | None started by the extension itself. GNOME's file previewer is started by the session bus when the user asks for a preview. |
+| Runs | Applications the user chooses, through GIO, and the actions such an application declares itself in its desktop file. Files and folders the user chooses, through the default handler for their address, or through an application the user picked in "Open With" among those that can open the file. A terminal of GNOME (Ptyxis, Console or GNOME Terminal) when the user chooses to open one in a folder. Nothing else is ever executed. |
+| Clipboard | Written to only when the user asks: Enter on a calculation (the answer), "Copy Path" or "Copy Name" (the path or name of a local file), Ctrl+C or "Copy File" / "Copy Folder" (the address of a local file or folder, in the form Files pastes). Never read. |
+| Other processes | None started by the extension on its own. GNOME's file previewer is started by the session bus when the user asks for a preview; a terminal when the user asks for one. |
 
 The history file records which applications and files were opened, with
 dates. It is capped in size (a few hundred entries, ten dates each), a file over
@@ -96,6 +96,18 @@ duplicates).
 * **Show in Folder hands over only a local file that still exists**, to the desktop's standard
   file manager interface (`org.freedesktop.FileManager1`, which shows it selected); when none
   answers, the file's folder is opened instead, under the same checks.
+* **A terminal is started from a list of arguments, never a command line.** "Open a Terminal Here"
+  is offered only when Ptyxis, Console or GNOME Terminal is found, by its absolute path, in the
+  shell's search path. The folder (the folder chosen, or the one holding the file chosen) must be
+  local and still exist; it is passed as one argument (`--working-directory=<folder>`) through
+  GNOME Shell's own launcher, so no shell ever reads its name, whatever characters it holds.
+* **A file is copied as an address.** Ctrl+C (and "Copy File" / "Copy Folder") puts the address of
+  a local file or folder that still exists on the clipboard, in the form Files pastes
+  (`x-special/gnome-copied-files`); nothing of its content is read. With text selected in the
+  search field, Ctrl+C copies that text instead, as any text field does.
+* **Folders come from the same index, by the same rules.** They are found by a second read-only
+  query, with the user's words bound as a value like any search, and the same exclusions (hidden
+  folders, excluded folders) as files.
 * **The preview shows only a local file that still exists**, through GNOME's own previewer (the
   one the Files application uses), asked over the session bus with the file's address and nothing
   else. While it is shown, Luciole lets go of the keyboard and gives it to the preview window; it

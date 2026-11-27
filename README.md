@@ -43,8 +43,8 @@ letters in order understood.
 </td>
 <td width="33%" valign="top">
 
-**Files**<br>From the index GNOME already keeps; <kbd>/pdf</kbd>, <kbd>/images</kbd>… restrict a
-search to one type of file.
+**Files and folders**<br>From the index GNOME already keeps, folders in a section of their own;
+<kbd>/pdf</kbd>, <kbd>/images</kbd>… restrict a search to one type of file.
 
 </td>
 <td width="33%" valign="top">
@@ -64,7 +64,7 @@ that ends your session is ever chosen for you.
 <td width="33%" valign="top">
 
 **Preview and act**<br><kbd>Space</kbd> previews a file; <kbd>Ctrl</kbd>+<kbd>K</kbd> or a right click
-shows what else you can do: show in folder, copy its path, open with…
+opens its menu, as in Files: show in folder, copy it, open a terminal there, open with…
 
 </td>
 <td width="33%" valign="top">
@@ -124,9 +124,10 @@ Then log out and back in, and enable it as above.
 | <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Space</kbd> | open or close Luciole (can be changed in the settings) |
 | <kbd>↑</kbd> <kbd>↓</kbd> · <kbd>Tab</kbd> | move in the results · jump to the next section |
 | <kbd>Enter</kbd> · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> | open · show a file, selected, in its folder |
-| <kbd>Ctrl</kbd>+<kbd>K</kbd> or a right click | the actions of the selected result (or of the one clicked) |
+| <kbd>Ctrl</kbd>+<kbd>K</kbd>, <kbd>→</kbd> at the end of the field, or a right click | the menu of the selected result (or of the one clicked) |
+| <kbd>Ctrl</kbd>+<kbd>C</kbd> | copy the selected file or folder, to paste it in Files |
 | <kbd>Space</kbd> or <kbd>Ctrl</kbd>+<kbd>Y</kbd> | preview the selected file |
-| <kbd>Ctrl</kbd>+<kbd>0</kbd> … <kbd>4</kbd> | everything, applications, files, calculator, system |
+| <kbd>Ctrl</kbd>+<kbd>0</kbd> … <kbd>5</kbd> | everything, applications, files, folders, calculator, system |
 | <kbd>↑</kbd> in the empty field | a previous search |
 | <kbd>/</kbd> | a type of file: `/pdf`, `/images`, `/documents`, `/folders`… |
 | <kbd>Esc</kbd> | clear the field, then close |
