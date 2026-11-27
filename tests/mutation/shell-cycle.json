@@ -5,7 +5,7 @@
  "command": [
   "sh",
   "tests/shell/cycle.sh",
-  "60"
+  "200"
  ],
  "mutants": [
   {

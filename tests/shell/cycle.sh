@@ -20,10 +20,14 @@ ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 CYCLES=${1:-100}
 UUID=luciole@gor3pig.github.io
 CONTROL=control@example.invalid
-# Allowed growth above the control, in bytes, of what the JavaScript heap keeps alive after a
-# garbage collection, from the end of the warm-up (a quarter of the cycles) to the end.
-MAX_EXTRA_BYTES=200000
-# (measured: 20 to 45 kB over 75 cycles; this catches a leak of a few kB per cycle)
+# Allowed growth above the control, per measured cycle (after the warm-up, a quarter of the
+# cycles), of what the JavaScript heap keeps alive after a garbage collection. A reading of the
+# heap is noisy by a few hundred kB (the collector frees memory in the background): over 200
+# cycles, 150 measured, a leak of 16 kB per cycle adds up to some 2.4 MB, far above that noise,
+# while the limit, 3 kB per cycle, is 450 kB. Fewer cycles see only larger leaks.
+MAX_EXTRA_PER_CYCLE=3000
+MEASURED_CYCLES=$((CYCLES - CYCLES / 4))
+MAX_EXTRA_BYTES=$((MAX_EXTRA_PER_CYCLE * MEASURED_CYCLES))
 
 WORK=$(mktemp -d)
 # A process of the test shell may still be writing there for a moment after it exits.

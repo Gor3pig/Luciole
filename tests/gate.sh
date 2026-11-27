@@ -115,10 +115,10 @@ LIST
     return "$status"
 }
 
-CYCLES=60
+CYCLES=200
 UI_CYCLES=80
 if [ -n "${GATE_FULL:-}" ]; then
-    CYCLES=100
+    CYCLES=300
     UI_CYCLES=150
 fi
 

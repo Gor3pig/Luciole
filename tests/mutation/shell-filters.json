@@ -1,5 +1,5 @@
 {
- "description": "Mutants for the categories in the live launcher: chips, shortcuts, click, reopening. Not listed because equivalent: a chip that can take the keyboard focus (Tab is handled by the field, and a click does not move the focus). Each mutant runs only the part of tests/shell/files.sh that covers it (FILES_PARTS); the whole script runs in the gate.",
+ "description": "Mutants for the categories in the live launcher: chips, shortcuts, click, reopening. Not listed because equivalent: a chip that can take the keyboard focus (Tab is handled by the field, and a click does not move the focus). Each mutant runs only the part of tests/shell/files.sh that covers it (FILES_PARTS); the whole script runs in the gate. Not listed because equivalent: the empty-field hint with text typed (with words typed and nothing found, the window says that nothing was found, before the hint is ever looked at).",
  "slow": true,
  "timeout": 400,
  "command": [
@@ -84,18 +84,6 @@
    "label": "the empty-field hint never shows",
    "old": "        } else if (empty && this.#filter !== null && words === '') {",
    "new": "        } else if (false) {",
-   "command": [
-    "env",
-    "FILES_PARTS=categories",
-    "sh",
-    "tests/shell/files.sh"
-   ]
-  },
-  {
-   "file": "src/ui/launcher.js",
-   "label": "the empty-field hint stays with text typed",
-   "old": "        } else if (empty && this.#filter !== null && words === '') {",
-   "new": "        } else if (empty && this.#filter !== null) {",
    "command": [
     "env",
     "FILES_PARTS=categories",

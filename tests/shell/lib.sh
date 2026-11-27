@@ -132,15 +132,26 @@ ext_state() {
 # (SHELL_EXTRA_ARGS), which is only done by the tests that measure memory.
 heap_bytes() {
     _heap_file="${WORK:-/tmp}/heap-$$.json"
-    gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval \
-        "imports.system.gc(); imports.system.dumpMemoryInfo('$_heap_file'); 1" >/dev/null 2>&1
-    # gcBytes counts the objects themselves, mallocBytes what they own (array contents, string
-    # text): both are needed, a leaked array shows mostly in the second. The first occurrence of
-    # each is the whole heap; the ones further down belong to a single zone.
-    _gc=$(sed -n 's/^ *"gcBytes": \([0-9]*\),.*/\1/p' "$_heap_file" | head -n 1)
-    _malloc=$(sed -n 's/^ *"mallocBytes": \([0-9]*\),.*/\1/p' "$_heap_file" | head -n 1)
-    rm -f "$_heap_file"
-    [ -n "$_gc" ] && [ -n "$_malloc" ] && echo $((_gc + _malloc))
+    _least=""
+    # The collector frees memory in the background, a moment after it ran: a single reading may
+    # still count memory on its way out, enough to hide a leak. The least of three readings, a
+    # moment apart, is the memory really kept.
+    for _try in 1 2 3; do
+        gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval \
+            "imports.system.gc(); imports.system.dumpMemoryInfo('$_heap_file'); 1" >/dev/null 2>&1
+        # gcBytes counts the objects themselves, mallocBytes what they own (array contents, string
+        # text): both are needed, a leaked array shows mostly in the second. The first occurrence
+        # of each is the whole heap; the ones further down belong to a single zone.
+        _gc=$(sed -n 's/^ *"gcBytes": \([0-9]*\),.*/\1/p' "$_heap_file" | head -n 1)
+        _malloc=$(sed -n 's/^ *"mallocBytes": \([0-9]*\),.*/\1/p' "$_heap_file" | head -n 1)
+        rm -f "$_heap_file"
+        if [ -n "$_gc" ] && [ -n "$_malloc" ]; then
+            _now=$((_gc + _malloc))
+            if [ -z "$_least" ] || [ "$_now" -lt "$_least" ]; then _least=$_now; fi
+        fi
+        sleep 0.5
+    done
+    [ -n "$_least" ] && echo "$_least"
 }
 
 # luciole_actors: how many actors of the extension (style class "luciole-...") are still in the

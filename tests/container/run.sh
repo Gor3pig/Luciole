@@ -48,7 +48,7 @@ run() {
 }
 run gjs -m tests/run.js
 run sh -c 'for seed in 1 2 3; do LUCIOLE_SEED=$seed gjs -m tests/run.js --fuzz || exit 1; done'
-for test in "cycle.sh 60" "openclose.sh 80" placement.sh race.sh history.sh search.sh files.sh degrade.sh; do
+for test in "cycle.sh 200" "openclose.sh 80" placement.sh race.sh history.sh search.sh files.sh degrade.sh; do
     # shellcheck disable=SC2086
     run sh tests/shell/$test
 done

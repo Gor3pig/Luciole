@@ -97,8 +97,12 @@ function runCommand(argv, cwd, timeoutSeconds, logPath = null) {
         const launcher = new Gio.SubprocessLauncher({
             flags: logPath ? Gio.SubprocessFlags.STDERR_MERGE : Gio.SubprocessFlags.STDOUT_SILENCE | Gio.SubprocessFlags.STDERR_SILENCE,
         });
-        if (logPath)
+        if (logPath) {
+            // GLib writes over the file without emptying it first: what a longer, earlier run left
+            // would show past the end of this one.
+            Gio.File.new_for_path(logPath).replace_contents(new Uint8Array(), null, false, Gio.FileCreateFlags.NONE, null);
             launcher.set_stdout_file_path(logPath);
+        }
         launcher.set_cwd(cwd);
         const process = launcher.spawnv(argv);
         running.add(process);
