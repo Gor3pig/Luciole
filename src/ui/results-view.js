@@ -134,6 +134,16 @@ export class ResultsView {
         }
     }
 
+    // Where a row is on screen, or null when it is not shown.
+    rowExtents(key) {
+        const row = this.#rows.get(key);
+        if (!row?.mapped)
+            return null;
+        const [x, y] = row.get_transformed_position();
+        const [width, height] = row.get_transformed_size();
+        return {x, y, width, height};
+    }
+
     clear() {
         this.#rows.clear();
         this.#hints.clear();

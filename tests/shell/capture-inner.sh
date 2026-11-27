@@ -99,6 +99,13 @@ CROP=""
 if [ "${CAPTURE_CROP:-0}" = 1 ]; then
     set -- $(actor_geometry luciole-panel)
     [ "$#" = 4 ] || fail "CAPTURE_CROP: the window of Luciole was not found"
+    # The menu of actions (GNOME's, over the window) may reach past it: the frame takes both.
+    MENU_BOX=$(actor_geometry luciole-context-menu)
+    if [ -n "$MENU_BOX" ]; then
+        # shellcheck disable=SC2086
+        set -- $(echo "$1 $2 $3 $4 $MENU_BOX" | awk '{ l = ($1 < $5 ? $1 : $5); t = ($2 < $6 ? $2 : $6);
+            r = ($1 + $3 > $5 + $7 ? $1 + $3 : $5 + $7); b = ($2 + $4 > $6 + $8 ? $2 + $4 : $6 + $8); print l, t, r - l, b - t }')
+    fi
     # 40 px of desktop around the window; the frame is the 1280x720 virtual monitor.
     CROP=$(awk -v x="$1" -v y="$2" -v w="$3" -v h="$4" 'BEGIN { m = 40; l = x - m; t = y - m; r = 1280 - (x + w) - m; b = 720 - (y + h) - m;
         printf "%d %d %d %d", (l > 0 ? l : 0), (t > 0 ? t : 0), (r > 0 ? r : 0), (b > 0 ? b : 0) }')

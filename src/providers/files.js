@@ -390,6 +390,9 @@ export class FilesProvider extends Provider {
         const url = result.data?.url;
         if (action.id !== 'open-with' || !isLocalFileUri(url))
             return [];
+        // A file no longer there (the index lags behind) has nothing to be opened with.
+        if (!await this.#exists(url, this.#lifetime))
+            return [];
         return openWithActions(await this.#appsFor(url, this.#lifetime), this.#gettext);
     }
 

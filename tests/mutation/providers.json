@@ -341,6 +341,12 @@
    "label": "any address is shown in a folder",
    "old": "        if (!isLocalFileUri(url))\n            throw new Error('refusing to show an address that is not a local file');",
    "new": "        if (false)\n            throw new Error('refusing to show an address that is not a local file');"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "Open With lists applications for a file no longer there",
+   "old": "        if (!await this.#exists(url, this.#lifetime))\n            return [];\n        return openWithActions(",
+   "new": "        return openWithActions("
   }
  ]
 }

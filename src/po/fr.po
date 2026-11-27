@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 22:59+0100\n"
+"POT-Creation-Date: 2026-11-27 09:20+0100\n"
 "PO-Revision-Date: 2026-11-25 20:00+0100\n"
 "Last-Translator: Luciole contributors\n"
 "Language-Team: fr <>\n"
@@ -410,25 +410,12 @@ msgstr "Espace : aperçu"
 
 #: src/ui/launcher.js
 #, javascript-format
-msgid "Open “%s” with"
-msgstr "Ouvrir « %s » avec"
-
-#: src/ui/launcher.js
-msgid "Actions for"
-msgstr "Actions pour"
-
-#: src/ui/launcher.js
-#, javascript-format
 msgid "Previous search %d of %d"
 msgstr "Recherche précédente %d sur %d"
 
 #: src/ui/launcher.js
 msgid "Search"
 msgstr "Rechercher"
-
-#: src/ui/launcher.js
-msgid "Actions"
-msgstr "Actions"
 
 #: src/ui/launcher.js
 msgid "Luciole search"

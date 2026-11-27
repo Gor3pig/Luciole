@@ -83,35 +83,6 @@
 .luciole-menu {
     padding: 0 8px 8px 8px;
 }
-.luciole-menu-heading {
-    padding: 4px 8px 0 8px;
-    font-size: 12px;
-    font-weight: bold;
-    color: #5e5c64;
-}
-.luciole-menu-title {
-    padding: 0 8px;
-    font-size: 15px;
-}
-.luciole-menu-subtitle {
-    padding: 0 8px 6px 8px;
-    font-size: 12px;
-    color: #5e5c64;
-}
-.luciole-menu-row {
-    padding: 7px 8px;
-    border-radius: 8px;
-}
-.luciole-menu-row:hover {
-    background-color: rgba(0, 0, 0, 0.06);
-}
-.luciole-menu-row:selected {
-    background-color: rgba(53, 132, 228, 0.18);
-}
-.luciole-menu-hint {
-    font-size: 12px;
-    color: #5e5c64;
-}
 .luciole-menu-confirmation {
     padding: 28px 8px;
     spacing: 10px;

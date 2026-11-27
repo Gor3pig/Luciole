@@ -65,15 +65,25 @@ wait_last() {
     return 1
 }
 last_results() { grep -F '[Luciole] results:' "$LOG" | tail -n 1 | sed 's/.*results: //'; }
-# menu_state: "hidden", or "<number of actions> <index highlighted> <labels>".
+# The menu of actions is GNOME's own (a popup menu over the window).
+# menu_state: "hidden", or "<number of actions> <index highlighted> <labels>"; while "Open With…" is
+# unfolded, those of its applications.
 menu_state() {
-    shell_eval "(function find(a) { if (a.style_class === 'luciole-menu') { if (!a.visible) return 'hidden'; const rows = a.get_children()[0].get_children().filter(c => c.style_class === 'luciole-menu-row'); return rows.length + ' ' + rows.findIndex(r => r.has_style_pseudo_class('selected')) + ' ' + rows.map(r => r.accessible_name).join(';'); } for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
+    shell_eval "(function() { let bp = null; (function f(a) { if (bp) return; if ((a.style_class || '').includes('luciole-context-menu')) { bp = a; return; } a.get_children().forEach(f); })(global.stage); const m = bp && bp._delegate; if (!m || !m.isOpen) return 'hidden'; const sub = m._getMenuItems().find(i => i.menu && i.menu.isOpen); const rows = (sub ? sub.menu : m)._getMenuItems().filter(i => i.reactive && i.label); const f = global.stage.key_focus; return rows.length + ' ' + rows.findIndex(i => f && (i === f || i.contains(f))) + ' ' + rows.map(i => i.label.text).join(';'); })()"
+}
+# context_menus: how many of the launcher's menus exist (shown or not): none once one is closed.
+context_menus() {
+    shell_eval "(function() { let n = 0; (function f(a) { if ((a.style_class || '').includes('luciole-context-menu')) n++; a.get_children().forEach(f); })(global.stage); return String(n); })()"
+}
+# focus_in_field: whether the keyboard is in the search field.
+focus_in_field() {
+    shell_eval "(function() { const f = global.stage.key_focus; let p = f; while (p) { if ((p.style_class || '').includes('luciole-entry')) return 'yes'; p = p.get_parent(); } return 'no'; })()"
 }
 results_visible() {
     shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-results-view')) return String(a.visible); for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
 }
 confirmation_shown() {
-    shell_eval "(function find(a) { if (a.style_class === 'luciole-menu-confirmation') return 'yes'; for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage) || 'no'"
+    shell_eval "(function find(a) { if (a.style_class === 'luciole-menu-confirmation' && a.mapped) return 'yes'; for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage) || 'no'"
 }
 clipboard_text() {
     shell_eval "(function() { globalThis.clipValue = '?'; imports.gi.St.Clipboard.get_default().get_text(imports.gi.St.ClipboardType.CLIPBOARD, (c, t) => { globalThis.clipValue = t; }); return 'asked'; })()" >/dev/null
@@ -100,7 +110,7 @@ result_row_center() {
     shell_eval "(function() { const rows = []; (function walk(a) { if (a.style_class === 'luciole-row' && a.visible) rows.push(a); a.get_children().forEach(walk); })(global.stage); const c = rows[$1]; if (!c) return ''; const [x, y] = c.get_transformed_position(); const [w, h] = c.get_transformed_size(); return Math.round(x + w / 2) + ' ' + Math.round(y + h / 2); })()"
 }
 menu_title() {
-    shell_eval "(function find(a) { if (a.style_class === 'luciole-menu-title' && a.mapped) return a.get_text(); for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage) || 'none'"
+    shell_eval "(function() { let bp = null; (function f(a) { if (bp) return; if ((a.style_class || '').includes('luciole-context-menu')) { bp = a; return; } a.get_children().forEach(f); })(global.stage); const m = bp && bp._delegate; if (!m || !m.isOpen) return 'none'; const t = m._getMenuItems().find(i => !i.reactive && i.label); return t ? t.label.text : 'none'; })()"
 }
 # escape_preview <count of "back" before>: Escape to the preview until it is closed. Just after it
 # opens, the previewer may not handle keys yet and ignores an Escape: then another is sent (four at most).
@@ -114,7 +124,12 @@ escape_preview() {
     return 1
 }
 menu_row_center() {
-    shell_eval "(function find(a) { if (a.style_class === 'luciole-menu') { const rows = a.get_children()[0].get_children().filter(c => c.style_class === 'luciole-menu-row'); const c = rows[$1]; const [x, y] = c.get_transformed_position(); const [w, h] = c.get_transformed_size(); return Math.round(x + w / 2) + ' ' + Math.round(y + h / 2); } for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
+    shell_eval "(function() { let bp = null; (function f(a) { if (bp) return; if ((a.style_class || '').includes('luciole-context-menu')) { bp = a; return; } a.get_children().forEach(f); })(global.stage); const m = bp && bp._delegate; if (!m || !m.isOpen) return ''; const sub = m._getMenuItems().find(i => i.menu && i.menu.isOpen); const rows = (sub ? sub.menu : m)._getMenuItems().filter(i => i.reactive && i.label); const c = rows[$1]; if (!c) return ''; const [x, y] = c.get_transformed_position(); const [w, h] = c.get_transformed_size(); return Math.round(x + w / 2) + ' ' + Math.round(y + h / 2); })()"
+}
+# wait_menu: until the menu is shown (the actions are listed first), two seconds at most.
+wait_menu() {
+    i=0; while [ "$i" -lt 20 ] && [ "$(menu_state)" = hidden ]; do sleep 0.1; i=$((i + 1)); done
+    [ "$(menu_state)" != hidden ]
 }
 
 # ---- Parts: each can run alone (FILES_PARTS="menu calc"; empty: all of them) ----
@@ -301,7 +316,7 @@ CLOSED_SYS=$(launcher_closed_count)
 ACTIVATED=$(grep -cF '[Luciole] activating ' "$LOG")
 rm -f "$WORK/panel-ran"
 chord Control_L+k
-sleep 0.5
+wait_menu || fail "system: Ctrl+K did not open the menu"
 press Return
 wait_log "[Luciole] closed" $((CLOSED_SYS + 1)) || fail "system: the window did not close after Open in the menu"
 i=0; while [ ! -e "$WORK/panel-ran" ] && [ "$i" -lt 60 ]; do sleep 0.1; i=$((i + 1)); done
@@ -442,7 +457,7 @@ wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $
 HIDDEN=$(grep -cF "hidden for the preview" "$LOG")
 BACK=$(grep -cF "back from the preview" "$LOG")
 chord Control_L+k
-sleep 0.5
+wait_menu || fail "preview: Ctrl+K did not open the menu"
 press Down
 press Down
 sleep 0.2
@@ -558,7 +573,7 @@ typed "5 km en m"
 wait_last 'results: 1 first=5000 m query=5 km en m' || fail "no answer for the conversion (last: $(last_results))"
 CLOSED_CALC=$(launcher_closed_count)
 chord Control_L+k
-sleep 0.5
+wait_menu || fail "calculator: Ctrl+K did not open the menu"
 set -- $(menu_state)
 [ "$1" = 2 ] || fail "calculator: expected 2 actions (copy the result, copy the calculation), got '$(menu_state)'"
 press Down
@@ -581,12 +596,15 @@ COPIES=$(grep -cF "copied the answer" "$LOG")
 SHOWN=$(grep -cF "confirmation shown" "$LOG")
 press Return
 wait_log "confirmation shown" $((SHOWN + 1)) || fail "calculator: no confirmation for 3*3"
+SEARCHES=$(grep -cF '[Luciole] results:' "$LOG")
 typed z
 press Return
 chord Control_L+k
+chord Control_L+1
 sleep 0.15
-set -- $(menu_state)
-[ "$1" = 0 ] || fail "calculator: Ctrl+K during the confirmation opened the menu ('$(menu_state)')"
+[ "$(menu_state)" = hidden ] || fail "calculator: Ctrl+K during the confirmation opened the menu ('$(menu_state)')"
+# A category chosen would search again, and say so in the log.
+[ "$(grep -cF '[Luciole] results:' "$LOG")" = "$SEARCHES" ] || fail "calculator: Ctrl+1 during the confirmation searched again ($(last_results))"
 [ "$(entry_text_length)" = 3 ] || fail "calculator: typing during the confirmation reached the field ($(entry_text_length) characters, expected 3)"
 [ "$(grep -cF "copied the answer" "$LOG")" = $((COPIES + 1)) ] || fail "calculator: Enter during the confirmation copied again ($(grep -cF "copied the answer" "$LOG") copies, expected $((COPIES + 1)))"
 wait_log "[Luciole] closed" $((CLOSED_CALC + 1)) || fail "calculator: the window did not close after the confirmation"
@@ -598,7 +616,7 @@ typed "6*7"
 wait_last 'results: 1 first=42 query=6\*7' || fail "no answer for 6*7 (last: $(last_results))"
 CLOSED_CALC=$(launcher_closed_count)
 chord Control_L+k
-sleep 0.5
+wait_menu || fail "calculator: Ctrl+K did not open the menu"
 press Return
 sleep 0.1
 [ "$(confirmation_shown)" = yes ] || fail "calculator: no confirmation after Copy Result in the menu"
@@ -632,11 +650,12 @@ typed rapport
 wait_last 'results: 1 first=rapport' || fail "the real file was not found (last: $(last_results))"
 CLOSED_BEFORE=$(launcher_closed_count)
 chord Control_L+k
-sleep 0.5
+wait_menu || fail "menu: Ctrl+K did not open the menu"
 set -- $(menu_state)
 [ "$1" = 6 ] && [ "$2" = 0 ] || fail "menu: expected 6 actions with the first highlighted, got '$(menu_state)'"
-[ "$(results_visible)" = false ] || fail "menu: the results are still shown behind the menu"
-echo "ok: Ctrl+K shows the 6 actions of a file in place of the results"
+[ "$(results_visible)" = true ] || fail "menu: the results are hidden behind the menu"
+[ "$(menu_title)" = "rapport-test.txt" ] || fail "menu: the menu is titled '$(menu_title)', expected the file"
+echo "ok: Ctrl+K opens GNOME's menu with the 6 actions of a file, over the results"
 press Down
 sleep 0.3
 set -- $(menu_state)
@@ -648,35 +667,28 @@ set -- $(menu_state)
 [ "$2" = 5 ] || fail "menu: the up arrow did not wrap to the last action ('$(menu_state)')"
 echo "ok: the arrows move the highlight and wrap around"
 escape
-sleep 0.3
+sleep 0.4
 [ "$(menu_state)" = hidden ] || fail "menu: Escape did not close the menu"
-[ "$(results_visible)" = true ] || fail "menu: the results did not come back"
 [ "$(launcher_closed_count)" = "$CLOSED_BEFORE" ] || fail "menu: Escape closed the whole window"
-echo "ok: Escape goes back to the results and keeps the window open"
-chord Control_L+k
-sleep 0.3
-chord Control_L+k
-sleep 0.3
-[ "$(menu_state)" = hidden ] || fail "menu: Ctrl+K again did not close the menu"
-chord Control_L+k
-sleep 0.3
+[ "$(focus_in_field)" = yes ] || fail "menu: the keyboard did not come back to the field"
+[ "$(context_menus)" = 0 ] || fail "menu: the menu closed is still there ($(context_menus))"
+LENGTH=$(entry_text_length)
 typed x
 sleep 0.4
-[ "$(menu_state)" = hidden ] || fail "menu: typing did not leave the menu"
+[ "$(entry_text_length)" = $((LENGTH + 1)) ] || fail "menu: typing after the menu did not reach the field ($(entry_text_length) characters, expected $((LENGTH + 1)))"
 clear_entry 1
-sleep 0.4
-echo "ok: Ctrl+K again, or typing, leaves the menu"
+echo "ok: Escape closes the menu only; the keyboard is back in the field"
 
 # Copy the path: a confirmation, the clipboard holds the path, then the window closes.
 wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
 chord Control_L+k
-sleep 0.4
+wait_menu || fail "menu: Ctrl+K did not open the menu"
 press Down
 press Down
 press Down
 sleep 0.2
 press Return
-sleep 0.1
+i=0; while [ "$i" -lt 20 ] && [ "$(confirmation_shown)" != yes ]; do sleep 0.05; i=$((i + 1)); done
 [ "$(confirmation_shown)" = yes ] || fail "menu: no confirmation after Copy Path"
 [ "$(clipboard_text)" = "$WORK/docs/rapport-test.txt" ] || fail "menu: the clipboard holds '$(clipboard_text)', expected the path"
 wait_log "[Luciole] closed" $((CLOSED_BEFORE + 1)) || fail "menu: the window did not close after the confirmation"
@@ -686,42 +698,50 @@ reopen_launcher
 typed rapport
 wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
 chord Control_L+k
-sleep 0.4
+wait_menu || fail "menu: Ctrl+K did not open the menu"
 press Down
 press Down
 press Down
 press Down
 sleep 0.2
 press Return
-sleep 0.3
+sleep 0.4
 [ "$(clipboard_text)" = "rapport-test.txt" ] || fail "menu: the clipboard holds '$(clipboard_text)', expected the file name"
 wait_log "[Luciole] closed" $((CLOSED_BEFORE + 2)) || fail "menu: the window did not close after Copy Name"
 echo "ok: Copy Name puts the name on the clipboard"
 sleep 0.4
 
-# Open With: a second level listing the applications, Escape goes back one level at a time.
+# Open With: unfolds in the menu, listing the applications; the left arrow folds it again.
 reopen_launcher
 typed rapport
 wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
 CLOSED_NOW=$(launcher_closed_count)
 chord Control_L+k
-sleep 0.4
+wait_menu || fail "menu: Ctrl+K did not open the menu"
 press Up
 sleep 0.2
-press Return
-sleep 1
+press Right
+sleep 0.6
 set -- $(menu_state)
 [ "$1" -ge 1 ] && [ "$1" != 6 ] || fail "menu: Open With did not list applications ('$(menu_state)')"
-echo "ok: Open With lists the applications that open the file ($1 here: $(menu_state))"
-escape
-sleep 0.3
+case "$(menu_state)" in *"Lecteur Luciole de test"*) ;; *) fail "menu: Open With does not offer the test reader ('$(menu_state)')" ;; esac
+echo "ok: Open With unfolds the applications that open the file ($1 here: $(menu_state))"
+press Left
+sleep 0.4
 set -- $(menu_state)
-[ "$1" = 6 ] && [ "$2" = 5 ] || fail "menu: Escape from the submenu did not come back to the actions with Open With highlighted ('$(menu_state)')"
-escape
-sleep 0.3
-[ "$(menu_state)" = hidden ] || fail "menu: a second Escape did not close the menu"
-[ "$(launcher_closed_count)" = "$CLOSED_NOW" ] || fail "menu: Escape closed the whole window"
-echo "ok: Escape goes back from the submenu, then closes the menu"
+[ "$1" = 6 ] && [ "$2" = 5 ] || fail "menu: the left arrow did not fold Open With back ('$(menu_state)')"
+press Right
+sleep 0.6
+OPENED_WITH=$(grep -cF "menu action: " "$LOG")
+press Return
+wait_log "menu action: " $((OPENED_WITH + 1)) || fail "menu: choosing an application in Open With did nothing"
+grep -F "menu action: " "$LOG" | tail -n 1 | grep -qF "menu action: open-with:luciole-test-reader.desktop" ||
+    fail "menu: Open With ran '$(grep -F "menu action: " "$LOG" | tail -n 1)', expected the test reader"
+echo "ok: the application chosen in Open With opens the file"
+wait_log "[Luciole] closed" $((CLOSED_NOW + 1)) || fail "menu: the window did not close after Open With"
+sleep 0.4
+reopen_launcher
+clear_entry 8
 
 # Under the pointer a row takes a light tint, unlike the chosen one; the chosen one under the pointer
 # keeps its own. row_tint <index>: "<red>,<green>,<blue>,<alpha>" of that row's background.
@@ -759,8 +779,7 @@ pointer "$1" "$2"
 tries=0
 while [ "$tries" -lt 3 ]; do
     send rclick
-    i=0; while [ "$i" -lt 10 ] && [ "$(menu_state)" = hidden ]; do sleep 0.1; i=$((i + 1)); done
-    [ "$(menu_state)" != hidden ] && break
+    wait_menu && break
     tries=$((tries + 1))
     set -- $(result_row_center 1)
     [ "$#" = 2 ] && pointer "$1" "$2"
@@ -774,10 +793,23 @@ escape
 sleep 0.3
 [ "$(menu_state)" = hidden ] || fail "right click: Escape did not close the menu"
 [ "$(launcher_closed_count)" = "$CLOSED_RC" ] || fail "right click: the window closed"
+[ "$(focus_in_field)" = yes ] || fail "right click: the keyboard did not come back to the field"
+# A click beside the menu closes the menu only.
+set -- $(result_row_center 1)
+pointer "$1" "$2"
+send rclick
+wait_menu || fail "right click: the menu did not open again"
+set -- $(result_row_center 0)
+pointer "$1" "$(( $2 - 4 ))"
+click
+sleep 0.5
+[ "$(menu_state)" = hidden ] || fail "right click: a click beside the menu did not close it"
+[ "$(launcher_closed_count)" = "$CLOSED_RC" ] || fail "right click: a click beside the menu closed the window"
+[ "$(focus_in_field)" = yes ] || fail "right click: the keyboard did not come back to the field after a click beside the menu"
 pointer 60 650
 send rclick
 wait_log "[Luciole] closed" $((CLOSED_RC + 1)) || fail "right click outside the window did not close it"
-echo "ok: a right click shows the actions of the row clicked; outside the window it closes it"
+echo "ok: a right click shows the actions of the row clicked; Escape or a click beside closes the menu only; outside the window it closes it"
 sleep 0.4
 reopen_launcher
 CLOSED_NOW=$(launcher_closed_count)
@@ -797,29 +829,27 @@ sleep 0.4
 reopen_launcher
 CLOSED_NOW=$(launcher_closed_count)
 
-# An action that fails (the file of the index is not there) leaves the menu and the window open.
+# An action that fails (the file of the index is not there) leaves the window open, the keyboard in the field.
 clear_entry 7
 typed quok
 wait_last 'results: 3 first=.*query=quok' || fail "results did not come back (last: $(last_results))"
 chord Control_L+k
-sleep 0.4
+wait_menu || fail "menu: Ctrl+K did not open the menu"
 press Down
 sleep 0.2
 press Return
 wait_log "the file is no longer there" 1 || fail "menu: the failure of Show in Folder was not logged"
 sleep 0.5
-[ "$(menu_state)" != hidden ] || fail "menu: a failed action closed the menu"
 [ "$(launcher_closed_count)" = "$CLOSED_NOW" ] || fail "menu: a failed action closed the window"
-echo "ok: a failed action is logged and leaves the menu open"
-escape
-sleep 0.3
+[ "$(focus_in_field)" = yes ] || fail "menu: the keyboard is not in the field after a failed action"
+echo "ok: a failed action is logged and leaves the window open"
 
 # An application: its own declared action runs (the test one just runs "true").
 clear_entry 4
 typed factu
 wait_last 'results: 2 first=Facture Express query=factu' || fail "the application was not found (last: $(last_results))"
 chord Control_L+k
-sleep 0.4
+wait_menu || fail "menu: Ctrl+K did not open the menu"
 set -- $(menu_state)
 [ "$1" = 2 ] || fail "menu: expected Open and the application's own action, got '$(menu_state)'"
 press Down
@@ -836,7 +866,7 @@ typed rapport
 wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
 CLOSED_NOW=$(launcher_closed_count)
 chord Control_L+k
-sleep 0.5
+wait_menu || fail "menu: Ctrl+K did not open the menu"
 set -- $(menu_row_center 4)
 pointer "$1" "$2"
 sleep 0.3
@@ -850,10 +880,10 @@ reopen_launcher
 typed rapport
 wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
 chord Control_L+k
-sleep 0.5
-[ "$(menu_state)" != hidden ] || fail "menu: the menu did not open"
+wait_menu || fail "menu: the menu did not open"
 combo
 sleep 0.6
+[ "$(context_menus)" = 0 ] || fail "menu: the menu is still there after the window was closed ($(context_menus))"
 reopen_launcher
 [ "$(menu_state)" = hidden ] || fail "menu: the menu was still there after closing the window with the shortcut and reopening"
 [ "$(results_visible)" = true ] || fail "menu: the results were not shown after reopening"
@@ -883,7 +913,7 @@ while [ "$n" -lt 20 ]; do
 done
 sleep 1
 kill -0 "$SHELL_PID" 2>/dev/null || fail "menu: the shell died during the race"
-[ "$(menu_state)" = hidden ] || [ "$(menu_state)" = "" ] || true
+[ "$(context_menus)" -le 1 ] || fail "menu: menus were left behind by the race ($(context_menus))"
 # (The failure provoked on purpose above is logged as an error: it is the only one expected.)
 if log_errors 'JS ERROR|CRITICAL' | grep -vF 'the file is no longer there' | grep -q .; then
     log_errors 'JS ERROR|CRITICAL' | grep -vF 'the file is no longer there' | head -5

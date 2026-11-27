@@ -1,5 +1,5 @@
 {
- "description": "Mutants for the menu of actions in the live launcher. Not listed because equivalent or out of reach: the staleness check of an answer (the gap between asking and the answer is too short to close the window inside it, in a test), and forgetting the menu when closing (opening forgets it too). Not listed because it cannot be provoked in a live shell: a copy that fails (the clipboard always works there); it is covered by the unit tests of the controller. Also not listed because equivalent: the guard on Enter during the confirmation (a field that is not editable does not send Enter at all). Each mutant runs only the part of tests/shell/files.sh that covers it (FILES_PARTS); the whole script runs in the gate. A preview already on screen is noticed twice (its Visible state read after ShowFile, and its window at the timeout): the mutant removes both.",
+ "description": "Mutants for the menu of actions in the live launcher (GNOME's own menu: moving in it, Escape and the clicks are GNOME's, not listed). Not listed because GNOME does it too: giving the keyboard back to the field when the menu closes (the shell's modal stack restores it first). Not listed because equivalent or out of reach: the staleness check of an answer (the gap between asking and the answer is too short to close the window inside it, in a test), and forgetting the menu when closing (opening forgets it too). Not listed because it cannot be provoked in a live shell: a copy that fails (the clipboard always works there); it is covered by the unit tests of the controller. Also not listed because equivalent: the guard on Enter during the confirmation (a field that is not editable does not send Enter at all). Each mutant runs only the part of tests/shell/files.sh that covers it (FILES_PARTS); the whole script runs in the gate. A preview already on screen is noticed twice (its Visible state read after ShowFile, and its window at the timeout): the mutant removes both.",
  "slow": true,
  "timeout": 400,
  "command": [
@@ -9,108 +9,12 @@
  "mutants": [
   {
    "file": "src/ui/launcher.js",
-   "label": "Ctrl+K does not open the menu",
-   "old": "                else\n                    this.#log.guardAsync('opening the actions menu', () => this.#openMenu());",
-   "new": "                else\n                    void 0;",
-   "command": [
-    "env",
-    "FILES_PARTS=menu",
-    "sh",
-    "tests/shell/files.sh"
-   ]
-  },
-  {
-   "file": "src/ui/launcher.js",
-   "label": "Ctrl+K does not close an open menu",
-   "old": "                if (this.#menu.isOpen)\n                    this.#closeMenu();\n                else\n                    this.#log.guardAsync('opening",
-   "new": "                if (false)\n                    this.#closeMenu();\n                else\n                    this.#log.guardAsync('opening",
-   "command": [
-    "env",
-    "FILES_PARTS=menu",
-    "sh",
-    "tests/shell/files.sh"
-   ]
-  },
-  {
-   "file": "src/ui/launcher.js",
-   "label": "the down arrow does not move in the menu",
-   "old": "        case Clutter.KEY_Down:\n            this.#menu.move(1);\n            this.#showMenu();\n            return true;",
-   "new": "        case Clutter.KEY_Down:\n            return true;",
-   "command": [
-    "env",
-    "FILES_PARTS=menu",
-    "sh",
-    "tests/shell/files.sh"
-   ]
-  },
-  {
-   "file": "src/ui/launcher.js",
-   "label": "the up arrow goes the wrong way",
-   "old": "            this.#menu.move(-1);\n            this.#showMenu();",
-   "new": "            this.#menu.move(1);\n            this.#showMenu();",
-   "command": [
-    "env",
-    "FILES_PARTS=menu",
-    "sh",
-    "tests/shell/files.sh"
-   ]
-  },
-  {
-   "file": "src/ui/launcher.js",
-   "label": "Escape does not leave the menu",
-   "old": "        case Clutter.KEY_Escape:\n            this.#menuBack();\n            return true;",
-   "new": "        case Clutter.KEY_Escape:\n            return false;",
-   "command": [
-    "env",
-    "FILES_PARTS=menu",
-    "sh",
-    "tests/shell/files.sh"
-   ]
-  },
-  {
-   "file": "src/ui/launcher.js",
-   "label": "Enter runs the opened result, not the menu action",
-   "old": "            if (this.#menu.isOpen) {\n                if (!this.#confirmTimer)\n                    this.#log.guardAsync('running an action', () => this.#runMenuAction());\n            } else {\n                this.#activateSelected();\n            }",
-   "new": "            this.#activateSelected();",
-   "command": [
-    "env",
-    "FILES_PARTS=menu",
-    "sh",
-    "tests/shell/files.sh"
-   ]
-  },
-  {
-   "file": "src/ui/launcher.js",
-   "label": "a failed action closes the window",
-   "old": "        if (!outcome.ok)\n            return;\n        const own",
-   "new": "        const own",
-   "command": [
-    "env",
-    "FILES_PARTS=menu",
-    "sh",
-    "tests/shell/files.sh"
-   ]
-  },
-  {
-   "file": "src/ui/launcher.js",
    "label": "a copy closes at once, without confirmation",
    "old": "        if (outcome.confirmation || own)\n            this.#showConfirmation(outcome.confirmation ?? own);\n        else\n            this.close();",
    "new": "        this.close();",
    "command": [
     "env",
     "FILES_PARTS=calc",
-    "sh",
-    "tests/shell/files.sh"
-   ]
-  },
-  {
-   "file": "src/ui/launcher.js",
-   "label": "a submenu is not entered",
-   "old": "            if (this.#menu.push(action.label, choices))\n                this.#showMenu();\n            return;",
-   "new": "            return;",
-   "command": [
-    "env",
-    "FILES_PARTS=menu",
     "sh",
     "tests/shell/files.sh"
    ]
@@ -144,30 +48,6 @@
    "label": "the results stay shown behind the menu",
    "old": "        this.#view.actor.hide();\n        this.#menuBox.show();",
    "new": "        this.#menuBox.show();",
-   "command": [
-    "env",
-    "FILES_PARTS=menu",
-    "sh",
-    "tests/shell/files.sh"
-   ]
-  },
-  {
-   "file": "src/ui/launcher.js",
-   "label": "going back from a submenu closes the whole menu",
-   "old": "        if (this.#menu.back())\n            this.#showMenu();\n        else\n            this.#hideMenu();",
-   "new": "        this.#menu.close();\n        this.#hideMenu();",
-   "command": [
-    "env",
-    "FILES_PARTS=menu",
-    "sh",
-    "tests/shell/files.sh"
-   ]
-  },
-  {
-   "file": "src/ui/launcher.js",
-   "label": "a click on an action does not run it",
-   "old": "                this.#log.guardAsync('running an action', () => this.#runMenuAction());\n            });\n            this.#menuRows.add_child(row);",
-   "new": "            });\n            this.#menuRows.add_child(row);",
    "command": [
     "env",
     "FILES_PARTS=menu",
@@ -662,18 +542,6 @@
    ]
   },
   {
-   "file": "src/ui/launcher.js",
-   "label": "a right click shows the actions of the result selected before",
-   "old": "        this.#navigated = true;\n        this.#choose(item.key);\n        await this.#openMenu();",
-   "new": "        await this.#openMenu();",
-   "command": [
-    "env",
-    "FILES_PARTS=menu",
-    "sh",
-    "tests/shell/files.sh"
-   ]
-  },
-  {
    "file": "src/ui/results-view.js",
    "label": "a right click opens the result",
    "old": "            if (button === Clutter.BUTTON_SECONDARY)\n                this.#onContextMenu(item);\n            else\n                this.#onActivate(item);",
@@ -714,6 +582,138 @@
    "label": "the row under the pointer looks chosen",
    "old": ".luciole-row:hover {\n    background-color: rgba(255, 255, 255, 0.08);",
    "new": ".luciole-row:hover {\n    background-color: rgba(120, 174, 237, 0.24);",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "Ctrl+K does not open the menu",
+   "old": "                this.#log.guardAsync('opening the actions menu', () => this.#openMenu());\n                return Clutter.EVENT_STOP;",
+   "new": "                return Clutter.EVENT_STOP;",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "Ctrl+K has nothing to point the menu at",
+   "old": "        const place = where ?? this.#view.rowExtents(item.key);",
+   "new": "        const place = where;",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/shell/context-menu.js",
+   "label": "Ctrl+K does not highlight the first action",
+   "old": "        if (keyboard)\n            this.#menu.actor.navigate_focus(",
+   "new": "        if (false)\n            this.#menu.actor.navigate_focus(",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the window closes when its menu takes the keyboard",
+   "old": "        if (this.#popup && (this.#popup.isOpen || this.#popup.owns(focus)))\n            return;\n",
+   "new": "",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/shell/context-menu.js",
+   "label": "an action chosen in the menu is not run",
+   "old": "            row.connect('activate', () => this.#choose([index]));",
+   "new": "            row.connect('activate', () => {});",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "a failed action closes the window",
+   "old": "        if (!outcome.ok) {\n            this.#resetMenu();\n            return;\n        }\n        const own",
+   "new": "        const own",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/shell/context-menu.js",
+   "label": "Open With offers no application",
+   "old": "                    submenu.menu.addMenuItem(row);",
+   "new": "                    void row;",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "an application chosen in Open With is not the one run",
+   "old": "        if (choiceIndex !== undefined) {",
+   "new": "        if (false) {",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "a right click shows the actions of the result selected before",
+   "old": "        this.#navigated = true;\n        this.#choose(item.key);\n        await this.#openMenu({x, y, width: 0, height: 0});",
+   "new": "        await this.#openMenu({x, y, width: 0, height: 0});",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "a menu closed stays behind",
+   "old": "        this.#popup = null;\n        popup.destroy();\n        if (!this.#isOpen)",
+   "new": "        this.#popup = null;\n        if (!this.#isOpen)",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the menu stays behind when the window closes",
+   "old": "        this.#popup = null;\n        popup?.destroy();",
+   "new": "        this.#popup = null;",
    "command": [
     "env",
     "FILES_PARTS=menu",

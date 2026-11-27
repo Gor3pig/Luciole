@@ -321,6 +321,13 @@ test('Open With lists the applications of the file, the default first', async ()
     t.provider.destroy();
 });
 
+test('Open With offers nothing for a file no longer there', async () => {
+    const t = setupProvider({apps: [{id: 'a.desktop', name: 'A'}], missing: [FILE.data.url]});
+    await t.ready;
+    assertEquals(await t.provider.subActions(FILE, {id: 'open-with'}), [], 'its applications are not listed');
+    t.provider.destroy();
+});
+
 test('Open With launches the chosen application with the file', async () => {
     const t = setupProvider({apps: [{id: 'a.desktop', name: 'A'}, {id: 'b.desktop', name: 'B'}]});
     await t.ready;

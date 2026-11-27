@@ -13,7 +13,8 @@ import {jumpSection, nextSelection} from '../core/merge.js';
 import {HistoryCursor} from '../core/query-history.js';
 import {parseTypeQuery, typeLabels, typePrefix} from '../core/type-filter.js';
 import * as compat from '../shell/compat.js';
-import {describeList, describeWindow, setSelected} from './a11y.js';
+import {ContextMenu} from '../shell/context-menu.js';
+import {describeWindow} from './a11y.js';
 import {ResultsView} from './results-view.js';
 
 const OPEN_MS = 120;
@@ -73,6 +74,8 @@ export class Launcher {
     #menu = new ActionMenu();
     #menuToken = 0;
     #menuItem = null;
+    // GNOME's menu, while it is open (see #openMenu).
+    #popup = null;
     #menuBox = null;
     #menuRows = null;
     #confirmTimer = 0;
@@ -600,72 +603,85 @@ export class Launcher {
         this.#previewer?.cancel();
     }
 
-    // ---- The menu of actions of the selected result (Ctrl+K) ----
+    // ---- The menu of actions of a result (right click, Ctrl+K): GNOME's own menu ----
 
-    // A right click on a row: that result is chosen, as with the arrows, and its actions shown.
+    // A right click on a row: that result is chosen, as with the arrows, and its menu opens where
+    // the pointer is.
     async #openMenuOf(item) {
         if (!this.#isOpen || this.#confirmTimer || this.#menu.isOpen)
             return;
         if (!this.#items.some(candidate => candidate.key === item.key))
             return;
+        const {x, y} = compat.pointerPosition();
         this.#navigated = true;
         this.#choose(item.key);
-        await this.#openMenu();
+        await this.#openMenu({x, y, width: 0, height: 0});
     }
 
-    async #openMenu() {
+    // Opens the menu of the chosen result, pointing at `where`, else at its row (Ctrl+K).
+    async #openMenu(where = null) {
         const item = this.#items.find(candidate => candidate.key === this.#selectedKey);
-        if (!item || !this.#isOpen)
+        if (!item || !this.#isOpen || this.#confirmTimer || this.#menu.isOpen)
             return;
         const token = ++this.#menuToken;
         const actions = await this.#log.guardAsync('listing the actions', () => this.#getActions(item), []);
-        // The window may have closed, or the user done something else, while the actions were listed.
-        if (token !== this.#menuToken || !this.#isOpen)
-            return;
-        this.#menuItem = item;
         // "Preview" is the window's own business, and only when there is a previewer.
         const usable = this.#canPreview(item) ? actions : actions.filter(action => action.id !== 'preview');
-        this.#menu.open(item.result.title, usable);
-        this.#showMenu();
-    }
-
-    // Keys while a menu is shown. True when the key was used (typing is left to the field, which
-    // then leaves the menu).
-    #menuKey(symbol, control) {
-        if (this.#confirmTimer)
-            return true;
-        switch (symbol) {
-        case Clutter.KEY_Down:
-            this.#menu.move(1);
-            this.#showMenu();
-            return true;
-        case Clutter.KEY_Up:
-            this.#menu.move(-1);
-            this.#showMenu();
-            return true;
-        case Clutter.KEY_Return:
-        case Clutter.KEY_KP_Enter:
-            // Enter reaches the field as its "activate" signal (see the handler there), which runs
-            // the highlighted action; Ctrl+Enter would act on the hidden list, so it is swallowed.
-            return control;
-        case Clutter.KEY_Escape:
-            this.#menuBack();
-            return true;
-        case Clutter.KEY_Tab:
-        case Clutter.KEY_ISO_Left_Tab:
-            return true;
-        default:
-            // Other shortcuts would act on the list hidden behind the menu.
-            return control;
+        // What a submenu ("Open With…") offers is listed now, so the menu is complete when it opens.
+        const choices = new Map();
+        for (const action of usable.filter(candidate => candidate.submenu)) {
+            choices.set(action, await this.#log.guardAsync('listing the choices', () => this.#getSubActions(item, action), []));
         }
+        // The window may have closed, or the user done something else, while the actions were listed.
+        if (token !== this.#menuToken || !this.#isOpen || this.#menu.isOpen)
+            return;
+        // A submenu with nothing in it is left out.
+        const shown = usable.filter(action => !action.submenu || choices.get(action).length > 0);
+        const place = where ?? this.#view.rowExtents(item.key);
+        if (shown.length === 0 || !place)
+            return;
+        this.#menuItem = item;
+        this.#menu.open(item.result.title, shown);
+        const popup = new ContextMenu({
+            owner: this.#overlay,
+            title: item.result.title,
+            entries: shown.map(action => action.submenu
+                ? {label: action.label, choices: choices.get(action)}
+                : {label: action.label, hint: action.hint}),
+            onClosed: chosen => this.#log.guardAsync('running an action', () => this.#menuClosed(popup, chosen, choices)),
+        });
+        this.#popup = popup;
+        popup.open(place, where === null);
+        this.#log.debug(`menu opened: ${item.key}`);
     }
 
-    #menuBack() {
-        this.#menuToken++;
-        if (this.#menu.back())
-            this.#showMenu();
-        else
-            this.#hideMenu();
+    // The menu closed, with an action chosen or not. The keyboard comes back to the field.
+    async #menuClosed(popup, chosen, choices) {
+        if (popup !== this.#popup)
+            return;
+        this.#popup = null;
+        popup.destroy();
+        if (!this.#isOpen)
+            return;
+        const focus = compat.keyFocusActor();
+        if (!focus || !this.#overlay.contains(focus))
+            this.#entry.grab_key_focus();
+        if (!chosen) {
+            this.#log.debug('menu left');
+            this.#resetMenu();
+            return;
+        }
+        const [index, choiceIndex] = chosen;
+        this.#menu.select(index);
+        if (choiceIndex !== undefined) {
+            const action = this.#menu.selected;
+            if (!action || !this.#menu.push(action.label, choices.get(action) ?? [])) {
+                this.#resetMenu();
+                return;
+            }
+            this.#menu.select(choiceIndex);
+        }
+        await this.#runMenuAction();
     }
 
     async #runMenuAction() {
@@ -675,24 +691,15 @@ export class Launcher {
             return;
         const token = ++this.#menuToken;
         const stale = () => token !== this.#menuToken || !this.#isOpen || !this.#menu.isOpen;
+        this.#log.debug(`menu action: ${action.id}`);
         if (action.id === 'preview') {
             this.#resetMenu();
-            this.#hideMenu();
             await this.#preview(item);
-            return;
-        }
-        if (action.submenu) {
-            const choices = await this.#log.guardAsync('listing the choices', () => this.#getSubActions(item, action), []);
-            if (stale())
-                return;
-            if (this.#menu.push(action.label, choices))
-                this.#showMenu();
             return;
         }
         // Opening a result that runs once the window is gone (the system's) goes the usual way.
         if (action.id === 'open' && item.result.closeBeforeActivate === true) {
             this.#resetMenu();
-            this.#hideMenu();
             this.#activate(item);
             return;
         }
@@ -700,8 +707,10 @@ export class Launcher {
         if (stale())
             return;
         // A failed action (it is logged) leaves the window open, so the user can try another.
-        if (!outcome.ok)
+        if (!outcome.ok) {
+            this.#resetMenu();
             return;
+        }
         const own = action.id === 'open' ? this.#confirmationOf(item) : null;
         if (outcome.confirmation || own)
             this.#showConfirmation(outcome.confirmation ?? own);
@@ -726,45 +735,7 @@ export class Launcher {
         });
     }
 
-    // Draws the menu at its current level, in place of the results.
-    #showMenu() {
-        const menu = this.#menu;
-        this.#menuRows.destroy_all_children();
-        const item = this.#menuItem;
-        const _ = this.#gettext;
-        const heading = menu.depth > 1
-            ? _('Open “%s” with').format(item?.result.title ?? '')
-            : _('Actions for');
-        this.#menuRows.add_child(new St.Label({style_class: 'luciole-menu-heading', text: heading}));
-        if (menu.depth === 1) {
-            this.#menuRows.add_child(new St.Label({style_class: 'luciole-menu-title', text: menu.title}));
-            if (item?.result.subtitle)
-                this.#menuRows.add_child(new St.Label({style_class: 'luciole-menu-subtitle', text: item.result.subtitle}));
-        }
-        menu.actions.forEach((action, index) => {
-            const row = new St.Button({style_class: 'luciole-menu-row', can_focus: false, reactive: true, track_hover: true, x_expand: true});
-            const content = new St.BoxLayout({x_expand: true});
-            content.add_child(new St.Label({text: action.label, x_expand: true, y_align: Clutter.ActorAlign.CENTER}));
-            const hint = action.submenu ? '›' : action.hint;
-            if (hint)
-                content.add_child(new St.Label({style_class: 'luciole-menu-hint', text: hint, y_align: Clutter.ActorAlign.CENTER}));
-            row.set_child(content);
-            row.accessible_name = action.label;
-            const selected = index === menu.index;
-            if (selected)
-                row.add_style_pseudo_class('selected');
-            setSelected(row, selected);
-            row.connect('clicked', () => {
-                menu.select(index);
-                this.#showMenu();
-                this.#log.guardAsync('running an action', () => this.#runMenuAction());
-            });
-            this.#menuRows.add_child(row);
-        });
-        this.#presentMenuBox();
-    }
-
-    // The menu box in place of the chips and the results.
+    // The confirmation ("Path copied") in place of the chips and the results.
     #presentMenuBox() {
         this.#chipBox.hide();
         this.#emptyHint.hide();
@@ -778,7 +749,7 @@ export class Launcher {
         this.#chipBox.visible = this.#categories.length > 0;
     }
 
-    // Closes the menu and shows the results again.
+    // Closes the menu, or the confirmation, and shows the results again.
     #closeMenu() {
         if (!this.#menu.isOpen && !this.#confirmTimer)
             return;
@@ -786,11 +757,15 @@ export class Launcher {
         this.#hideMenu();
     }
 
-    // Forgets the menu, wherever it was: pending answers become stale, the timer stops.
+    // Forgets the menu, wherever it was: pending answers become stale, the timer stops, GNOME's
+    // menu goes away.
     #resetMenu() {
         this.#menuToken++;
         this.#menu.close();
         this.#menuItem = null;
+        const popup = this.#popup;
+        this.#popup = null;
+        popup?.destroy();
         if (this.#confirmTimer) {
             GLib.source_remove(this.#confirmTimer);
             this.#confirmTimer = 0;
@@ -841,6 +816,9 @@ export class Launcher {
             return;
         const focus = compat.keyFocusActor();
         if (focus && this.#overlay.contains(focus))
+            return;
+        // The launcher's own menu holds the keyboard while it is open, and gives it back as it closes.
+        if (this.#popup && (this.#popup.isOpen || this.#popup.owns(focus)))
             return;
         this.#log.debug('keyboard focus left the launcher');
         this.close();
@@ -928,9 +906,9 @@ export class Launcher {
         panel.add_child(chipBox);
         panel.add_child(emptyHint);
         panel.add_child(view.actor);
+        // Where "Path copied" (and the like) is said for a moment before the window closes.
         const menuBox = new St.BoxLayout({style_class: 'luciole-menu', orientation: Clutter.Orientation.VERTICAL, visible: false});
         const menuRows = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL});
-        describeList(menuRows, _('Actions'));
         menuBox.add_child(menuRows);
         panel.add_child(menuBox);
         this.#menuBox = menuBox;
@@ -1011,14 +989,8 @@ export class Launcher {
             this.#log.guard('searching', () => this.#onQuery(this.#currentQuery()));
         });
         text.connect('activate', () => {
-            if (this.#confirmTimer)
-                return Clutter.EVENT_STOP;
-            if (this.#menu.isOpen) {
-                if (!this.#confirmTimer)
-                    this.#log.guardAsync('running an action', () => this.#runMenuAction());
-            } else {
+            if (!this.#confirmTimer && !this.#menu.isOpen)
                 this.#activateSelected();
-            }
             return Clutter.EVENT_STOP;
         });
         text.connect('key-press-event', (_actor, event) => {
@@ -1032,17 +1004,13 @@ export class Launcher {
             const symbol = event.get_key_symbol();
             const control = (event.get_state() & Clutter.ModifierType.CONTROL_MASK) !== 0;
             if (control && (symbol === Clutter.KEY_k || symbol === Clutter.KEY_K)) {
-                if (this.#menu.isOpen)
-                    this.#closeMenu();
-                else
-                    this.#log.guardAsync('opening the actions menu', () => this.#openMenu());
+                this.#log.guardAsync('opening the actions menu', () => this.#openMenu());
                 return Clutter.EVENT_STOP;
             }
-            if (this.#menu.isOpen) {
-                const handled = this.#menuKey(symbol, control);
-                if (handled)
-                    return Clutter.EVENT_STOP;
-            }
+            // An action of the menu is running (a file being copied, an application listed): the
+            // list behind it stays as it is.
+            if (this.#menu.isOpen)
+                return Clutter.EVENT_STOP;
             if (control && (symbol === Clutter.KEY_Return || symbol === Clutter.KEY_KP_Enter)) {
                 this.#activateSecondary();
                 return Clutter.EVENT_STOP;

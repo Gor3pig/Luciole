@@ -110,6 +110,12 @@ export function keyFocusActor() {
     return global.stage.get_key_focus();
 }
 
+/** Where the pointer is on screen, as {x, y}. */
+export function pointerPosition() {
+    const [x, y] = global.get_pointer();
+    return {x, y};
+}
+
 /** The actor a pointer or touch event is aimed at, or null. */
 export function eventActor(event) {
     return global.stage.get_event_actor(event);
