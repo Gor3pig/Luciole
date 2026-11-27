@@ -454,7 +454,7 @@
   {
    "file": "src/shell/previewer.js",
    "label": "the preview window is not given the keyboard",
-   "old": "    if (actor)\n        Main.activateWindow(actor.meta_window);",
+   "old": "    if (actor) {\n        Main.activateWindow(actor.meta_window);\n        // The keys go to the window only when nothing of the shell keeps the keyboard: opened over\n        // the overview, the launcher otherwise hands it back to the overview's controls.\n        global.stage.set_key_focus(null);\n    }",
    "new": "    void Main;",
    "command": [
     "env",
@@ -646,7 +646,7 @@
   {
    "file": "src/shell/previewer.js",
    "label": "a preview already on screen is not noticed (neither read nor seen as a window)",
-   "old": "                this.#readVisible(current);\n",
+   "old": "                    if (alreadyShown)\n                        this.#seen(current);\n",
    "new": "",
    "command": [
     "env",
