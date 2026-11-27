@@ -333,15 +333,18 @@ async function worker(queue, dir) {
         const file = Gio.File.new_for_path(GLib.build_filenamev([dir, mutant.file]));
         const original = readText(file);
         let status;
+        // Kept for a survivor: what its test saw is the first clue to why it did not notice.
+        const log = GLib.build_filenamev([dir, 'mutant.log']);
         try {
             writeText(file, edits.reduce((text, edit) => text.replace(edit.old, () => edit.new), original));
-            status = await runCommand(mutant.command ?? spec.command, dir, spec.timeout ?? TIMEOUT_SECONDS);
+            status = await runCommand(mutant.command ?? spec.command, dir, spec.timeout ?? TIMEOUT_SECONDS, log);
         } finally {
             writeText(file, original);
         }
         if (status === 0) {
             survivors.push(`${mutant.file}: ${mutant.label}`);
-            print(`SURVIVED  ${mutant.file}: ${mutant.label}`);
+            const lastLines = readText(Gio.File.new_for_path(log)).trimEnd().split('\n').slice(-6).join('\n    ');
+            print(`SURVIVED  ${mutant.file}: ${mutant.label}\n    ${lastLines}`);
         } else {
             killed++;
             if (useCache)
