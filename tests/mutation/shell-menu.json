@@ -580,8 +580,8 @@
   {
    "file": "src/ui/launcher.js",
    "label": "Ctrl+K does not open the menu",
-   "old": "                this.#log.guardAsync('opening the actions menu', () => this.#openMenu());\n                return Clutter.EVENT_STOP;",
-   "new": "                return Clutter.EVENT_STOP;",
+   "old": "            if (control && (symbol === Clutter.KEY_k || symbol === Clutter.KEY_K)) {\n                this.#log.guardAsync('opening the actions menu', () => this.#openMenu());\n                return Clutter.EVENT_STOP;",
+   "new": "            if (control && (symbol === Clutter.KEY_k || symbol === Clutter.KEY_K)) {\n                return Clutter.EVENT_STOP;",
    "command": [
     "env",
     "FILES_PARTS=menu",
@@ -801,6 +801,54 @@
    "command": [
     "env",
     "FILES_PARTS=folders",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the help bar stays during a confirmation",
+   "old": "        const items = this.#confirmTimer ? [] : helpItems(",
+   "new": "        const items = helpItems(",
+   "command": [
+    "env",
+    "FILES_PARTS=help",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the help bar is never shown",
+   "old": "        bar.visible = items.length > 0;",
+   "new": "        bar.visible = false;",
+   "command": [
+    "env",
+    "FILES_PARTS=help",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the right arrow does not open the actions",
+   "old": "            if (event.get_key_symbol() === Clutter.KEY_Right) {",
+   "new": "            if (false) {",
+   "command": [
+    "env",
+    "FILES_PARTS=help",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "the right arrow opens the actions anywhere in the text",
+   "old": "                if (!atEnd || text.get_selection() || !this.#selectedItem() || this.#confirmTimer)",
+   "new": "                if (text.get_selection() || !this.#selectedItem() || this.#confirmTimer)",
+   "command": [
+    "env",
+    "FILES_PARTS=help",
     "sh",
     "tests/shell/files.sh"
    ]

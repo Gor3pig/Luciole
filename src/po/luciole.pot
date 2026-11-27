@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-27 13:17+0100\n"
+"POT-Creation-Date: 2026-11-27 13:28+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,12 +17,40 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/core/session.js
+#: src/core/help-bar.js
+msgid "Choose"
+msgstr ""
+
+#: src/core/help-bar.js src/core/session.js src/providers/calc.js
+msgid "Enter"
+msgstr ""
+
+#: src/core/help-bar.js src/core/session.js
 msgid "Open"
 msgstr ""
 
-#: src/core/session.js src/providers/calc.js
-msgid "Enter"
+#: src/core/help-bar.js src/providers/calc.js
+msgid "Copy Result"
+msgstr ""
+
+#: src/core/help-bar.js
+msgid "Open in Files"
+msgstr ""
+
+#: src/core/help-bar.js src/providers/files-query.js
+msgid "Preview"
+msgstr ""
+
+#: src/core/help-bar.js src/providers/files-query.js
+msgid "Space"
+msgstr ""
+
+#: src/core/help-bar.js
+msgid "Actions"
+msgstr ""
+
+#: src/core/help-bar.js
+msgid "Ctrl+K"
 msgstr ""
 
 #: src/core/session.js
@@ -306,10 +334,6 @@ msgid "Result copied"
 msgstr ""
 
 #: src/providers/calc.js
-msgid "Copy Result"
-msgstr ""
-
-#: src/providers/calc.js
 msgid "Copy Full Calculation"
 msgstr ""
 
@@ -347,14 +371,6 @@ msgstr ""
 
 #: src/providers/files-query.js
 msgid "Open With…"
-msgstr ""
-
-#: src/providers/files-query.js
-msgid "Preview"
-msgstr ""
-
-#: src/providers/files-query.js
-msgid "Space"
 msgstr ""
 
 #: src/providers/files-query.js

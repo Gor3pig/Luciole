@@ -78,6 +78,24 @@
     font-size: 13px;
     color: #b4b3bb;
 }
+.luciole-help-bar {
+    padding: 8px 10px 2px 10px;
+    margin-top: 6px;
+    spacing: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.luciole-help-item {
+    spacing: 6px;
+}
+.luciole-help-label {
+    font-size: 12px;
+    color: #b4b3bb;
+}
+.luciole-help-key {
+    font-size: 12px;
+    font-weight: bold;
+    color: #e4e3ea;
+}
 .luciole-menu {
     padding: 0 8px 8px 8px;
 }

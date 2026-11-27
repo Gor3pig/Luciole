@@ -8,6 +8,7 @@ import St from 'gi://St';
 
 import {ActionMenu} from '../core/action-menu.js';
 import {categoryForDigit, digitOfKey} from '../core/categories.js';
+import {helpItems} from '../core/help-bar.js';
 import {backdropClass, motionEnabled, verticalLayout} from '../core/layout.js';
 import {jumpSection, nextSelection} from '../core/merge.js';
 import {HistoryCursor} from '../core/query-history.js';
@@ -77,6 +78,8 @@ export class Launcher {
     // GNOME's menu, while it is open (see #openMenu).
     #popup = null;
     #menuBox = null;
+    // The bar under the results: what Enter, Space and Ctrl+K do for the chosen result.
+    #helpBar = null;
     #menuRows = null;
     #confirmTimer = 0;
     #onFilter;
@@ -278,6 +281,7 @@ export class Launcher {
             this.#log.debug(`perf query to final results: ${ms.toFixed(2)} ms`);
         }
         this.#updateEmptyHint(state.done);
+        this.#updateHelpBar();
         const first = merged.topHit ?? merged.items[0];
         this.#log.debug(`results: ${merged.items.length} first=${first ? first.result.title : '-'} query=${this.#currentQuery()}`);
     }
@@ -321,6 +325,7 @@ export class Launcher {
     #choose(key) {
         this.#selectedKey = key;
         this.#view.select(key);
+        this.#updateHelpBar();
         this.#log.debug(`selected: ${key}`);
     }
 
@@ -773,6 +778,7 @@ export class Launcher {
     // The confirmation ("Path copied") in place of the chips and the results.
     #presentMenuBox() {
         this.#chipBox.hide();
+        this.#helpBar.hide();
         this.#emptyHint.hide();
         this.#view.actor.hide();
         this.#menuBox.show();
@@ -782,6 +788,7 @@ export class Launcher {
         this.#menuBox.hide();
         this.#view.actor.show();
         this.#chipBox.visible = this.#categories.length > 0;
+        this.#updateHelpBar();
     }
 
     // Closes the menu, or the confirmation, and shows the results again.
@@ -844,6 +851,24 @@ export class Launcher {
         const _ = this.#gettext;
         this.#hint.set_text(_('Previous search %d of %d').format(where.position, where.total));
         this.#hint.show();
+    }
+
+    // Says what the keys do for the chosen result; hidden when none is chosen, or while a
+    // confirmation is shown.
+    #updateHelpBar() {
+        const bar = this.#helpBar;
+        if (!bar)
+            return;
+        const item = this.#selectedItem();
+        const items = this.#confirmTimer ? [] : helpItems(item, {canPreview: this.#canPreview(item), gettext: this.#gettext});
+        bar.destroy_all_children();
+        for (const {label, key} of items) {
+            const pair = new St.BoxLayout({style_class: 'luciole-help-item'});
+            pair.add_child(new St.Label({text: label, style_class: 'luciole-help-label', y_align: Clutter.ActorAlign.CENTER}));
+            pair.add_child(new St.Label({text: key, style_class: 'luciole-help-key', y_align: Clutter.ActorAlign.CENTER}));
+            bar.add_child(pair);
+        }
+        bar.visible = items.length > 0;
     }
 
     #checkFocus() {
@@ -941,6 +966,9 @@ export class Launcher {
         panel.add_child(chipBox);
         panel.add_child(emptyHint);
         panel.add_child(view.actor);
+        const helpBar = new St.BoxLayout({style_class: 'luciole-help-bar', x_align: Clutter.ActorAlign.END, visible: false});
+        panel.add_child(helpBar);
+        this.#helpBar = helpBar;
         // Where "Path copied" (and the like) is said for a moment before the window closes.
         const menuBox = new St.BoxLayout({style_class: 'luciole-menu', orientation: Clutter.Orientation.VERTICAL, visible: false});
         const menuRows = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL});
@@ -1091,10 +1119,23 @@ export class Launcher {
             }
         });
 
-        // Backspace goes to the input method before the field sees it as a key: it is caught on its
-        // way down instead. At the very start of the field it takes the type of file away.
+        // Backspace and the right arrow go to the input method before the field sees them as keys:
+        // they are caught on their way down instead. At the very start of the field Backspace takes
+        // the type of file away.
         overlay.connect('captured-event', (_actor, event) => {
-            if (event.type() !== Clutter.EventType.KEY_PRESS || event.get_key_symbol() !== Clutter.KEY_BackSpace)
+            if (event.type() !== Clutter.EventType.KEY_PRESS)
+                return Clutter.EVENT_PROPAGATE;
+            // At the end of the field, the right arrow opens the chosen result's actions (as in
+            // Alfred); anywhere else it moves the cursor, as usual. Like Backspace, it goes to the
+            // input method before the field sees it.
+            if (event.get_key_symbol() === Clutter.KEY_Right) {
+                const atEnd = text.get_cursor_position() === -1 || text.get_cursor_position() === entry.get_text().length;
+                if (!atEnd || text.get_selection() || !this.#selectedItem() || this.#confirmTimer)
+                    return Clutter.EVENT_PROPAGATE;
+                this.#log.guardAsync('opening the actions menu', () => this.#openMenu());
+                return Clutter.EVENT_STOP;
+            }
+            if (event.get_key_symbol() !== Clutter.KEY_BackSpace)
                 return Clutter.EVENT_PROPAGATE;
             const atStart = entry.get_text() === '' || text.get_cursor_position() === 0;
             if (this.#typeChip === null || !atStart || text.get_selection())

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-27 13:17+0100\n"
+"POT-Creation-Date: 2026-11-27 13:28+0100\n"
 "PO-Revision-Date: 2026-11-25 20:00+0100\n"
 "Last-Translator: Luciole contributors\n"
 "Language-Team: en <>\n"
@@ -16,13 +16,41 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/core/session.js
+#: src/core/help-bar.js
+msgid "Choose"
+msgstr "Choose"
+
+#: src/core/help-bar.js src/core/session.js src/providers/calc.js
+msgid "Enter"
+msgstr "Enter"
+
+#: src/core/help-bar.js src/core/session.js
 msgid "Open"
 msgstr "Open"
 
-#: src/core/session.js src/providers/calc.js
-msgid "Enter"
-msgstr "Enter"
+#: src/core/help-bar.js src/providers/calc.js
+msgid "Copy Result"
+msgstr "Copy Result"
+
+#: src/core/help-bar.js
+msgid "Open in Files"
+msgstr "Open in Files"
+
+#: src/core/help-bar.js src/providers/files-query.js
+msgid "Preview"
+msgstr "Preview"
+
+#: src/core/help-bar.js src/providers/files-query.js
+msgid "Space"
+msgstr "Space"
+
+#: src/core/help-bar.js
+msgid "Actions"
+msgstr "Actions"
+
+#: src/core/help-bar.js
+msgid "Ctrl+K"
+msgstr "Ctrl+K"
 
 #: src/core/session.js
 msgid "File Types"
@@ -314,10 +342,6 @@ msgid "Result copied"
 msgstr "Result copied"
 
 #: src/providers/calc.js
-msgid "Copy Result"
-msgstr "Copy Result"
-
-#: src/providers/calc.js
 msgid "Copy Full Calculation"
 msgstr "Copy Full Calculation"
 
@@ -356,14 +380,6 @@ msgstr "Name copied"
 #: src/providers/files-query.js
 msgid "Open With…"
 msgstr "Open With…"
-
-#: src/providers/files-query.js
-msgid "Preview"
-msgstr "Preview"
-
-#: src/providers/files-query.js
-msgid "Space"
-msgstr "Space"
 
 #: src/providers/files-query.js
 msgid "Default"

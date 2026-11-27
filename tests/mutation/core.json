@@ -1107,20 +1107,20 @@
   {
    "file": "src/providers/files-query.js",
    "label": "Copy Path copies the name",
-   "old": "{id: 'copy-path', label: _('Copy Path'), copy: pathOfUrl(url),",
-   "new": "{id: 'copy-path', label: _('Copy Path'), copy: baseName(url),"
+   "old": "\n        {id: 'copy-path', label: _('Copy Path'), copy: pathOfUrl(url),",
+   "new": "\n        {id: 'copy-path', label: _('Copy Path'), copy: baseName(url),"
   },
   {
    "file": "src/providers/files-query.js",
    "label": "Copy Name copies the path",
-   "old": "{id: 'copy-name', label: _('Copy Name'), copy: baseName(url),",
-   "new": "{id: 'copy-name', label: _('Copy Name'), copy: pathOfUrl(url),"
+   "old": "\n        {id: 'copy-name', label: _('Copy Name'), copy: baseName(url),",
+   "new": "\n        {id: 'copy-name', label: _('Copy Name'), copy: pathOfUrl(url),"
   },
   {
    "file": "src/providers/files-query.js",
    "label": "Open With is not a submenu",
-   "old": "{id: 'open-with', label: _('Open With…'), submenu: true}",
-   "new": "{id: 'open-with', label: _('Open With…')}"
+   "old": "\n        {id: 'open-with', label: _('Open With…'), submenu: true}",
+   "new": "\n        {id: 'open-with', label: _('Open With…')}"
   },
   {
    "file": "src/providers/files-query.js",
@@ -1743,7 +1743,7 @@
   {
    "file": "src/providers/files-query.js",
    "label": "found files cannot be previewed",
-   "old": "            previewable: isLocalFileUri(row.url),",
+   "old": "            previewable: !folder && isLocalFileUri(row.url),",
    "new": "            previewable: false,"
   },
   {
@@ -2057,6 +2057,42 @@
    "label": "in the light theme the row under the pointer looks chosen",
    "old": ".luciole-row:hover {\n    background-color: rgba(0, 0, 0, 0.06);",
    "new": ".luciole-row:hover {\n    background-color: rgba(53, 132, 228, 0.18);"
+  },
+  {
+   "file": "src/core/help-bar.js",
+   "label": "the help never mentions the preview",
+   "old": "    if (canPreview)\n        list.push(",
+   "new": "    if (false)\n        list.push("
+  },
+  {
+   "file": "src/core/help-bar.js",
+   "label": "the help says Open for a calculation",
+   "old": "        open = _('Copy Result');",
+   "new": "        open = _('Open');"
+  },
+  {
+   "file": "src/core/help-bar.js",
+   "label": "the help says Open for a folder",
+   "old": "    else if (item.result.data?.folder === true)",
+   "new": "    else if (false)"
+  },
+  {
+   "file": "src/core/help-bar.js",
+   "label": "the help offers actions to every result",
+   "old": "    if (WITH_ACTIONS.has(item.providerId))",
+   "new": "    if (true)"
+  },
+  {
+   "file": "src/core/help-bar.js",
+   "label": "a type of file is said to open",
+   "old": "    if (typeof item.result.completesTo === 'string')\n        return",
+   "new": "    if (false)\n        return"
+  },
+  {
+   "file": "src/core/help-bar.js",
+   "label": "nothing chosen still says something",
+   "old": "    if (!item?.result)\n        return [];",
+   "new": "    if (!item)\n        return [];"
   }
  ]
 }

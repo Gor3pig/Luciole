@@ -690,6 +690,56 @@ clear_entry 8
 sleep 0.3
 fi
 
+if part help; then
+fresh_start
+# The bar under the results says what the keys do for the chosen result.
+help_text() {
+    shell_eval "(function() { let bar = null; (function w(a) { if (bar) return; if ((a.style_class || '') === 'luciole-help-bar') { bar = a; return; } a.get_children().forEach(w); })(global.stage); if (!bar || !bar.visible || !bar.mapped) return 'hidden'; return bar.get_children().map(p => p.get_children().map(l => l.text).join(' ')).join(' · '); })()"
+}
+clear_entry 8
+typed rapport
+wait_last 'results: 1 first=rapport' || fail "help: the real file was not found (last: $(last_results))"
+sleep 0.3
+[ "$(help_text)" = "Ouvrir Entrée · Aperçu Espace · Actions Ctrl+K" ] || fail "help: a file says '$(help_text)'"
+clear_entry 8
+typed pinson
+wait_last 'results: 3 first=.*query=pinson' || fail "help: the folders were not found (last: $(last_results))"
+chord Control_L+3
+wait_last 'results: 2 first=Pinsonnet.* query=pinson' || fail "help: Ctrl+3 did not keep the folders (last: $(last_results))"
+sleep 0.3
+[ "$(help_text)" = "Ouvrir dans Fichiers Entrée · Actions Ctrl+K" ] || fail "help: a folder says '$(help_text)'"
+chord Control_L+0
+clear_entry 8
+typed "6*7"
+wait_last 'results: 1 first=42 query=6\*7' || fail "help: no answer for 6*7 (last: $(last_results))"
+sleep 0.3
+[ "$(help_text)" = "Copier le résultat Entrée · Actions Ctrl+K" ] || fail "help: a calculation says '$(help_text)'"
+CLOSED_HELP=$(launcher_closed_count)
+SHOWN=$(grep -cF "confirmation shown" "$LOG")
+press Return
+wait_log "confirmation shown" $((SHOWN + 1)) || fail "help: no confirmation for 6*7"
+[ "$(help_text)" = hidden ] || fail "help: the bar is shown during the confirmation ('$(help_text)')"
+wait_log "[Luciole] closed" $((CLOSED_HELP + 1)) || fail "help: the window did not close after the confirmation"
+echo "ok: the bar under the results says what Enter, Space and Ctrl+K do for a file, a folder, a calculation; not during a confirmation"
+sleep 0.4
+reopen_launcher
+typed rapport
+wait_last 'results: 1 first=rapport' || fail "help: the real file was not found again (last: $(last_results))"
+press Left
+press Right
+sleep 0.5
+[ "$(menu_state)" = hidden ] || fail "help: the right arrow inside the text opened the menu"
+press Right
+wait_menu || fail "help: the right arrow at the end of the field did not open the menu"
+set -- $(menu_state)
+[ "$2" = 0 ] || fail "help: the menu of the right arrow does not highlight its first action ('$(menu_state)')"
+escape
+sleep 0.4
+echo "ok: the right arrow at the end of the field opens the actions; inside the text it moves the cursor"
+clear_entry 8
+sleep 0.3
+fi
+
 if part menu; then
 fresh_start
 clear_entry 8
