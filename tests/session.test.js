@@ -735,6 +735,17 @@ test('another action is run by its source, and the search that led to it is reme
     assertEquals(t.queryHistory.entries, ['fire']);
 });
 
+test('an action of its source that says what it did unseen ("File copied") is confirmed once done', async () => {
+    const t = menuSetup();
+    await t.controller.search('fire');
+    const outcome = await t.controller.runAction(t.item, {id: 'copy-file', confirmation: 'File copied'});
+    assertEquals(outcome, {ok: true, confirmation: 'File copied'});
+    t.apps.activateAction = async () => {
+        throw new Error('the file is no longer there');
+    };
+    assertEquals(await t.controller.runAction(t.item, {id: 'copy-file', confirmation: 'File copied'}), {ok: false, confirmation: null});
+});
+
 test('an action that fails is logged, reported as failed, and not remembered', async () => {
     const t = menuSetup();
     t.apps.activateAction = async () => {

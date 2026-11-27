@@ -151,6 +151,32 @@ export function rowsToResults(rows, {home, excludedFolders = [], excludedTypes =
 export const OPEN_WITH_PREFIX = 'open-with:';
 // The theme's icon for a folder, as Files shows it.
 export const FOLDER_ICON = 'folder';
+
+/**
+ * The terminals of GNOME that can open in a folder, in the order they are looked for, and how each
+ * is asked to: an argument list, never a command line a shell would read.
+ */
+export const TERMINALS = [
+    {program: 'ptyxis', argv: (path, dir) => [path, '--new-window', `--working-directory=${dir}`]},
+    {program: 'kgx', argv: (path, dir) => [path, `--working-directory=${dir}`]},
+    {program: 'gnome-terminal', argv: (path, dir) => [path, `--working-directory=${dir}`]},
+];
+
+/**
+ * The first terminal installed, with the arguments that open it in a folder; null when there is
+ * none.
+ *
+ * @param {(program: string) => string | null} findProgram - the program's full path, or null
+ * @returns {{program: string, argvFor: (dir: string) => string[]} | null}
+ */
+export function findTerminal(findProgram) {
+    for (const terminal of TERMINALS) {
+        const path = findProgram(terminal.program);
+        if (typeof path === 'string' && path.startsWith('/'))
+            return {program: terminal.program, argvFor: dir => terminal.argv(path, dir)};
+    }
+    return null;
+}
 const MAX_OPEN_WITH = 12;
 
 /** The last part of a path or an address, decoded: "file:///a/b%20c.odt" -> "b c.odt". */
@@ -164,28 +190,35 @@ export function baseName(url) {
  * one has any: nothing else can be copied as a path or handed to an application. A folder is not
  * previewed (it is opened), and is shown in the folder that holds it.
  *
+ * Copying the file itself (Ctrl+C) puts it on the clipboard for Files to paste; a terminal is offered
+ * only when one is installed.
+ *
  * @param {string} url
  * @param {(text: string) => string} gettext
- * @param {{folder?: boolean}} [options]
+ * @param {{folder?: boolean, terminal?: boolean}} [options]
  */
-export function fileActionList(url, gettext, {folder = false} = {}) {
+export function fileActionList(url, gettext, {folder = false, terminal = false} = {}) {
     if (!isLocalFileUri(url))
         return [];
     const _ = gettext;
+    const copyPath = {id: 'copy-path', label: _('Copy Path'), copy: pathOfUrl(url), confirmation: _('Path copied')};
+    const copyName = {id: 'copy-name', label: _('Copy Name'), copy: baseName(url), confirmation: _('Name copied')};
+    const openWith = {id: 'open-with', label: _('Open With…'), submenu: true};
     if (folder) {
         return [
             {id: 'open-folder', label: _('Show in Parent Folder'), hint: _('Ctrl+Enter')},
-            {id: 'copy-path', label: _('Copy Path'), copy: pathOfUrl(url), confirmation: _('Path copied')},
-            {id: 'copy-name', label: _('Copy Name'), copy: baseName(url), confirmation: _('Name copied')},
-            {id: 'open-with', label: _('Open With…'), submenu: true},
+            ...terminal ? [{id: 'terminal', label: _('Open a Terminal Here')}] : [],
+            {id: 'copy-file', label: _('Copy Folder'), hint: _('Ctrl+C'), confirmation: _('Folder copied')},
+            copyPath, copyName, openWith,
         ];
     }
     return [
         {id: 'open-folder', label: _('Show in Folder'), hint: _('Ctrl+Enter')},
         {id: 'preview', label: _('Preview'), hint: _('Space')},
-        {id: 'copy-path', label: _('Copy Path'), copy: pathOfUrl(url), confirmation: _('Path copied')},
-        {id: 'copy-name', label: _('Copy Name'), copy: baseName(url), confirmation: _('Name copied')},
-        {id: 'open-with', label: _('Open With…'), submenu: true},
+        {id: 'copy-file', label: _('Copy File'), hint: _('Ctrl+C'), confirmation: _('File copied')},
+        copyPath, copyName,
+        ...terminal ? [{id: 'terminal', label: _('Open a Terminal in Its Folder')}] : [],
+        openWith,
     ];
 }
 

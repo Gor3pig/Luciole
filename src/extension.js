@@ -140,8 +140,9 @@ export default class LucioleExtension extends Extension {
 
         const registry = new ProviderRegistry({log});
         registry.register('apps', () => new AppsProvider());
-        registry.register('files', () => new FilesProvider());
-        registry.register('folders', () => new FilesProvider({kind: 'folders'}));
+        const fileOptions = {copyFile: uri => compat.copyFile(uri), spawn: argv => compat.spawn(argv)};
+        registry.register('files', () => new FilesProvider(fileOptions));
+        registry.register('folders', () => new FilesProvider({kind: 'folders', ...fileOptions}));
         registry.register('system', () => new SystemProvider());
         registry.register('calc', () => new CalcProvider({copyText: text => compat.copyText(text)}));
         disposables.add(() => registry.stop());

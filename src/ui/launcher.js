@@ -724,6 +724,24 @@ export class Launcher {
         this.#log.debug('menu left');
     }
 
+    // Ctrl+C: the chosen result is copied when its source can copy it (a file, a folder); then it
+    // is said, as for a copy from the menu.
+    async #copyChosen() {
+        const item = this.#selectedItem();
+        if (!item || !this.#isOpen || this.#confirmTimer || this.#menu.isOpen)
+            return;
+        const token = ++this.#menuToken;
+        const actions = await this.#log.guardAsync('listing the actions', () => this.#getActions(item), []);
+        const action = actions.find(candidate => candidate.id === 'copy-file');
+        if (!action || token !== this.#menuToken || !this.#isOpen)
+            return;
+        const outcome = await this.#log.guardAsync('copying the chosen file', () => this.#onRunAction(item, action), {ok: false, confirmation: null});
+        if (token !== this.#menuToken || !this.#isOpen)
+            return;
+        if (outcome.ok && outcome.confirmation)
+            this.#showConfirmation(outcome.confirmation);
+    }
+
     async #runMenuAction() {
         const action = this.#menu.selected;
         const item = this.#menuItem;
@@ -1068,6 +1086,12 @@ export class Launcher {
             const control = (event.get_state() & Clutter.ModifierType.CONTROL_MASK) !== 0;
             if (control && (symbol === Clutter.KEY_k || symbol === Clutter.KEY_K)) {
                 this.#log.guardAsync('opening the actions menu', () => this.#openMenu());
+                return Clutter.EVENT_STOP;
+            }
+            // Ctrl+C copies the chosen file or folder, for Files to paste (as in Spotlight); with
+            // text selected in the field it copies that text, as usual.
+            if (control && (symbol === Clutter.KEY_c || symbol === Clutter.KEY_C) && !text.get_selection()) {
+                this.#log.guardAsync('copying the chosen file', () => this.#copyChosen());
                 return Clutter.EVENT_STOP;
             }
             // An action of the menu is running (a file being copied, an application listed): the

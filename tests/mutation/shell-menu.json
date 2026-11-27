@@ -796,7 +796,7 @@
   {
    "file": "src/extension.js",
    "label": "the Folders source is not registered",
-   "old": "        registry.register('folders', () => new FilesProvider({kind: 'folders'}));\n",
+   "old": "        registry.register('folders', () => new FilesProvider({kind: 'folders', ...fileOptions}));\n",
    "new": "",
    "command": [
     "env",
@@ -849,6 +849,66 @@
    "command": [
     "env",
     "FILES_PARTS=help",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "Ctrl+C does not copy the chosen file",
+   "old": "            if (control && (symbol === Clutter.KEY_c || symbol === Clutter.KEY_C) && !text.get_selection()) {",
+   "new": "            if (false) {",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "Ctrl+C copies the file even with text selected",
+   "old": "            if (control && (symbol === Clutter.KEY_c || symbol === Clutter.KEY_C) && !text.get_selection()) {",
+   "new": "            if (control && (symbol === Clutter.KEY_c || symbol === Clutter.KEY_C)) {",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/ui/launcher.js",
+   "label": "Ctrl+C copies without saying so",
+   "old": "        if (outcome.ok && outcome.confirmation)\n            this.#showConfirmation(outcome.confirmation);\n    }\n\n    async #runMenuAction() {",
+   "new": "    }\n\n    async #runMenuAction() {",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/shell/compat.js",
+   "label": "a file is copied as plain text, not for Files",
+   "old": "'x-special/gnome-copied-files'",
+   "new": "'text/plain'",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
+  },
+  {
+   "file": "src/extension.js",
+   "label": "the files cannot start a terminal",
+   "old": "spawn: argv => compat.spawn(argv)};",
+   "new": "spawn: () => {}};",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
     "sh",
     "tests/shell/files.sh"
    ]

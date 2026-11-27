@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-27 13:28+0100\n"
+"POT-Creation-Date: 2026-11-27 13:31+0100\n"
 "PO-Revision-Date: 2026-11-25 20:00+0100\n"
 "Last-Translator: Luciole contributors\n"
 "Language-Team: en <>\n"
@@ -354,14 +354,6 @@ msgid "Show in Folder"
 msgstr "Show in Folder"
 
 #: src/providers/files-query.js
-msgid "Show in Parent Folder"
-msgstr "Show in Parent Folder"
-
-#: src/providers/files-query.js
-msgid "Ctrl+Enter"
-msgstr "Ctrl+Enter"
-
-#: src/providers/files-query.js
 msgid "Copy Path"
 msgstr "Copy Path"
 
@@ -380,6 +372,42 @@ msgstr "Name copied"
 #: src/providers/files-query.js
 msgid "Open With…"
 msgstr "Open With…"
+
+#: src/providers/files-query.js
+msgid "Show in Parent Folder"
+msgstr "Show in Parent Folder"
+
+#: src/providers/files-query.js
+msgid "Ctrl+Enter"
+msgstr "Ctrl+Enter"
+
+#: src/providers/files-query.js
+msgid "Open a Terminal Here"
+msgstr "Open a Terminal Here"
+
+#: src/providers/files-query.js
+msgid "Copy Folder"
+msgstr "Copy Folder"
+
+#: src/providers/files-query.js
+msgid "Ctrl+C"
+msgstr "Ctrl+C"
+
+#: src/providers/files-query.js
+msgid "Folder copied"
+msgstr "Folder copied"
+
+#: src/providers/files-query.js
+msgid "Copy File"
+msgstr "Copy File"
+
+#: src/providers/files-query.js
+msgid "File copied"
+msgstr "File copied"
+
+#: src/providers/files-query.js
+msgid "Open a Terminal in Its Folder"
+msgstr "Open a Terminal in Its Folder"
 
 #: src/providers/files-query.js
 msgid "Default"

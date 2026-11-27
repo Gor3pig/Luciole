@@ -48,14 +48,19 @@ const FILES = [
     ['/home/me/Documents', 'say "hi" now.txt'],
 ];
 
-function setupProvider({files = FILES, excludedFolders = [], excludedTypes = [], openConnection, missing = [], apps = [], noFileManager = false, kind = 'files'} = {}) {
+function setupProvider({files = FILES, excludedFolders = [], excludedTypes = [], openConnection, missing = [], apps = [], noFileManager = false, kind = 'files', terminals = []} = {}) {
     const log = recordingLog();
     const database = openConnection ? null : memoryDatabase(files);
     const opened = [];
     const launched = [];
     const shown = [];
+    const copied = [];
+    const spawned = [];
     const provider = new FilesProvider({
         kind,
+        copyFile: uri => copied.push(uri),
+        spawn: argv => spawned.push(argv),
+        findProgram: program => (terminals.includes(program) ? `/usr/bin/${program}` : null),
         openConnection: openConnection ?? (async () => {
             opened.push(true);
             return database;
@@ -77,7 +82,7 @@ function setupProvider({files = FILES, excludedFolders = [], excludedTypes = [],
     };
     const ready = provider.init({settings, log, gettext: text => text});
     const search = query => provider.search(query, {cancellable: new Gio.Cancellable(), limit: 6, emit() {}});
-    return {provider, log, opened, launched, shown, ready, search, database};
+    return {provider, log, opened, launched, shown, copied, spawned, ready, search, database};
 }
 
 const titles = results => results.map(r => r.title);
@@ -314,7 +319,7 @@ const FILE = {data: {url: 'file:///home/me/Documents/Facture%20mars.pdf', parent
 test('a file offers its menu actions, and a result that is not a local file offers none', async () => {
     const t = setupProvider();
     await t.ready;
-    assertEquals((await t.provider.actions(FILE)).map(action => action.id), ['open-folder', 'preview', 'copy-path', 'copy-name', 'open-with']);
+    assertEquals((await t.provider.actions(FILE)).map(action => action.id), ['open-folder', 'preview', 'copy-file', 'copy-path', 'copy-name', 'open-with']);
     assertEquals(await t.provider.actions({data: {url: 'https://example.org/x'}}), []);
     assertEquals(await t.provider.actions({}), []);
     t.provider.destroy();
@@ -442,7 +447,7 @@ test('folders are a source of their own: Files leaves them out, Folders lists on
     const found = await folders.search('compta');
     assertEquals(found.map(r => r.title).sort(), ['Compta', 'Compta 2025'], 'hidden folders are left out too');
     assert(found.every(r => r.icon === 'folder' && r.data.folder === true && r.previewable === false), 'each is a folder');
-    assertEquals((await folders.provider.actions(found[0])).map(a => a.id), ['open-folder', 'copy-path', 'copy-name', 'open-with']);
+    assertEquals((await folders.provider.actions(found[0])).map(a => a.id), ['open-folder', 'copy-file', 'copy-path', 'copy-name', 'open-with']);
     files.provider.destroy();
     folders.provider.destroy();
 });
@@ -460,6 +465,59 @@ test('"/folders" is a search of Files that finds the folders; the Folders source
     assertEquals(await typed(folders, 'folders'), []);
     files.provider.destroy();
     folders.provider.destroy();
+});
+
+test('a file or a folder is copied for Files to paste, only while it is there', async () => {
+    const t = setupProvider({missing: ['file:///home/me/Documents/Gone.pdf']});
+    await t.ready;
+    await t.provider.activateAction(FILE, {id: 'copy-file'});
+    assertEquals(t.copied, [FILE.data.url]);
+    let refused = null;
+    try {
+        await t.provider.activateAction({data: {url: 'file:///home/me/Documents/Gone.pdf'}}, {id: 'copy-file'});
+    } catch (error) {
+        refused = error.message;
+    }
+    assertEquals(refused, 'the file is no longer there');
+    try {
+        await t.provider.activateAction({data: {url: 'https://example.org/x'}}, {id: 'copy-file'});
+    } catch (error) {
+        refused = error.message;
+    }
+    assertEquals(refused, 'refusing an address that is not a local file');
+    assertEquals(t.copied.length, 1);
+    t.provider.destroy();
+});
+
+test('a terminal opens in a folder, or in the folder of a file, when one is installed', async () => {
+    const none = setupProvider();
+    await none.ready;
+    assert(!(await none.provider.actions(FILE)).some(action => action.id === 'terminal'), 'no terminal, no action');
+    none.provider.destroy();
+    const t = setupProvider({terminals: ['ptyxis']});
+    await t.ready;
+    assert((await t.provider.actions(FILE)).some(action => action.id === 'terminal'), 'a terminal is offered');
+    await t.provider.activateAction(FILE, {id: 'terminal'});
+    await t.provider.activateAction({data: {url: 'file:///home/me/Documents/Compta%202025', folder: true}}, {id: 'terminal'});
+    assertEquals(t.spawned, [
+        ['/usr/bin/ptyxis', '--new-window', '--working-directory=/home/me/Documents'],
+        ['/usr/bin/ptyxis', '--new-window', '--working-directory=/home/me/Documents/Compta 2025'],
+    ]);
+    t.provider.destroy();
+});
+
+test('no terminal opens in a folder that is gone', async () => {
+    const t = setupProvider({terminals: ['ptyxis'], missing: ['file:///home/me/Old']});
+    await t.ready;
+    let refused = null;
+    try {
+        await t.provider.activateAction({data: {url: 'file:///home/me/Old', folder: true}}, {id: 'terminal'});
+    } catch (error) {
+        refused = error.message;
+    }
+    assertEquals(refused, 'the file is no longer there');
+    assertEquals(t.spawned, []);
+    t.provider.destroy();
 });
 
 test('without a file manager to select the file, its folder is opened instead, and the log says so', async () => {

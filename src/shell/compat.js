@@ -11,6 +11,7 @@
 // otherwise.
 
 import Clutter from 'gi://Clutter';
+import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
@@ -18,6 +19,7 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {ensureActorVisibleInScrollView} from 'resource:///org/gnome/shell/misc/animationUtils.js';
 import {PACKAGE_VERSION} from 'resource:///org/gnome/shell/misc/config.js';
+import * as Util from 'resource:///org/gnome/shell/misc/util.js';
 
 import {chooseMonitorIndex, systemMotion} from '../core/layout.js';
 
@@ -141,4 +143,15 @@ export function ensureVisible(scrollView, actor) {
 /** Puts a text on the clipboard. Luciole only ever writes to it; it never reads it. */
 export function copyText(text) {
     St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, text);
+}
+
+/** Puts a file or folder on the clipboard the way Files does, for Files to paste it. */
+export function copyFile(uri) {
+    const content = new TextEncoder().encode(`copy\n${uri}`);
+    St.Clipboard.get_default().set_content(St.ClipboardType.CLIPBOARD, 'x-special/gnome-copied-files', new GLib.Bytes(content));
+}
+
+/** Starts a program from its arguments (no shell reads them), in GNOME's launch context. */
+export function spawn(argv) {
+    Util.trySpawn(argv);
 }

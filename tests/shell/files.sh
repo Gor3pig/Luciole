@@ -61,6 +61,16 @@ export INDEX_REAL_FILE="$WORK/docs/rapport-test.txt"
 # The file manager is a stand-in too, started by the bus when asked: it notes what it is asked to
 # show (in FILEMANAGER_RECORD) and opens nothing; the real one is never started.
 export FILEMANAGER_RECORD="$WORK/shown.txt"
+# A stand-in terminal, first in the PATH the shell searches: it writes down how it was asked to
+# open (its arguments, one per line) instead of opening a window.
+mkdir -p "$WORK/bin"
+export TERMINAL_RECORD="$WORK/terminal.txt"
+cat >"$WORK/bin/ptyxis" <<TERMINAL
+#!/bin/sh
+printf '%s\\n' "\$@" >"$TERMINAL_RECORD"
+TERMINAL
+chmod +x "$WORK/bin/ptyxis"
+export PATH="$WORK/bin:$PATH"
 cat >"$WORK/services/dbus-1/services/org.freedesktop.FileManager1.service" <<SERVICE
 [D-BUS Service]
 Name=org.freedesktop.FileManager1

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 import {
-    baseName, buildFtsTerms, displayFolder, fileActionList, isExcluded, isExcludedType, isLocalFileUri, openWithActions, parentUrl, pathOfUrl, rowsToResults,
+    baseName, buildFtsTerms, displayFolder, fileActionList, findTerminal, isExcluded, isExcludedType, isLocalFileUri, openWithActions, parentUrl, pathOfUrl, rowsToResults,
 } from '../src/providers/files-query.js';
 import {assert, assertEquals, test} from './harness.js';
 
@@ -160,29 +160,51 @@ test('the name of a file is the last part of its address, decoded', () => {
 
 test('a local file has the file actions, in this order, each with what it needs', () => {
     const actions = fileActionList('file:///home/me/Documents/Facture%20mars.pdf', echo);
-    assertEquals(actions.map(action => action.id), ['open-folder', 'preview', 'copy-path', 'copy-name', 'open-with']);
+    assertEquals(actions.map(action => action.id), ['open-folder', 'preview', 'copy-file', 'copy-path', 'copy-name', 'open-with']);
     assertEquals(actions[1].hint, 'Space');
-    assertEquals(actions[2].copy, '/home/me/Documents/Facture mars.pdf');
-    assertEquals(actions[3].copy, 'Facture mars.pdf');
-    assertEquals(actions[2].confirmation, 'Path copied');
-    assertEquals(actions[3].confirmation, 'Name copied');
-    assert(actions[4].submenu === true, 'Open With leads to a submenu');
-    assert(!('copy' in actions[0]) && !('copy' in actions[1]) && !('copy' in actions[4]), 'only the two copy actions copy');
+    assertEquals([actions[2].label, actions[2].hint, actions[2].confirmation], ['Copy File', 'Ctrl+C', 'File copied']);
+    assert(!('copy' in actions[2]), 'the file itself is copied by its source, not as text');
+    assertEquals(actions[3].copy, '/home/me/Documents/Facture mars.pdf');
+    assertEquals(actions[4].copy, 'Facture mars.pdf');
+    assertEquals(actions[3].confirmation, 'Path copied');
+    assertEquals(actions[4].confirmation, 'Name copied');
+    assert(actions[5].submenu === true, 'Open With leads to a submenu');
+});
+
+test('with a terminal installed, a file offers one in its folder, before Open With', () => {
+    const actions = fileActionList('file:///home/me/Documents/a.txt', echo, {terminal: true});
+    assertEquals(actions.map(action => action.id), ['open-folder', 'preview', 'copy-file', 'copy-path', 'copy-name', 'terminal', 'open-with']);
+    assertEquals(actions[5].label, 'Open a Terminal in Its Folder');
 });
 
 test('a folder has the folder actions: shown in the folder that holds it, never previewed', () => {
     const actions = fileActionList('file:///home/me/Documents/Compta', echo, {folder: true});
-    assertEquals(actions.map(action => action.id), ['open-folder', 'copy-path', 'copy-name', 'open-with']);
+    assertEquals(actions.map(action => action.id), ['open-folder', 'copy-file', 'copy-path', 'copy-name', 'open-with']);
     assertEquals(actions[0].label, 'Show in Parent Folder');
     assertEquals(actions[0].hint, 'Ctrl+Enter');
-    assertEquals(actions[1].copy, '/home/me/Documents/Compta');
-    assertEquals(actions[2].copy, 'Compta');
+    assertEquals([actions[1].label, actions[1].confirmation], ['Copy Folder', 'Folder copied']);
+    assertEquals(actions[2].copy, '/home/me/Documents/Compta');
+    assertEquals(actions[3].copy, 'Compta');
+    const withTerminal = fileActionList('file:///home/me/Documents/Compta', echo, {folder: true, terminal: true});
+    assertEquals(withTerminal.map(action => action.id), ['open-folder', 'terminal', 'copy-file', 'copy-path', 'copy-name', 'open-with']);
+    assertEquals(withTerminal[1].label, 'Open a Terminal Here');
 });
 
 test('the labels are translated', () => {
     const actions = fileActionList('file:///a/b.txt', text => `[${text}]`);
     assertEquals(actions[0].label, '[Show in Folder]');
-    assertEquals(actions[2].confirmation, '[Path copied]');
+    assertEquals(actions[3].confirmation, '[Path copied]');
+});
+
+test('the first terminal installed is used, opened in the folder by an argument of its own', () => {
+    const only = installed => program => (installed.includes(program) ? `/usr/bin/${program}` : null);
+    assertEquals(findTerminal(only([])), null);
+    const ptyxis = findTerminal(only(['gnome-terminal', 'ptyxis']));
+    assertEquals(ptyxis.program, 'ptyxis');
+    assertEquals(ptyxis.argvFor('/home/me/a "b"; rm'), ['/usr/bin/ptyxis', '--new-window', '--working-directory=/home/me/a "b"; rm']);
+    assertEquals(findTerminal(only(['kgx'])).argvFor('/x'), ['/usr/bin/kgx', '--working-directory=/x']);
+    assertEquals(findTerminal(only(['gnome-terminal'])).argvFor('/x'), ['/usr/bin/gnome-terminal', '--working-directory=/x']);
+    assertEquals(findTerminal(() => 'ptyxis'), null, 'a path that is not absolute is not trusted');
 });
 
 test('what is not a local file has no file actions', () => {

@@ -7,7 +7,7 @@ import Tracker from 'gi://Tracker';
 
 import {Provider} from '../core/provider.js';
 import {fileIsOfType} from '../core/type-filter.js';
-import {buildFtsTerms, fileActionList, isLocalFileUri, OPEN_WITH_PREFIX, openWithActions, rowsToResults} from './files-query.js';
+import {buildFtsTerms, fileActionList, findTerminal, isLocalFileUri, OPEN_WITH_PREFIX, openWithActions, pathOfUrl, rowsToResults} from './files-query.js';
 
 const LOCALSEARCH_BUS_NAME = 'org.freedesktop.LocalSearch3';
 
@@ -222,6 +222,10 @@ export function keepType(rows, typeId) {
     return kept;
 }
 
+function unavailable() {
+    throw new Error('not available here');
+}
+
 function iconForName(name) {
     const [type] = Gio.content_type_guess(name, null);
     return Gio.content_type_get_icon(type);
@@ -239,6 +243,9 @@ export class FilesProvider extends Provider {
     #exists;
     #appsFor;
     #showItem;
+    #copyFile;
+    #spawn;
+    #findProgram;
     #connection = null;
     #connecting = null;
     #destroyed = false;
@@ -261,8 +268,12 @@ export class FilesProvider extends Provider {
      * @param {(uri: string, cancellable: Gio.Cancellable) => Promise<boolean>} [options.exists] - for tests
      * @param {(uri: string, cancellable: Gio.Cancellable) => Promise<Array<{id: string, name: string, isDefault: boolean, launch: (uri: string) => void}>>} [options.appsFor] - for tests
      * @param {(uri: string, cancellable: Gio.Cancellable) => Promise<void>} [options.showItem] - for tests
+     * @param {(uri: string) => void} [options.copyFile] - puts a file on the clipboard, for Files to paste
+     * @param {(argv: string[]) => void} [options.spawn] - starts a program from its arguments, no shell
+     * @param {(program: string) => string | null} [options.findProgram] - a program's full path, or null
      */
-    constructor({kind = 'files', openConnection = openLocalSearch, openUri: open = openUri, exists = uriExists, appsFor = appsForUri, showItem = showItemInFolder} = {}) {
+    constructor({kind = 'files', openConnection = openLocalSearch, openUri: open = openUri, exists = uriExists, appsFor = appsForUri, showItem = showItemInFolder,
+        copyFile = unavailable, spawn = unavailable, findProgram = program => GLib.find_program_in_path(program)} = {}) {
         super();
         this.#kind = kind === 'folders' ? 'folders' : 'files';
         this.#openConnection = openConnection;
@@ -270,6 +281,9 @@ export class FilesProvider extends Provider {
         this.#exists = exists;
         this.#appsFor = appsFor;
         this.#showItem = showItem;
+        this.#copyFile = copyFile;
+        this.#spawn = spawn;
+        this.#findProgram = findProgram;
     }
 
     get id() {
@@ -364,13 +378,18 @@ export class FilesProvider extends Provider {
         });
     }
 
+    // A local file or folder that is still there; else it throws, and nothing is done with it.
+    async #checked(uri) {
+        if (!isLocalFileUri(uri))
+            throw new Error('refusing an address that is not a local file');
+        if (!await this.#exists(uri, this.#lifetime))
+            throw new Error('the file is no longer there');
+    }
+
     // Only a local file or folder that is still there is opened: the index may be out of date,
     // and nothing but a path on this machine may be handed to the system.
     async #openChecked(uri) {
-        if (!isLocalFileUri(uri))
-            throw new Error('refusing to open an address that is not a local file');
-        if (!await this.#exists(uri, this.#lifetime))
-            throw new Error('the file is no longer there');
+        await this.#checked(uri);
         await this.#open(uri, this.#lifetime);
     }
 
@@ -409,7 +428,10 @@ export class FilesProvider extends Provider {
 
     /** The menu actions of a file, besides Open. */
     async actions(result) {
-        return fileActionList(result.data?.url, this.#gettext, {folder: result.data?.folder === true});
+        return fileActionList(result.data?.url, this.#gettext, {
+            folder: result.data?.folder === true,
+            terminal: findTerminal(this.#findProgram) !== null,
+        });
     }
 
     /** What "Open With" leads to: the applications that can open this file. */
@@ -426,6 +448,17 @@ export class FilesProvider extends Provider {
     async activateAction(result, action) {
         if (action.id === 'open-folder') {
             await this.#showInFolder(result);
+        } else if (action.id === 'copy-file') {
+            await this.#checked(result.data?.url);
+            this.#copyFile(result.data.url);
+        } else if (action.id === 'terminal') {
+            // A folder opens there; a file, in the folder that holds it.
+            const folder = result.data?.folder === true ? result.data?.url : result.data?.parentUrl;
+            await this.#checked(folder);
+            const terminal = findTerminal(this.#findProgram);
+            if (!terminal)
+                throw new Error('no terminal is installed');
+            this.#spawn(terminal.argvFor(pathOfUrl(folder)));
         } else if (action.id.startsWith(OPEN_WITH_PREFIX)) {
             // The file must still be there, and the application one of those that can open it:
             // an identifier is never trusted on its own.

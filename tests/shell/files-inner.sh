@@ -748,12 +748,12 @@ wait_last 'results: 1 first=rapport' || fail "the real file was not found (last:
 CLOSED_BEFORE=$(launcher_closed_count)
 chord Control_L+k
 wait_menu || fail "menu: Ctrl+K did not open the menu"
-WANT=6 wait_menu_count || fail "menu: Open With did not join the menu ('$(menu_state)')"
+WANT=8 wait_menu_count || fail "menu: Open With did not join the menu ('$(menu_state)')"
 set -- $(menu_state)
-[ "$1" = 6 ] && [ "$2" = 0 ] || fail "menu: expected 6 actions with the first highlighted, got '$(menu_state)'"
+[ "$1" = 8 ] && [ "$2" = 0 ] || fail "menu: expected 8 actions with the first highlighted, got '$(menu_state)'"
 [ "$(results_visible)" = true ] || fail "menu: the results are hidden behind the menu"
 case "$(menu_title)" in "rapport-test.txt | "*/docs) ;; *) fail "menu: the heading is '$(menu_title)', expected the file and its folder" ;; esac
-echo "ok: Ctrl+K opens GNOME's menu with the 6 actions of a file, over the results, the file and its folder at the top"
+echo "ok: Ctrl+K opens GNOME's menu with the 8 actions of a file, over the results, the file and its folder at the top"
 # From the keyboard the menu opens under the start of the row's name, like the menu key in Files:
 # below the row, never over the field.
 set -- $(actor_geometry luciole-context-menu) $(actor_geometry luciole-entry) $(result_row_center 0)
@@ -781,7 +781,7 @@ wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $
 echo "ok: Ctrl+K closes the menu it opened; a letter typed in the menu goes to the search"
 chord Control_L+k
 wait_menu || fail "menu: Ctrl+K did not open the menu"
-WANT=6 wait_menu_count || fail "menu: Open With did not join the menu ('$(menu_state)')"
+WANT=8 wait_menu_count || fail "menu: Open With did not join the menu ('$(menu_state)')"
 press Down
 sleep 0.3
 set -- $(menu_state)
@@ -790,7 +790,7 @@ press Up
 press Up
 sleep 0.3
 set -- $(menu_state)
-[ "$2" = 5 ] || fail "menu: the up arrow did not wrap to the last action ('$(menu_state)')"
+[ "$2" = 7 ] || fail "menu: the up arrow did not wrap to the last action ('$(menu_state)')"
 echo "ok: the arrows move the highlight and wrap around"
 escape
 sleep 0.4
@@ -812,6 +812,7 @@ wait_menu || fail "menu: Ctrl+K did not open the menu"
 press Down
 press Down
 press Down
+press Down
 sleep 0.2
 press Return
 i=0; while [ "$i" -lt 20 ] && [ "$(confirmation_shown)" != yes ]; do sleep 0.05; i=$((i + 1)); done
@@ -825,6 +826,7 @@ typed rapport
 wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
 chord Control_L+k
 wait_menu || fail "menu: Ctrl+K did not open the menu"
+press Down
 press Down
 press Down
 press Down
@@ -844,19 +846,19 @@ wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $
 CLOSED_NOW=$(launcher_closed_count)
 chord Control_L+k
 wait_menu || fail "menu: Ctrl+K did not open the menu"
-WANT=6 wait_menu_count || fail "menu: Open With did not join the menu ('$(menu_state)')"
+WANT=8 wait_menu_count || fail "menu: Open With did not join the menu ('$(menu_state)')"
 press Up
 sleep 0.2
 press Right
 sleep 0.6
 set -- $(menu_state)
-[ "$1" -ge 1 ] && [ "$1" != 6 ] || fail "menu: Open With did not list applications ('$(menu_state)')"
+[ "$1" -ge 1 ] && [ "$1" != 8 ] || fail "menu: Open With did not list applications ('$(menu_state)')"
 case "$(menu_state)" in *"Lecteur Luciole de test"*) ;; *) fail "menu: Open With does not offer the test reader ('$(menu_state)')" ;; esac
 echo "ok: Open With unfolds the applications that open the file ($1 here: $(menu_state))"
 press Left
 sleep 0.4
 set -- $(menu_state)
-[ "$1" = 6 ] && [ "$2" = 5 ] || fail "menu: the left arrow did not fold Open With back ('$(menu_state)')"
+[ "$1" = 8 ] && [ "$2" = 7 ] || fail "menu: the left arrow did not fold Open With back ('$(menu_state)')"
 press Right
 sleep 0.6
 OPENED_WITH=$(grep -cF "menu action: " "$LOG")
@@ -868,6 +870,54 @@ echo "ok: the application chosen in Open With opens the file"
 wait_log "[Luciole] closed" $((CLOSED_NOW + 1)) || fail "menu: the window did not close after Open With"
 sleep 0.4
 reopen_launcher
+clear_entry 8
+
+# Ctrl+C copies the chosen file for Files to paste, and says so; with text selected in the field it
+# copies that text instead, as usual.
+clipboard_types() {
+    shell_eval "imports.gi.St.Clipboard.get_default().get_mimetypes(imports.gi.St.ClipboardType.CLIPBOARD).join(';')"
+}
+clear_entry 8
+typed rapport
+wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
+CLOSED_NOW=$(launcher_closed_count)
+SHOWN=$(grep -cF "confirmation shown" "$LOG")
+chord Control_L+c
+wait_log "confirmation shown" $((SHOWN + 1)) || fail "copy: Ctrl+C on a file did not say it was copied"
+[ "$(confirmation_shown)" = yes ] || fail "copy: no confirmation on screen after Ctrl+C"
+case ";$(clipboard_types);" in *";x-special/gnome-copied-files;"*) ;; *) fail "copy: the clipboard does not hold a file for Files ('$(clipboard_types)')" ;; esac
+wait_log "[Luciole] closed" $((CLOSED_NOW + 1)) || fail "copy: the window did not close after the confirmation"
+sleep 0.4
+reopen_launcher
+typed rapport
+wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
+SHOWN=$(grep -cF "confirmation shown" "$LOG")
+chord Control_L+a
+chord Control_L+c
+sleep 0.6
+[ "$(grep -cF "confirmation shown" "$LOG")" = "$SHOWN" ] || fail "copy: Ctrl+C with text selected copied the file"
+[ "$(clipboard_text)" = "rapport" ] || fail "copy: Ctrl+C with text selected did not copy that text (clipboard: '$(clipboard_text)')"
+echo "ok: Ctrl+C copies the chosen file for Files; with text selected, the text"
+# A terminal opens in the file's folder (the stand-in writes down its arguments).
+clear_entry 8
+typed rapport
+wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
+rm -f "$TERMINAL_RECORD"
+sleep 0.3
+chord Control_L+k
+wait_menu || fail "terminal: Ctrl+K did not open the menu"
+case "$(menu_state)" in *"Ouvrir un terminal dans son dossier"*) ;; *) fail "terminal: the menu offers no terminal ('$(menu_state)')" ;; esac
+n=0; while [ "$n" -lt 6 ]; do press Down; n=$((n + 1)); done
+sleep 0.2
+press Return
+i=0; while [ ! -s "$TERMINAL_RECORD" ] && [ "$i" -lt 50 ]; do sleep 0.1; i=$((i + 1)); done
+[ "$(cat "$TERMINAL_RECORD" 2>/dev/null)" = "$(printf -- '--new-window\n--working-directory=%s' "$WORK/docs")" ] ||
+    fail "terminal: the terminal was asked '$(cat "$TERMINAL_RECORD" 2>/dev/null)'"
+echo "ok: a terminal opens in the file's folder, its folder given as one argument"
+sleep 0.4
+OPENED_NOW=$(grep -cF "[Luciole] opened" "$LOG")
+CLOSED_NOW=$(grep -cF "[Luciole] closed" "$LOG")
+[ $((OPENED_NOW - CLOSED_NOW)) = 0 ] && reopen_launcher
 clear_entry 8
 
 # Under the pointer a row takes a light tint, unlike the chosen one; the chosen one under the pointer
@@ -894,6 +944,13 @@ echo "ok: the row under the pointer has a light tint of its own; the chosen one 
 clear_entry 12
 typed quok
 wait_last 'results: 3 first=.*query=quok' || fail "results did not come back (last: $(last_results))"
+# The list is read and clicked once it is no longer redrawn (the files arrive after the
+# applications): the same rows twice in a row.
+row_names() {
+    shell_eval "(function() { const rows = []; (function walk(a) { if (a.style_class === 'luciole-row' && a.visible) rows.push(a); a.get_children().forEach(walk); })(global.stage); return rows.map(r => r.get_accessible_name?.() ?? '').join(';'); })()"
+}
+PREVIOUS=''; i=0
+while [ "$i" -lt 30 ]; do CURRENT=$(row_names); [ -n "$CURRENT" ] && [ "$CURRENT" = "$PREVIOUS" ] && break; PREVIOUS=$CURRENT; sleep 0.25; i=$((i + 1)); done
 CLOSED_RC=$(launcher_closed_count)
 # (The list may still be redrawn for a moment after the results are logged.)
 i=0; while [ "$i" -lt 20 ]; do set -- $(result_row_center 1); [ "$#" = 2 ] && break; sleep 0.1; i=$((i + 1)); done
@@ -921,16 +978,17 @@ sleep 0.3
 [ "$(menu_state)" = hidden ] || fail "right click: Escape did not close the menu"
 [ "$(launcher_closed_count)" = "$CLOSED_RC" ] || fail "right click: the window closed"
 [ "$(focus_in_field)" = yes ] || fail "right click: the keyboard did not come back to the field"
-# Another row right-clicked while a menu is open: its own menu, at once. (The menu opens below the
-# pointer, over the rows under it: the row above is the one in sight.)
+# Another row right-clicked while a menu is open: its own menu, at once. (The menu's corner is at
+# the pointer: the part of the rows left of it stays in sight.)
 FIRST=$(shell_eval "(function() { const rows = []; (function walk(a) { if (a.style_class === 'luciole-row' && a.visible) rows.push(a); a.get_children().forEach(walk); })(global.stage); return rows[0] ? rows[0].get_accessible_name?.() ?? '' : ''; })()")
 set -- $(result_row_center 1)
 pointer "$1" "$2"
 send rclick
 wait_menu || fail "right click: no menu for the second row"
 SECOND_TITLE=$(menu_title)
+# Left of the pointer: the menu starts at the pointer and may go up over the row above.
 set -- $(result_row_center 0)
-pointer "$1" "$2"
+pointer $(($1 - 200)) "$2"
 send rclick
 i=0; while [ "$i" -lt 30 ] && { [ "$(menu_title)" = "$SECOND_TITLE" ] || [ "$(menu_state)" = hidden ]; }; do sleep 0.1; i=$((i + 1)); done
 [ "$(menu_state)" != hidden ] || fail "right click: a right click on another row, menu open, only closed the menu"
@@ -944,8 +1002,9 @@ set -- $(result_row_center 1)
 pointer "$1" "$2"
 send rclick
 wait_menu || fail "right click: the menu did not open again"
+# Left of the pointer, where the menu never is.
 set -- $(result_row_center 0)
-pointer "$1" "$(( $2 - 4 ))"
+pointer $(($1 - 200)) "$2"
 click
 sleep 0.5
 [ "$(menu_state)" = hidden ] || fail "right click: a click beside the menu did not close it"
@@ -1024,7 +1083,7 @@ wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $
 CLOSED_NOW=$(launcher_closed_count)
 chord Control_L+k
 wait_menu || fail "menu: Ctrl+K did not open the menu"
-set -- $(menu_row_center 4)
+set -- $(menu_row_center 5)
 pointer "$1" "$2"
 sleep 0.3
 click

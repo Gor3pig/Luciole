@@ -289,7 +289,8 @@ export class SearchController {
             this.#log.debug(`action ${action.id} on ${item.key} done`);
             this.#rememberQuery(query);
         }
-        return {ok, confirmation: null};
+        // An action that says it did something unseen ("File copied") says so once done.
+        return {ok, confirmation: ok ? action.confirmation ?? null : null};
     }
 
     /**

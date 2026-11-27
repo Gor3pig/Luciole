@@ -1107,20 +1107,20 @@
   {
    "file": "src/providers/files-query.js",
    "label": "Copy Path copies the name",
-   "old": "\n        {id: 'copy-path', label: _('Copy Path'), copy: pathOfUrl(url),",
-   "new": "\n        {id: 'copy-path', label: _('Copy Path'), copy: baseName(url),"
+   "old": "    const copyPath = {id: 'copy-path', label: _('Copy Path'), copy: pathOfUrl(url),",
+   "new": "    const copyPath = {id: 'copy-path', label: _('Copy Path'), copy: baseName(url),"
   },
   {
    "file": "src/providers/files-query.js",
    "label": "Copy Name copies the path",
-   "old": "\n        {id: 'copy-name', label: _('Copy Name'), copy: baseName(url),",
-   "new": "\n        {id: 'copy-name', label: _('Copy Name'), copy: pathOfUrl(url),"
+   "old": "    const copyName = {id: 'copy-name', label: _('Copy Name'), copy: baseName(url),",
+   "new": "    const copyName = {id: 'copy-name', label: _('Copy Name'), copy: pathOfUrl(url),"
   },
   {
    "file": "src/providers/files-query.js",
    "label": "Open With is not a submenu",
-   "old": "\n        {id: 'open-with', label: _('Open With…'), submenu: true}",
-   "new": "\n        {id: 'open-with', label: _('Open With…')}"
+   "old": "    const openWith = {id: 'open-with', label: _('Open With…'), submenu: true};",
+   "new": "    const openWith = {id: 'open-with', label: _('Open With…')};"
   },
   {
    "file": "src/providers/files-query.js",
@@ -2093,6 +2093,12 @@
    "label": "nothing chosen still says something",
    "old": "    if (!item?.result)\n        return [];",
    "new": "    if (!item)\n        return [];"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "an action of a source is never confirmed",
+   "old": "        return {ok, confirmation: ok ? action.confirmation ?? null : null};",
+   "new": "        return {ok, confirmation: null};"
   }
  ]
 }

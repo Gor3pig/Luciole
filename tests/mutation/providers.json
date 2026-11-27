@@ -285,14 +285,14 @@
   {
    "file": "src/providers/files.js",
    "label": "existence not checked",
-   "old": "if (!await this.#exists(uri, this.#lifetime))",
-   "new": "if (false)"
+   "old": "        if (!await this.#exists(uri, this.#lifetime))\n            throw new Error('the file is no longer there');\n    }",
+   "new": "        if (false)\n            throw new Error('the file is no longer there');\n    }"
   },
   {
    "file": "src/providers/files.js",
    "label": "address not checked",
-   "old": "if (!isLocalFileUri(uri))",
-   "new": "if (false)"
+   "old": "        if (!isLocalFileUri(uri))\n            throw new Error('refusing an address that is not a local file');",
+   "new": "        if (false)\n            throw new Error('refusing an address that is not a local file');"
   },
   {
    "file": "src/providers/files.js",
@@ -411,8 +411,56 @@
   {
    "file": "src/providers/files.js",
    "label": "a folder is given a file's actions by its source",
-   "old": "        return fileActionList(result.data?.url, this.#gettext, {folder: result.data?.folder === true});",
-   "new": "        return fileActionList(result.data?.url, this.#gettext);"
+   "old": "            folder: result.data?.folder === true,\n            terminal:",
+   "new": "            folder: false,\n            terminal:"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "a terminal is never offered",
+   "old": "            terminal: findTerminal(this.#findProgram) !== null,",
+   "new": "            terminal: false,"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "a file is copied even when it is gone",
+   "old": "            await this.#checked(result.data?.url);\n            this.#copyFile(result.data.url);",
+   "new": "            this.#copyFile(result.data.url);"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "a folder's terminal opens in the folder that holds it",
+   "old": "            const folder = result.data?.folder === true ? result.data?.url : result.data?.parentUrl;",
+   "new": "            const folder = result.data?.parentUrl;"
+  },
+  {
+   "file": "src/providers/files.js",
+   "label": "a terminal opens even when its folder is gone",
+   "old": "            await this.#checked(folder);\n            const terminal",
+   "new": "            const terminal"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "Ptyxis is not asked for a new window",
+   "old": "    {program: 'ptyxis', argv: (path, dir) => [path, '--new-window', `--working-directory=${dir}`]},",
+   "new": "    {program: 'ptyxis', argv: (path, dir) => [path, `--working-directory=${dir}`]},"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "a terminal found by a relative name is trusted",
+   "old": "        if (typeof path === 'string' && path.startsWith('/'))",
+   "new": "        if (typeof path === 'string')"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "a folder offers no terminal",
+   "old": "            ...terminal ? [{id: 'terminal', label: _('Open a Terminal Here')}] : [],",
+   "new": ""
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "a file cannot be copied for Files",
+   "old": "        {id: 'copy-file', label: _('Copy File'), hint: _('Ctrl+C'), confirmation: _('File copied')},\n",
+   "new": ""
   }
  ]
 }
