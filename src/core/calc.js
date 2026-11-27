@@ -13,8 +13,9 @@ import {convert, findUnit} from './units.js';
 export const MAX_INPUT = 200;
 export const MAX_TOKENS = 100;
 export const MAX_DEPTH = 16;
-// A result shows this many significant digits, which hides 0.1 + 0.2 = 0.30000000000000004.
-const SIGNIFICANT_DIGITS = 10;
+// A result shows this many significant digits: enough for the units defined exactly (an ounce is
+// 28.349523125 g), few enough to hide the noise of floating point (0.1 + 0.2 = 0.30000000000000004).
+const SIGNIFICANT_DIGITS = 12;
 
 const FUNCTIONS = new Map([
     ['sqrt', Math.sqrt], ['racine', Math.sqrt],
@@ -137,7 +138,12 @@ class Reader {
                 const right = this.term();
                 // "150 + 20 %" is 150 plus 20 % of 150.
                 const amount = right.pct ? left.v * right.v : right.v;
-                left = {v: left.v + sign * amount, pct: false};
+                let sum = left.v + sign * amount;
+                // Two nearly equal numbers cancel (3 * 1.1 - 3.3): what is left of them is the noise
+                // of floating point, not a value.
+                if (Math.abs(sum) < Math.max(Math.abs(left.v), Math.abs(amount)) * 1e-14)
+                    sum = 0;
+                left = {v: sum, pct: false};
             } else {
                 return left;
             }

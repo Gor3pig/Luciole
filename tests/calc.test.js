@@ -47,12 +47,12 @@ test('a comma or a point is the decimal mark, and spaces inside a number are ign
     assertEquals(calc('1 0000 + 1'), null, 'four digits after a space are another number, not a group');
 });
 
-test('the result is shown with the decimal mark asked for, rounded to ten digits', () => {
+test('the result is shown with the decimal mark asked for, rounded to twelve digits', () => {
     assertEquals(calc('1/4', ','), '0,25');
     assertEquals(calc('1/4', '.'), '0.25');
     assertEquals(calc('0.1 + 0.2'), '0.3');
-    assertEquals(calc('1/3'), '0.3333333333');
-    assertEquals(calc('2/3'), '0.6666666667');
+    assertEquals(calc('1/3'), '0.333333333333');
+    assertEquals(calc('2/3'), '0.666666666667');
     assertEquals(calc('1000000 * 1000000'), '1000000000000');
 });
 
@@ -83,9 +83,9 @@ test('functions and constants', () => {
     assertEquals(calc('log(1000)'), '3');
     assertEquals(calc('exp(0)'), '1');
     assertEquals(calc('sin(0) + cos(0)'), '1');
-    assertEquals(calc('pi * 2'), '6.283185307');
-    assertEquals(calc('π * 2'), '6.283185307');
-    assertEquals(calc('Pi * 2'), '6.283185307');
+    assertEquals(calc('pi * 2'), '6.28318530718');
+    assertEquals(calc('π * 2'), '6.28318530718');
+    assertEquals(calc('Pi * 2'), '6.28318530718');
     assertEquals(calc('sqrt(sqrt(16))'), '2');
 });
 
@@ -136,9 +136,9 @@ test('the answer carries the text as typed, the result and the whole calculation
 });
 
 test('a conversion: the same kind of unit, French or English names, several ways to say "to"', () => {
-    assertEquals(evaluateQuery('5 km en miles', {decimal: ','}), {kind: 'convert', text: '5 km en miles', result: '3,106855961 mi', full: '5 km = 3,106855961 mi'});
+    assertEquals(evaluateQuery('5 km en miles', {decimal: ','}), {kind: 'convert', text: '5 km en miles', result: '3,10685596119 mi', full: '5 km = 3,10685596119 mi'});
     for (const text of ['5 km to mi', '5 km vers mi', '5km en mi', '5 KM EN MI', '5 km -> mi', '5 km => mi', '5 km → mi', '5 kilomètres en miles'])
-        assertEquals(evaluateQuery(text)?.result, '3.106855961 mi', text);
+        assertEquals(evaluateQuery(text)?.result, '3.10685596119 mi', text);
 });
 
 test('conversions take an expression on the left', () => {
@@ -149,7 +149,7 @@ test('conversions take an expression on the left', () => {
 test('the usual conversions give the usual numbers', () => {
     const results = {
         '1 mile en km': '1.609344 km', '1 in en cm': '2.54 cm', '10 ft en m': '3.048 m', '3 yd en m': '2.7432 m',
-        '1 kg en lb': '2.204622622 lb', '1 oz en g': '28.34952313 g', '2 tonnes en kg': '2000 kg',
+        '1 kg en lb': '2.20462262185 lb', '1 oz en g': '28.349523125 g', '2 tonnes en kg': '2000 kg',
         '1 gallon en l': '3.785411784 l', '1 cup en ml': '236.5882365 ml', '2 l en cl': '200 cl',
         '2 h en min': '120 min', '1 jour en h': '24 h', '1 semaine en jours': '7 j', '90 s en min': '1.5 min',
         '0 °C en °F': '32 °F', '100 °C en K': '373.15 K', '32 °F en °C': '0 °C', '212 °F en °C': '100 °C', '0 K en °C': '-273.15 °C',
@@ -176,9 +176,9 @@ test('a conversion that cannot be worked out gives nothing', () => {
     assertEquals(evaluateQuery('10^305 km en mm'), null, 'a result too big to be finite');
 });
 
-test('a number is shown with ten significant digits, no grouping, and zero is just zero', () => {
+test('a number is shown with twelve significant digits, no grouping, and zero is just zero', () => {
     assertEquals(formatNumber(1234567.891), '1234567.891');
-    assertEquals(formatNumber(1 / 3), '0.3333333333');
+    assertEquals(formatNumber(1 / 3), '0.333333333333');
     assertEquals(formatNumber(0), '0');
     assertEquals(formatNumber(-0), '0');
     assertEquals(formatNumber(1.5, ','), '1,5');
@@ -222,7 +222,30 @@ test('"in" separates a conversion, and is still the inch where it is a unit', ()
     assertEquals(evaluateQuery('20 °C in °F')?.result, '68 °F');
     assertEquals(evaluateQuery('10 in in cm')?.result, '25.4 cm', 'the first "in" is the inch, the second separates');
     assertEquals(evaluateQuery('2 in to cm')?.result, '5.08 cm');
-    assertEquals(evaluateQuery('5 km in mi')?.result, '3.106855961 mi');
+    assertEquals(evaluateQuery('5 km in mi')?.result, '3.10685596119 mi');
     for (const text of ['5 in', '3 in', 'in', 'in m', '5 km in', 'five in m', 'log in', 'sign in'])
         assertEquals(evaluateQuery(text), null, text);
+});
+
+test('a value defined exactly is shown whole, and the noise of floating point is not', () => {
+    const exact = {
+        '1 oz en g': '28.349523125 g', '1 lb en g': '453.59237 g', '1 mi en m': '1609.344 m', '1 in en mm': '25.4 mm',
+        '1 gal en ml': '3785.411784 ml', '1 cup en ml': '236.5882365 ml', '0 K en °F': '-459.67 °F', '1 To en o': '1000000000000 B',
+    };
+    for (const [text, shown] of Object.entries(exact))
+        assertEquals(evaluateQuery(text)?.result, shown, text);
+    for (const [text, shown] of Object.entries({'0.1 + 0.2': '0.3', '1.1 * 3': '3.3', '98.6 °F en °C': '37 °C', '0.7 + 0.1': '0.8', '3 * 1.1 - 3.3': '0', '1000000000000 + 0.5 - 1000000000000': '0.5', '0.000001 - 0.000001': '0'}))
+        assertEquals(evaluateQuery(text)?.result, shown, text);
+});
+
+test('bits and bytes: case tells the symbols apart, as the standard says', () => {
+    const cases = {
+        '100 Mb en MB': '12.5 MB', '1 MB en Mb': '8 Mbit', '1 Gb en Mb': '1000 Mbit', '8 b en B': '1 B',
+        '1 kb en b': '1000 bit', '1 Kb en bit': '1000 bit', '1 o en bit': '8 bit', '1 Go en Mbit': '8000 Mbit',
+        '1 gigabit en megabit': '1000 Mbit', '1 octet en bits': '8 bit',
+        // Written all in lower case, the byte is meant, as usually typed.
+        '1 gb en mb': '1000 MB',
+    };
+    for (const [text, shown] of Object.entries(cases))
+        assertEquals(evaluateQuery(text)?.result, shown, text);
 });

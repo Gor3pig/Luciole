@@ -1389,7 +1389,7 @@
   {
    "file": "src/core/calc.js",
    "label": "too many digits are kept",
-   "old": "const SIGNIFICANT_DIGITS = 10;",
+   "old": "const SIGNIFICANT_DIGITS = 12;",
    "new": "const SIGNIFICANT_DIGITS = 17;"
   },
   {
@@ -2021,6 +2021,36 @@
    "label": "\"in\" does not separate a conversion",
    "old": "new Set(['en', 'vers', 'to', 'in'])",
    "new": "new Set(['en', 'vers', 'to'])"
+  },
+  {
+   "file": "src/core/units.js",
+   "label": "case is ignored in unit symbols, the megabit is read as a megabyte",
+   "old": "    const cased = BY_EXACT_NAME.get(name) ?? (name.endsWith('s') ? BY_EXACT_NAME.get(name.slice(0, -1)) : undefined);\n    if (cased)\n        return cased;\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/units.js",
+   "label": "a bit is a byte",
+   "old": "exactNames: ['b'], factor: 1 / 8}",
+   "new": "exactNames: ['b'], factor: 1}"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "a real small difference is taken for noise",
+   "old": "Math.max(Math.abs(left.v), Math.abs(amount)) * 1e-14",
+   "new": "Math.max(Math.abs(left.v), Math.abs(amount)) * 1e-12"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "the noise of a subtraction is shown",
+   "old": "                if (Math.abs(sum) < Math.max(Math.abs(left.v), Math.abs(amount)) * 1e-14)\n                    sum = 0;\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "values defined exactly are cut short",
+   "old": "const SIGNIFICANT_DIGITS = 12;",
+   "new": "const SIGNIFICANT_DIGITS = 10;"
   }
  ]
 }

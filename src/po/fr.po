@@ -281,7 +281,7 @@ msgstr "o"
 
 #: src/providers/calc.js
 msgid "kB"
-msgstr "Ko"
+msgstr "ko"
 
 #: src/providers/calc.js
 msgid "MB"

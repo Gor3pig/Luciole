@@ -49,7 +49,7 @@ const UNITS = [
     {kind: 'temperature', symbol: 'K', names: ['k', 'kelvin'], factor: 1, offset: 0},
     // Computing, base: byte (octet). Kilo, mega... are 1000 times, kibi, mebi... 1024 times.
     // The symbols are the English ones; the calculator shows them translated ("Mo" in French).
-    {kind: 'data', symbol: 'B', names: ['o', 'octet', 'byte', 'b'], factor: 1},
+    {kind: 'data', symbol: 'B', names: ['o', 'octet', 'byte'], exactNames: ['B'], factor: 1},
     {kind: 'data', symbol: 'kB', names: ['ko', 'kb'], factor: 1e3},
     {kind: 'data', symbol: 'MB', names: ['mo', 'mb'], factor: 1e6},
     {kind: 'data', symbol: 'GB', names: ['go', 'gb'], factor: 1e9},
@@ -58,13 +58,24 @@ const UNITS = [
     {kind: 'data', symbol: 'MiB', names: ['mio', 'mib'], factor: 1024 ** 2},
     {kind: 'data', symbol: 'GiB', names: ['gio', 'gib'], factor: 1024 ** 3},
     {kind: 'data', symbol: 'TiB', names: ['tio', 'tib'], factor: 1024 ** 4},
+    // Bits, an eighth of a byte (network speeds). In the symbols case tells them apart: "Mb" is the
+    // megabit, "MB" the megabyte; written all in lower case ("mb"), the byte is meant, as usually typed.
+    {kind: 'data', symbol: 'bit', names: ['bit', 'bits'], exactNames: ['b'], factor: 1 / 8},
+    {kind: 'data', symbol: 'kbit', names: ['kbit', 'kilobit'], exactNames: ['kb', 'Kb'], factor: 1e3 / 8},
+    {kind: 'data', symbol: 'Mbit', names: ['mbit', 'megabit'], exactNames: ['Mb'], factor: 1e6 / 8},
+    {kind: 'data', symbol: 'Gbit', names: ['gbit', 'gigabit'], exactNames: ['Gb'], factor: 1e9 / 8},
+    {kind: 'data', symbol: 'Tbit', names: ['tbit', 'terabit'], exactNames: ['Tb'], factor: 1e12 / 8},
 ];
 
 const BY_NAME = new Map();
+// Names whose case matters (b and B, Mb and MB), looked up before the folded ones.
+const BY_EXACT_NAME = new Map();
 for (const unit of UNITS) {
     unit.offset ??= 0;
     for (const name of unit.names)
         BY_NAME.set(name, unit);
+    for (const name of unit.exactNames ?? [])
+        BY_EXACT_NAME.set(name, unit);
 }
 
 // The longest a unit name can be: anything longer is not one, and need not be looked up.
@@ -79,6 +90,9 @@ const MAX_NAME_LENGTH = 24;
 export function findUnit(name) {
     if (typeof name !== 'string' || name === '' || name.length > MAX_NAME_LENGTH)
         return null;
+    const cased = BY_EXACT_NAME.get(name) ?? (name.endsWith('s') ? BY_EXACT_NAME.get(name.slice(0, -1)) : undefined);
+    if (cased)
+        return cased;
     const folded = fold(name);
     const exact = BY_NAME.get(folded);
     if (exact)
