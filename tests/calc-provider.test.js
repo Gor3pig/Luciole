@@ -125,3 +125,11 @@ test('the controller shows the answer for a calculation, and Enter copies it thr
 test('the decimal mark of the session is a comma or a point', () => {
     assert(['.', ','].includes(sessionDecimalMark()), `got ${sessionDecimalMark()}`);
 });
+
+test('the symbols of computing units follow the language of the session', async () => {
+    const french = {MB: 'Mo', GB: 'Go'};
+    const provider = new CalcProvider({copyText() {}, decimal: ','});
+    await provider.init({gettext: text => french[text] ?? text});
+    const [result] = await provider.search('1 GB en MB', {cancellable: new Gio.Cancellable(), limit: 1, emit() {}});
+    assertEquals(result.title, '1000 Mo');
+});

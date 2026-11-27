@@ -48,15 +48,16 @@ const UNITS = [
     {kind: 'temperature', symbol: '°F', names: ['°f', 'f', 'fahrenheit', '°fahrenheit'], factor: 5 / 9, offset: 459.67},
     {kind: 'temperature', symbol: 'K', names: ['k', 'kelvin'], factor: 1, offset: 0},
     // Computing, base: byte (octet). Kilo, mega... are 1000 times, kibi, mebi... 1024 times.
-    {kind: 'data', symbol: 'o', names: ['o', 'octet', 'byte'], factor: 1},
-    {kind: 'data', symbol: 'Ko', names: ['ko', 'kb'], factor: 1e3},
-    {kind: 'data', symbol: 'Mo', names: ['mo', 'mb'], factor: 1e6},
-    {kind: 'data', symbol: 'Go', names: ['go', 'gb'], factor: 1e9},
-    {kind: 'data', symbol: 'To', names: ['to', 'tb'], factor: 1e12},
-    {kind: 'data', symbol: 'Kio', names: ['kio', 'kib'], factor: 1024},
-    {kind: 'data', symbol: 'Mio', names: ['mio', 'mib'], factor: 1024 ** 2},
-    {kind: 'data', symbol: 'Gio', names: ['gio', 'gib'], factor: 1024 ** 3},
-    {kind: 'data', symbol: 'Tio', names: ['tio', 'tib'], factor: 1024 ** 4},
+    // The symbols are the English ones; the calculator shows them translated ("Mo" in French).
+    {kind: 'data', symbol: 'B', names: ['o', 'octet', 'byte', 'b'], factor: 1},
+    {kind: 'data', symbol: 'kB', names: ['ko', 'kb'], factor: 1e3},
+    {kind: 'data', symbol: 'MB', names: ['mo', 'mb'], factor: 1e6},
+    {kind: 'data', symbol: 'GB', names: ['go', 'gb'], factor: 1e9},
+    {kind: 'data', symbol: 'TB', names: ['to', 'tb'], factor: 1e12},
+    {kind: 'data', symbol: 'KiB', names: ['kio', 'kib'], factor: 1024},
+    {kind: 'data', symbol: 'MiB', names: ['mio', 'mib'], factor: 1024 ** 2},
+    {kind: 'data', symbol: 'GiB', names: ['gio', 'gib'], factor: 1024 ** 3},
+    {kind: 'data', symbol: 'TiB', names: ['tio', 'tib'], factor: 1024 ** 4},
 ];
 
 const BY_NAME = new Map();

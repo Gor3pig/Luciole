@@ -1449,8 +1449,8 @@
   {
    "file": "src/core/units.js",
    "label": "a kibibyte is a thousand",
-   "old": "{kind: 'data', symbol: 'Kio', names: ['kio', 'kib'], factor: 1024}",
-   "new": "{kind: 'data', symbol: 'Kio', names: ['kio', 'kib'], factor: 1000}"
+   "old": "{kind: 'data', symbol: 'KiB', names: ['kio', 'kib'], factor: 1024}",
+   "new": "{kind: 'data', symbol: 'KiB', names: ['kio', 'kib'], factor: 1000}"
   },
   {
    "file": "src/core/units.js",
@@ -2003,6 +2003,12 @@
    "label": "a long search with a type is not remembered",
    "old": "export const MAX_QUERY_CHARS = 256 + Math.max(...FILE_TYPES.map(type => typePrefix(type.id).length));",
    "new": "export const MAX_QUERY_CHARS = 256;"
+  },
+  {
+   "file": "src/core/calc.js",
+   "label": "the symbol of a unit is never translated",
+   "old": "            result: `${output} ${symbol(to.symbol)}`,",
+   "new": "            result: `${output} ${to.symbol}`,"
   }
  ]
 }

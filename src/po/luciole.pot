@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-26 19:53+0100\n"
+"POT-Creation-Date: 2026-11-26 22:59+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -258,6 +258,43 @@ msgstr ""
 
 #: src/prefs.js
 msgid "Choose a Folder to Exclude"
+msgstr ""
+
+#. Translators: the symbols of bytes and their multiples (French: o, Ko, Mo...).
+#: src/providers/calc.js
+msgid "B"
+msgstr ""
+
+#: src/providers/calc.js
+msgid "kB"
+msgstr ""
+
+#: src/providers/calc.js
+msgid "MB"
+msgstr ""
+
+#: src/providers/calc.js
+msgid "GB"
+msgstr ""
+
+#: src/providers/calc.js
+msgid "TB"
+msgstr ""
+
+#: src/providers/calc.js
+msgid "KiB"
+msgstr ""
+
+#: src/providers/calc.js
+msgid "MiB"
+msgstr ""
+
+#: src/providers/calc.js
+msgid "GiB"
+msgstr ""
+
+#: src/providers/calc.js
+msgid "TiB"
 msgstr ""
 
 #: src/providers/calc.js

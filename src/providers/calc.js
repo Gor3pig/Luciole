@@ -60,13 +60,23 @@ export class CalcProvider extends Provider {
         return 100;
     }
 
+    // The symbols of computing units, as the language of the session writes them.
+    #symbols() {
+        const _ = this.#gettext ?? (text => text);
+        return {
+            // Translators: the symbols of bytes and their multiples (French: o, Ko, Mo...).
+            B: _('B'), kB: _('kB'), MB: _('MB'), GB: _('GB'), TB: _('TB'),
+            KiB: _('KiB'), MiB: _('MiB'), GiB: _('GiB'), TiB: _('TiB'),
+        };
+    }
+
     async init({gettext, log}) {
         this.#gettext = gettext;
         this.#log = log ?? null;
     }
 
     async search(query) {
-        const outcome = evaluateQuery(query, {decimal: this.#decimal});
+        const outcome = evaluateQuery(query, {decimal: this.#decimal, symbol: shownAs => this.#symbols()[shownAs] ?? shownAs});
         if (!outcome)
             return [];
         const _ = this.#gettext;

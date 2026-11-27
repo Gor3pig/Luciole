@@ -311,6 +311,12 @@
    "label": "results restricted to a type not ordered",
    "old": "ORDER BY DESC(?rank)\nLIMIT 300`;",
    "new": "LIMIT 300`;"
+  },
+  {
+   "file": "src/providers/calc.js",
+   "label": "the calculator shows the units in English whatever the language",
+   "old": "{decimal: this.#decimal, symbol: shownAs => this.#symbols()[shownAs] ?? shownAs}",
+   "new": "{decimal: this.#decimal}"
   }
  ]
 }

@@ -153,7 +153,7 @@ test('the usual conversions give the usual numbers', () => {
         '1 gallon en l': '3.785411784 l', '1 cup en ml': '236.5882365 ml', '2 l en cl': '200 cl',
         '2 h en min': '120 min', '1 jour en h': '24 h', '1 semaine en jours': '7 j', '90 s en min': '1.5 min',
         '0 °C en °F': '32 °F', '100 °C en K': '373.15 K', '32 °F en °C': '0 °C', '212 °F en °C': '100 °C', '0 K en °C': '-273.15 °C',
-        '1 Go en Mo': '1000 Mo', '1 Gio en Mio': '1024 Mio', '1 Kio en o': '1024 o', '1 Tio en Gio': '1024 Gio', '1 Ko en o': '1000 o', '2 To en Go': '2000 Go',
+        '1 Go en Mo': '1000 MB', '1 Gio en Mio': '1024 MiB', '1 Kio en o': '1024 B', '1 Tio en Gio': '1024 GiB', '1 Ko en o': '1000 B', '2 To en Go': '2000 GB', '1 GB to MB': '1000 MB',
         '20 °C en °F': '68 °F', '20°C en °F': '68 °F',
     };
     for (const [text, expected] of Object.entries(results))
@@ -161,9 +161,9 @@ test('the usual conversions give the usual numbers', () => {
 });
 
 test('"To" is both a unit and a word for "to"', () => {
-    assertEquals(evaluateQuery('2 To to Go')?.result, '2000 Go');
-    assertEquals(evaluateQuery('2 To en Go')?.result, '2000 Go');
-    assertEquals(evaluateQuery('2000 Go to To')?.result, '2 To');
+    assertEquals(evaluateQuery('2 To to Go')?.result, '2000 GB');
+    assertEquals(evaluateQuery('2 To en Go')?.result, '2000 GB');
+    assertEquals(evaluateQuery('2000 Go to To')?.result, '2 TB');
 });
 
 test('units of different kinds, unknown units and a missing unit give nothing', () => {
@@ -207,4 +207,12 @@ test('only units of the same kind convert, and a result that is not a number is 
     assertEquals(convert(Infinity, findUnit('m'), findUnit('km')), null);
     assert(convert(1e308, findUnit('t'), findUnit('mg')) === null, 'a result too big to be finite');
     assert(convert(1e308, findUnit('t'), findUnit('t')) === null, 'an intermediate value too big to be finite');
+});
+
+test('the symbol of a unit is shown the way the caller writes it (translated)', () => {
+    const french = {MB: 'Mo', GB: 'Go'};
+    const shown = evaluateQuery('1 GB to MB', {symbol: name => french[name] ?? name});
+    assertEquals(shown.result, '1000 Mo');
+    assertEquals(shown.full, '1 Go = 1000 Mo');
+    assertEquals(evaluateQuery('5 km en m', {symbol: name => french[name] ?? name}).result, '5000 m', 'others unchanged');
 });

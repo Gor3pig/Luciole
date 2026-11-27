@@ -295,11 +295,12 @@ export function formatNumber(value, decimal = '.') {
  * Reads a search text as a calculation or a conversion.
  *
  * @param {string} text
- * @param {{decimal?: string}} [options] - the decimal mark to show results with
+ * @param {{decimal?: string, symbol?: (symbol: string) => string}} [options] - the decimal mark to
+ *   show results with, and how a unit's symbol is shown (translated)
  * @returns {{kind: 'calc' | 'convert', text: string, result: string, full: string} | null}
  *   null when the text is not clearly one, or cannot be worked out
  */
-export function evaluateQuery(text, {decimal = '.'} = {}) {
+export function evaluateQuery(text, {decimal = '.', symbol = shownAs => shownAs} = {}) {
     if (typeof text !== 'string')
         return null;
     const query = text.trim();
@@ -330,8 +331,8 @@ export function evaluateQuery(text, {decimal = '.'} = {}) {
         return {
             kind: 'convert',
             text: shown,
-            result: `${output} ${to.symbol}`,
-            full: `${input} ${from.symbol} = ${output} ${to.symbol}`,
+            result: `${output} ${symbol(to.symbol)}`,
+            full: `${input} ${symbol(from.symbol)} = ${output} ${symbol(to.symbol)}`,
         };
     }
 

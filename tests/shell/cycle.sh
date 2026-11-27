@@ -66,8 +66,12 @@ if [ -z "$CG" ] || [ -z "$LG" ]; then
     echo "FAIL: heap growth could not be measured (need at least 8 cycles)"
     exit 1
 fi
-# A control whose heap shrank is no baseline to subtract.
+# A control whose heap shrank is no baseline to subtract. One that grew a lot (a busy machine) is
+# not a reason to forgive Luciole as much: at most MAX_CONTROL_CREDIT is taken off, so a real leak
+# cannot hide behind a noisy control (a quiet control grows by about 30 kB).
+MAX_CONTROL_CREDIT=100000
 [ "$CG" -lt 0 ] && CG=0
+[ "$CG" -gt "$MAX_CONTROL_CREDIT" ] && CG=$MAX_CONTROL_CREDIT
 EXTRA=$((LG - CG))
 echo
 echo "heap growth after warm-up: control ${CG} bytes, Luciole ${LG} bytes, extra ${EXTRA} bytes (limit ${MAX_EXTRA_BYTES} bytes)"
