@@ -880,6 +880,8 @@ export class Launcher {
         const item = this.#selectedItem();
         const items = this.#confirmTimer ? [] : helpItems(item, {canPreview: this.#canPreview(item), gettext: this.#gettext});
         bar.destroy_all_children();
+        // The bar spans the window (its line above too), its words on the right.
+        bar.add_child(new St.Widget({x_expand: true}));
         for (const {label, key} of items) {
             const pair = new St.BoxLayout({style_class: 'luciole-help-item'});
             pair.add_child(new St.Label({text: label, style_class: 'luciole-help-label', y_align: Clutter.ActorAlign.CENTER}));
@@ -984,7 +986,7 @@ export class Launcher {
         panel.add_child(chipBox);
         panel.add_child(emptyHint);
         panel.add_child(view.actor);
-        const helpBar = new St.BoxLayout({style_class: 'luciole-help-bar', x_align: Clutter.ActorAlign.END, visible: false});
+        const helpBar = new St.BoxLayout({style_class: 'luciole-help-bar', x_expand: true, visible: false});
         panel.add_child(helpBar);
         this.#helpBar = helpBar;
         // Where "Path copied" (and the like) is said for a moment before the window closes.

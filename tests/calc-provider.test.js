@@ -36,7 +36,7 @@ test('a calculation gives one result: the answer as title, the calculation as su
     const t = await setup();
     const [result] = await t.search('2 + 2 * 3');
     assertEquals(result.title, '8');
-    assertEquals(result.subtitle, '2 + 2 * 3 · [Enter to copy]');
+    assertEquals(result.subtitle, '2 + 2 * 3');
     assertEquals(result.data, {copy: '8', full: '2 + 2 * 3 = 8'});
     assertEquals((await t.search('2 + 2 * 3')).length, 1);
 });

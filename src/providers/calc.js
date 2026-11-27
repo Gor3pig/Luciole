@@ -83,7 +83,8 @@ export class CalcProvider extends Provider {
         return [{
             id: outcome.text,
             title: outcome.result,
-            subtitle: `${outcome.text} · ${_('Enter to copy')}`,
+            // What Enter does is said in the bar under the results.
+            subtitle: outcome.text,
             icon: 'accessories-calculator-symbolic',
             // The typed text matches itself: the result always scores as a full match.
             matchFields: [outcome.text],

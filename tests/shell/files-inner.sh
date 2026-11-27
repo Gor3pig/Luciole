@@ -694,7 +694,7 @@ if part help; then
 fresh_start
 # The bar under the results says what the keys do for the chosen result.
 help_text() {
-    shell_eval "(function() { let bar = null; (function w(a) { if (bar) return; if ((a.style_class || '') === 'luciole-help-bar') { bar = a; return; } a.get_children().forEach(w); })(global.stage); if (!bar || !bar.visible || !bar.mapped) return 'hidden'; return bar.get_children().map(p => p.get_children().map(l => l.text).join(' ')).join(' · '); })()"
+    shell_eval "(function() { let bar = null; (function w(a) { if (bar) return; if ((a.style_class || '') === 'luciole-help-bar') { bar = a; return; } a.get_children().forEach(w); })(global.stage); if (!bar || !bar.visible || !bar.mapped) return 'hidden'; return bar.get_children().filter(p => p.get_n_children() > 0).map(p => p.get_children().map(l => l.text).join(' ')).join(' · '); })()"
 }
 clear_entry 8
 typed rapport
@@ -725,7 +725,10 @@ sleep 0.4
 reopen_launcher
 typed rapport
 wait_last 'results: 1 first=rapport' || fail "help: the real file was not found again (last: $(last_results))"
+# (Keys a person types are apart; sent back to back, the input method may not have moved the cursor
+# for the first when the second is read.)
 press Left
+sleep 0.2
 press Right
 sleep 0.5
 [ "$(menu_state)" = hidden ] || fail "help: the right arrow inside the text opened the menu"
