@@ -352,6 +352,7 @@ async function worker(queue, dir) {
 
 // First, each test once without any mutant, in the same conditions (copies, side by side): a
 // test that fails on its own would count every mutant as noticed and hide the ones it misses.
+let baselineRuns = 0;
 async function baseline(queue, dirs) {
     const commands = new Map();
     for (const {spec, mutant} of queue) {
@@ -362,10 +363,13 @@ async function baseline(queue, dirs) {
     const failed = [];
     await Promise.all(dirs.map(async dir => {
         for (let next = pending.shift(); next; next = pending.shift()) {
-            const log = GLib.build_filenamev([dir, 'baseline.log']);
+            // One log per command: a shared one would show the lines of the next command run.
+            const log = GLib.build_filenamev([dir, `baseline-${++baselineRuns}.log`]);
             if (await runCommand(next.argv, dir, next.timeout, log) !== 0) {
-                const lastLines = readText(Gio.File.new_for_path(log)).trimEnd().split('\n').slice(-8).join('\n    ');
-                failed.push(`${next.argv.join(' ')}\n    ${lastLines}`);
+                const logLines = readText(Gio.File.new_for_path(log)).trimEnd().split('\n');
+                // The test's own verdict first ("FAIL: ..."), then where the log ends.
+                const verdicts = logLines.filter(line => line.startsWith('FAIL'));
+                failed.push(`${next.argv.join(' ')}\n    ${[...verdicts, ...logLines.slice(-8)].join('\n    ')}`);
             }
         }
     }));
