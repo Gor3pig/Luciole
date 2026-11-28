@@ -9,13 +9,15 @@ import {sanitizeLabel} from './text.js';
 export const MAX_ACTIONS = 24;
 // A path or a name put on the clipboard: far longer than any real one, short enough to be harmless.
 export const MAX_COPY_CHARS = 4096;
+// The family an action belongs to (open, place, copy...): a short lowercase word.
+const GROUP_PATTERN = /^[a-z][a-z-]{0,31}$/;
 
 /**
  * What a provider hands over as "actions" is untrusted data: this keeps only well-formed ones,
  * with texts cleaned like result names, at most MAX_ACTIONS, without two of the same id.
  *
  * @param {unknown} list
- * @returns {Array<{id: string, label: string, hint?: string, copy?: string, confirmation?: string}>}
+ * @returns {Array<{id: string, label: string, hint?: string, copy?: string, confirmation?: string, group?: string}>}
  */
 export function cleanActions(list) {
     if (!Array.isArray(list))
@@ -40,9 +42,27 @@ export function cleanActions(list) {
         const confirmation = sanitizeLabel(raw.confirmation);
         if (confirmation !== '')
             action.confirmation = confirmation;
+        if (typeof raw.group === 'string' && GROUP_PATTERN.test(raw.group))
+            action.group = raw.group;
         clean.push(action);
     }
     return clean;
+}
+
+/**
+ * The rows of a menu: each action keeps its place in the list, and a separator goes before the first
+ * action of each new family, so the menu reads in blocks (open, place, copy).
+ *
+ * @param {Array<{label: string, hint?: string, group?: string}>} actions
+ * @returns {Array<{index: number, label: string, hint?: string, separatorBefore: boolean}>}
+ */
+export function menuEntries(actions) {
+    return actions.map((action, index) => ({
+        index,
+        label: action.label,
+        hint: action.hint,
+        separatorBefore: index > 0 && action.group !== actions[index - 1].group,
+    }));
 }
 
 export class ActionMenu {

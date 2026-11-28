@@ -64,7 +64,7 @@ that ends your session is ever chosen for you.
 <td width="33%" valign="top">
 
 **Preview and act**<br><kbd>Space</kbd> previews a file; <kbd>Ctrl</kbd>+<kbd>K</kbd> or a right click
-opens its menu, as in Files: show in folder, copy it, open a terminal there, open with…
+opens its menu, as in Files: open with…, show in folder, open a terminal there, copy it.
 
 </td>
 <td width="33%" valign="top">
@@ -134,10 +134,11 @@ Then log out and back in, and enable it as above.
 
 ## Settings
 
-`gnome-extensions prefs luciole@gor3pig.github.io`, or Extensions › Luciole: the shortcut, which
-sources are searched and how many results each shows, whether a result opens with a single or a
-double click, folders and file types to leave out, animations, a dimmed background, and whether
-searches are remembered (with a button to forget them).
+`gnome-extensions prefs luciole@gor3pig.github.io`, or Extensions › Luciole, in three pages:
+**General** (the shortcut, whether a result opens with a single or a double click, how many results
+each source shows), **Appearance** (a dimmed background, animations) and **Search** (which sources
+are searched, folders and file types to leave out, whether searches are remembered, with a button
+to forget them).
 
 <p align="center"><img src="docs/screenshots/dark.png" alt="Luciole in the dark style, with the filter of file types" width="560"></p>
 

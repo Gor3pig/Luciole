@@ -6,7 +6,7 @@ import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 
-import {ActionMenu} from '../core/action-menu.js';
+import {ActionMenu, menuEntries} from '../core/action-menu.js';
 import {categoryForDigit, digitOfKey} from '../core/categories.js';
 import {isDoubleClick} from '../core/click.js';
 import {helpItems} from '../core/help-bar.js';
@@ -674,7 +674,7 @@ export class Launcher {
             owner: this.#overlay,
             title: item.result.title,
             subtitle: item.result.subtitle ?? '',
-            entries: usable.map((action, index) => ({index, label: action.label, hint: action.hint})),
+            entries: menuEntries(usable),
             onClosed: report => this.#log.guardAsync('running an action', () => this.#menuClosed(popup, report)),
         });
         this.#popup = popup;

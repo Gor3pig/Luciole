@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Luciole contributors
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-import {ActionMenu, cleanActions, MAX_ACTIONS, MAX_COPY_CHARS} from '../src/core/action-menu.js';
+import {ActionMenu, cleanActions, MAX_ACTIONS, MAX_COPY_CHARS, menuEntries} from '../src/core/action-menu.js';
 import {assert, assertEquals, test} from './harness.js';
 
 const RLO = String.fromCodePoint(0x202e);
@@ -54,6 +54,40 @@ test('what is put on the clipboard is a non-empty text of reasonable size, and o
 test('what a source adds besides the known parts is dropped', () => {
     const [action] = cleanActions([{id: 'a', label: 'A', submenu: true, run: 'rm -rf /'}]);
     assertEquals(action, {id: 'a', label: 'A'});
+});
+
+test('the family of an action is kept when it is a short lowercase word, dropped otherwise', () => {
+    const actions = cleanActions([
+        {id: 'a', label: 'A', group: 'open'},
+        {id: 'b', label: 'B', group: 'place-2'},
+        {id: 'c', label: 'C', group: 'Copy'},
+        {id: 'd', label: 'D', group: ''},
+        {id: 'e', label: 'E', group: 5},
+        {id: 'f', label: 'F', group: `copy${RLO}`},
+        {id: 'g', label: 'G', group: 'x'.repeat(33)},
+        {id: 'h', label: 'H', group: 'copy-files'},
+    ]);
+    assertEquals(actions.map(action => action.group ?? null), ['open', null, null, null, null, null, null, 'copy-files']);
+});
+
+test('a separator goes before the first action of each new family, never at the top', () => {
+    const entries = menuEntries([
+        {label: 'Open', hint: 'Enter', group: 'open'},
+        {label: 'Open With…', group: 'open'},
+        {label: 'Show in Folder', hint: 'Ctrl+Enter', group: 'place'},
+        {label: 'Copy File', group: 'copy'},
+        {label: 'Copy Name', group: 'copy'},
+    ]);
+    assertEquals(entries.map(entry => entry.separatorBefore), [false, false, true, true, false]);
+    assertEquals(entries.map(entry => entry.index), [0, 1, 2, 3, 4], 'each entry keeps its place in the list');
+    assertEquals([entries[0].label, entries[0].hint], ['Open', 'Enter']);
+    assertEquals(menuEntries([{label: 'Copy Result', group: 'copy'}]).map(entry => entry.separatorBefore), [false]);
+});
+
+test('actions without a family, like the calculator\'s, read as one block', () => {
+    const entries = menuEntries([{label: 'Copy Result'}, {label: 'Copy Full Calculation'}]);
+    assertEquals(entries.map(entry => entry.separatorBefore), [false, false]);
+    assertEquals(menuEntries([]), []);
 });
 
 test('only so many actions are kept', () => {

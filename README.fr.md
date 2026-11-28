@@ -64,8 +64,8 @@ d'écran, redémarrer… Rien de ce qui ferme ta session n'est choisi à ta plac
 <td width="33%" valign="top">
 
 **Aperçu et actions**<br><kbd>Espace</kbd> affiche un aperçu du fichier ; <kbd>Ctrl</kbd>+<kbd>K</kbd> ou un
-clic droit ouvre son menu, comme dans Fichiers : afficher dans le dossier, le copier, ouvrir un
-terminal à cet endroit, ouvrir avec…
+clic droit ouvre son menu, comme dans Fichiers : ouvrir avec…, afficher dans le dossier, ouvrir un
+terminal à cet endroit, le copier.
 
 </td>
 <td width="33%" valign="top">
@@ -136,10 +136,11 @@ Puis ferme et rouvre ta session, et active-la comme ci-dessus.
 
 ## Réglages
 
-`gnome-extensions prefs luciole@gor3pig.github.io`, ou Extensions › Luciole : le raccourci, les
-sources cherchées et le nombre de résultats de chacune, l'ouverture d'un résultat d'un simple ou
-d'un double clic, les dossiers et types de fichiers à laisser de côté, les animations, un fond
-assombri, et la mémoire des recherches (avec un bouton pour l'effacer).
+`gnome-extensions prefs luciole@gor3pig.github.io`, ou Extensions › Luciole, en trois pages :
+**Général** (le raccourci, l'ouverture d'un résultat d'un simple ou d'un double clic, le nombre de
+résultats par source), **Apparence** (un fond assombri, les animations) et **Recherche** (les sources
+cherchées, les dossiers et types de fichiers à laisser de côté, la mémoire des recherches avec un
+bouton pour l'effacer).
 
 <p align="center"><img src="docs/screenshots/dark.fr.png" alt="Luciole en style sombre, avec le filtre des types de fichiers" width="560"></p>
 

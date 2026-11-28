@@ -7,7 +7,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
 
-import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+import {ExtensionPreferences, gettext as _, pgettext} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 // The icon shipped next to the code (see `make icon`).
 const ICON_FILE = 'luciole-128x128.png';
@@ -65,7 +65,8 @@ export default class LucioleExtensionPreferences extends ExtensionPreferences {
         window._settings = settings;
         window.set_default_size(640, 720);
         window.add(this._generalPage(window, settings));
-        window.add(this._sourcesPage(window, settings));
+        window.add(this._appearancePage(settings));
+        window.add(this._searchPage(window, settings));
     }
 
     // The icon, the name and one line, centred above the settings. Without the icon file (a local
@@ -127,6 +128,7 @@ export default class LucioleExtensionPreferences extends ExtensionPreferences {
         return row;
     }
 
+    // How Luciole is opened and how it behaves.
     _generalPage(window, settings) {
         const page = new Adw.PreferencesPage({title: _('General'), icon_name: 'preferences-system-symbolic'});
 
@@ -136,38 +138,16 @@ export default class LucioleExtensionPreferences extends ExtensionPreferences {
         shortcutGroup.add(this._shortcutRow(window, settings));
         page.add(shortcutGroup);
 
-        const appearanceGroup = new Adw.PreferencesGroup({title: _('Appearance')});
-        appearanceGroup.add(this._backdropRow(settings));
-        appearanceGroup.add(this._animationsRow(settings));
-        page.add(appearanceGroup);
-
-        const resultsGroup = new Adw.PreferencesGroup({title: _('Results')});
+        const behaviorGroup = new Adw.PreferencesGroup({title: _('Behavior')});
+        behaviorGroup.add(this._openClickRow(settings));
         const maxResults = new Adw.SpinRow({
-            title: _('Results per source'),
+            title: _('Results per Source'),
             subtitle: _('How many results each source shows at most'),
             adjustment: new Gtk.Adjustment({lower: 3, upper: 30, step_increment: 1, page_increment: 5}),
         });
         settings.bind('max-results', maxResults, 'value', Gio.SettingsBindFlags.DEFAULT);
-        resultsGroup.add(maxResults);
-        resultsGroup.add(this._openClickRow(settings));
-        page.add(resultsGroup);
-
-        const historyGroup = new Adw.PreferencesGroup({
-            title: _('History'),
-            description: _('Luciole remembers which results you open and the searches that led to them, only on this computer.'),
-        });
-        const remember = new Adw.SwitchRow({
-            title: _('Remember Searches'),
-            subtitle: _('Lets the up arrow bring back a previous search. Turning this off erases them'),
-        });
-        settings.bind('remember-queries', remember, 'active', Gio.SettingsBindFlags.DEFAULT);
-        historyGroup.add(remember);
-        const clear = new Adw.ButtonRow({title: _('Clear History'), css_classes: ['destructive-action']});
-        clear.connect('activated', () => {
-            settings.set_int('history-generation', settings.get_int('history-generation') + 1);
-        });
-        historyGroup.add(clear);
-        page.add(historyGroup);
+        behaviorGroup.add(maxResults);
+        page.add(behaviorGroup);
 
         const advanced = new Adw.PreferencesGroup({title: _('Advanced')});
         const debug = new Adw.SwitchRow({
@@ -178,6 +158,35 @@ export default class LucioleExtensionPreferences extends ExtensionPreferences {
         advanced.add(debug);
         page.add(advanced);
         return page;
+    }
+
+    // How the window looks.
+    _appearancePage(settings) {
+        const page = new Adw.PreferencesPage({title: _('Appearance'), icon_name: 'preferences-desktop-appearance-symbolic'});
+        const windowGroup = new Adw.PreferencesGroup({title: _('Window')});
+        windowGroup.add(this._backdropRow(settings));
+        windowGroup.add(this._animationsRow(settings));
+        page.add(windowGroup);
+        return page;
+    }
+
+    _historyGroup(settings) {
+        const group = new Adw.PreferencesGroup({
+            title: _('History'),
+            description: _('Luciole remembers which results you open and the searches that led to them, only on this computer.'),
+        });
+        const remember = new Adw.SwitchRow({
+            title: _('Remember Searches'),
+            subtitle: _('Lets the up arrow bring back a previous search. Turning this off erases them'),
+        });
+        settings.bind('remember-queries', remember, 'active', Gio.SettingsBindFlags.DEFAULT);
+        group.add(remember);
+        const clear = new Adw.ButtonRow({title: _('Clear History'), css_classes: ['destructive-action']});
+        clear.connect('activated', () => {
+            settings.set_int('history-generation', settings.get_int('history-generation') + 1);
+        });
+        group.add(clear);
+        return group;
     }
 
     _shortcutRow(window, settings) {
@@ -236,12 +245,14 @@ export default class LucioleExtensionPreferences extends ExtensionPreferences {
         ].includes(keyval);
     }
 
-    _sourcesPage(window, settings) {
-        const page = new Adw.PreferencesPage({title: _('Sources'), icon_name: 'system-search-symbolic'});
+    // What Luciole searches, what it leaves out, and what it remembers.
+    _searchPage(window, settings) {
+        // Translators: the name of the preferences page about searching (a noun)
+        const page = new Adw.PreferencesPage({title: pgettext('preferences page', 'Search'), icon_name: 'system-search-symbolic'});
 
         const providers = new Adw.PreferencesGroup({
             title: _('Sources'),
-            description: _('What Luciole searches. Applications are always listed before files.'),
+            description: _('What Luciole searches.'),
         });
         for (const provider of PROVIDERS) {
             const row = new Adw.SwitchRow({title: provider.title()});
@@ -275,6 +286,7 @@ export default class LucioleExtensionPreferences extends ExtensionPreferences {
             addLabel: _('Add Type'),
             entry: true,
         }));
+        page.add(this._historyGroup(settings));
         return page;
     }
 

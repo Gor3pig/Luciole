@@ -230,7 +230,7 @@ export class SearchController {
     async actionsFor(item) {
         const provider = this.#getProviders().find(p => p.id === item.providerId);
         const _ = this.#gettext;
-        const open = {id: 'open', label: _('Open'), hint: _('Enter')};
+        const open = {id: 'open', label: _('Open'), hint: _('Enter'), group: 'open'};
         if (!provider?.actions)
             return [open];
         const offered = await this.#log.guardAsync(`listing the actions of ${item.key}`,

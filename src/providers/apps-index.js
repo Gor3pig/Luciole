@@ -80,5 +80,5 @@ export function appActionList(declared) {
         return [];
     return declared
         .filter(action => action && typeof action.name === 'string' && action.name !== '' && typeof action.label === 'string' && action.label !== '')
-        .map(action => ({id: `${APP_ACTION_PREFIX}${action.name}`, label: action.label}));
+        .map(action => ({id: `${APP_ACTION_PREFIX}${action.name}`, label: action.label, group: 'app'}));
 }

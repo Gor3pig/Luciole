@@ -160,41 +160,48 @@ test('the name of a file is the last part of its address, decoded', () => {
 
 test('a local file has the file actions, in this order, each with what it needs', () => {
     const actions = fileActionList('file:///home/me/Documents/Facture%20mars.pdf', echo);
-    assertEquals(actions.map(action => action.id), ['open-folder', 'preview', 'copy-file', 'copy-path', 'copy-name', 'open-with']);
-    assertEquals(actions[1].hint, 'Space');
-    assertEquals([actions[2].label, actions[2].hint, actions[2].confirmation], ['Copy File', 'Ctrl+C', 'File copied']);
-    assert(!('copy' in actions[2]), 'the file itself is copied by its source, not as text');
-    assertEquals(actions[3].copy, '/home/me/Documents/Facture mars.pdf');
-    assertEquals(actions[4].copy, 'Facture mars.pdf');
-    assertEquals(actions[3].confirmation, 'Path copied');
-    assertEquals(actions[4].confirmation, 'Name copied');
-    assertEquals(actions[5].label, 'Open With…');
-    assert(!('submenu' in actions[5]), 'Open With is a plain action: GNOME\'s chooser does the rest');
+    assertEquals(actions.map(action => action.id), ['open-with', 'preview', 'open-folder', 'copy-file', 'copy-path', 'copy-name']);
+    assertEquals(actions[0].label, 'Open With…');
+    assert(!('submenu' in actions[0]), 'Open With is a plain action: GNOME\'s chooser does the rest');
+    assertEquals(actions[1].hint, 'Ctrl+Y', 'the key that always previews, as the help bar says');
+    assertEquals([actions[2].label, actions[2].hint], ['Show in Folder', 'Ctrl+Enter']);
+    assertEquals([actions[3].label, actions[3].hint, actions[3].confirmation], ['Copy File', 'Ctrl+C', 'File copied']);
+    assert(!('copy' in actions[3]), 'the file itself is copied by its source, not as text');
+    assertEquals(actions[4].copy, '/home/me/Documents/Facture mars.pdf');
+    assertEquals(actions[5].copy, 'Facture mars.pdf');
+    assertEquals(actions[4].confirmation, 'Path copied');
+    assertEquals(actions[5].confirmation, 'Name copied');
 });
 
-test('with a terminal installed, a file offers one in its folder, before Open With', () => {
+test('the file actions come in three families, as in Files: open, place, copy', () => {
+    const groups = list => list.map(action => action.group).join(' ');
+    assertEquals(groups(fileActionList('file:///a/b.txt', echo, {terminal: true})), 'open open place place copy copy copy');
+    assertEquals(groups(fileActionList('file:///a/b', echo, {folder: true, terminal: true})), 'open place place copy copy copy');
+});
+
+test('with a terminal installed, a file offers one in its folder, after Show in Folder', () => {
     const actions = fileActionList('file:///home/me/Documents/a.txt', echo, {terminal: true});
-    assertEquals(actions.map(action => action.id), ['open-folder', 'preview', 'copy-file', 'copy-path', 'copy-name', 'terminal', 'open-with']);
-    assertEquals(actions[5].label, 'Open a Terminal in Its Folder');
+    assertEquals(actions.map(action => action.id), ['open-with', 'preview', 'open-folder', 'terminal', 'copy-file', 'copy-path', 'copy-name']);
+    assertEquals(actions[3].label, 'Open a Terminal in Its Folder');
 });
 
 test('a folder has the folder actions: shown in the folder that holds it, never previewed', () => {
     const actions = fileActionList('file:///home/me/Documents/Compta', echo, {folder: true});
-    assertEquals(actions.map(action => action.id), ['open-folder', 'copy-file', 'copy-path', 'copy-name', 'open-with']);
-    assertEquals(actions[0].label, 'Show in Parent Folder');
-    assertEquals(actions[0].hint, 'Ctrl+Enter');
-    assertEquals([actions[1].label, actions[1].confirmation], ['Copy Folder', 'Folder copied']);
-    assertEquals(actions[2].copy, '/home/me/Documents/Compta');
-    assertEquals(actions[3].copy, 'Compta');
+    assertEquals(actions.map(action => action.id), ['open-with', 'open-folder', 'copy-file', 'copy-path', 'copy-name']);
+    assertEquals(actions[1].label, 'Show in Parent Folder');
+    assertEquals(actions[1].hint, 'Ctrl+Enter');
+    assertEquals([actions[2].label, actions[2].confirmation], ['Copy Folder', 'Folder copied']);
+    assertEquals(actions[3].copy, '/home/me/Documents/Compta');
+    assertEquals(actions[4].copy, 'Compta');
     const withTerminal = fileActionList('file:///home/me/Documents/Compta', echo, {folder: true, terminal: true});
-    assertEquals(withTerminal.map(action => action.id), ['open-folder', 'terminal', 'copy-file', 'copy-path', 'copy-name', 'open-with']);
-    assertEquals(withTerminal[1].label, 'Open a Terminal Here');
+    assertEquals(withTerminal.map(action => action.id), ['open-with', 'open-folder', 'terminal', 'copy-file', 'copy-path', 'copy-name']);
+    assertEquals(withTerminal[2].label, 'Open a Terminal Here');
 });
 
 test('the labels are translated', () => {
     const actions = fileActionList('file:///a/b.txt', text => `[${text}]`);
-    assertEquals(actions[0].label, '[Show in Folder]');
-    assertEquals(actions[3].confirmation, '[Path copied]');
+    assertEquals(actions[0].label, '[Open With…]');
+    assertEquals(actions[4].confirmation, '[Path copied]');
 });
 
 test('the first terminal installed is used, opened in the folder by an argument of its own', () => {

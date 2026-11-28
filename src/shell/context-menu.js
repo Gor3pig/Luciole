@@ -36,8 +36,9 @@ export class ContextMenu {
      * @param {Clutter.Actor} options.owner - the launcher's window
      * @param {string} options.title - the result, shown at the top
      * @param {string} [options.subtitle] - where it is, or what it is, shown under the title
-     * @param {Array<{index: number, label: string, hint?: string}>} options.entries - the actions, in
-     *   order; `index` is the action's place in the launcher's list
+     * @param {Array<{index: number, label: string, hint?: string, separatorBefore?: boolean}>} options.entries -
+     *   the actions, in order; `index` is the action's place in the launcher's list, and a separator
+     *   goes before an entry that starts a new family of actions
      * @param {(report: {chosen: number | null, outside: {x: number, y: number, button: number} | null,
      *   typed: string | null}) => void} options.onClosed
      */
@@ -50,6 +51,8 @@ export class ContextMenu {
         menu.addMenuItem(this.#heading(title, subtitle));
         menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         for (const entry of entries) {
+            if (entry.separatorBefore)
+                menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
             const row = new PopupMenu.PopupMenuItem(entry.label);
             if (entry.hint) {
                 row.label.x_expand = true;

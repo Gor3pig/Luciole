@@ -1032,6 +1032,18 @@
     "sh",
     "tests/shell/files.sh"
    ]
+  },
+  {
+   "file": "src/shell/context-menu.js",
+   "label": "GNOME's menu shows no separators between the families",
+   "old": "            if (entry.separatorBefore)\n                menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());\n",
+   "new": "",
+   "command": [
+    "env",
+    "FILES_PARTS=menu",
+    "sh",
+    "tests/shell/files.sh"
+   ]
   }
  ]
 }

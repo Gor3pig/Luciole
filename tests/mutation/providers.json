@@ -453,13 +453,13 @@
   {
    "file": "src/providers/files-query.js",
    "label": "a folder offers no terminal",
-   "old": "            ...terminal ? [{id: 'terminal', label: _('Open a Terminal Here')}] : [],",
+   "old": "            ...terminal ? [{id: 'terminal', label: _('Open a Terminal Here'), group: 'place'}] : [],",
    "new": ""
   },
   {
    "file": "src/providers/files-query.js",
    "label": "a file cannot be copied for Files",
-   "old": "        {id: 'copy-file', label: _('Copy File'), hint: _('Ctrl+C'), confirmation: _('File copied')},\n",
+   "old": "        {id: 'copy-file', label: _('Copy File'), hint: _('Ctrl+C'), confirmation: _('File copied'), group: 'copy'},\n",
    "new": ""
   },
   {

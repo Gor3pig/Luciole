@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: luciole\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-27 20:06+0100\n"
+"POT-Creation-Date: 2026-11-27 20:49+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -41,11 +41,11 @@ msgstr ""
 msgid "Preview"
 msgstr ""
 
-#: src/core/help-bar.js src/providers/files-query.js
+#: src/core/help-bar.js
 msgid "Space"
 msgstr ""
 
-#: src/core/help-bar.js
+#: src/core/help-bar.js src/providers/files-query.js
 msgid "Ctrl+Y"
 msgstr ""
 
@@ -184,19 +184,35 @@ msgid "Shortcut"
 msgstr ""
 
 #: src/prefs.js
-msgid "Appearance"
-msgstr ""
-
-#: src/prefs.js src/ui/results-view.js
-msgid "Results"
+msgid "Behavior"
 msgstr ""
 
 #: src/prefs.js
-msgid "Results per source"
+msgid "Results per Source"
 msgstr ""
 
 #: src/prefs.js
 msgid "How many results each source shows at most"
+msgstr ""
+
+#: src/prefs.js
+msgid "Advanced"
+msgstr ""
+
+#: src/prefs.js
+msgid "Log Timings"
+msgstr ""
+
+#: src/prefs.js
+msgid "Writes debug messages to the system journal"
+msgstr ""
+
+#: src/prefs.js
+msgid "Appearance"
+msgstr ""
+
+#: src/prefs.js
+msgid "Window"
 msgstr ""
 
 #: src/prefs.js
@@ -220,18 +236,6 @@ msgstr ""
 
 #: src/prefs.js
 msgid "Clear History"
-msgstr ""
-
-#: src/prefs.js
-msgid "Advanced"
-msgstr ""
-
-#: src/prefs.js
-msgid "Log Timings"
-msgstr ""
-
-#: src/prefs.js
-msgid "Writes debug messages to the system journal"
 msgstr ""
 
 #: src/prefs.js
@@ -265,12 +269,18 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
+#. Translators: the name of the preferences page about searching (a noun)
+#: src/prefs.js
+msgctxt "preferences page"
+msgid "Search"
+msgstr ""
+
 #: src/prefs.js
 msgid "Sources"
 msgstr ""
 
 #: src/prefs.js
-msgid "What Luciole searches. Applications are always listed before files."
+msgid "What Luciole searches."
 msgstr ""
 
 #: src/prefs.js
@@ -362,6 +372,10 @@ msgid "Show in Folder"
 msgstr ""
 
 #: src/providers/files-query.js
+msgid "Open With…"
+msgstr ""
+
+#: src/providers/files-query.js
 msgid "Copy Path"
 msgstr ""
 
@@ -375,10 +389,6 @@ msgstr ""
 
 #: src/providers/files-query.js
 msgid "Name copied"
-msgstr ""
-
-#: src/providers/files-query.js
-msgid "Open With…"
 msgstr ""
 
 #: src/providers/files-query.js
@@ -406,15 +416,15 @@ msgid "Folder copied"
 msgstr ""
 
 #: src/providers/files-query.js
+msgid "Open a Terminal in Its Folder"
+msgstr ""
+
+#: src/providers/files-query.js
 msgid "Copy File"
 msgstr ""
 
 #: src/providers/files-query.js
 msgid "File copied"
-msgstr ""
-
-#: src/providers/files-query.js
-msgid "Open a Terminal in Its Folder"
 msgstr ""
 
 #: src/ui/launcher.js
@@ -466,6 +476,10 @@ msgstr ""
 
 #: src/ui/launcher.js
 msgid "Luciole search"
+msgstr ""
+
+#: src/ui/results-view.js
+msgid "Results"
 msgstr ""
 
 #: src/ui/results-view.js

@@ -199,23 +199,26 @@ export function fileActionList(url, gettext, {folder = false, terminal = false} 
     if (!isLocalFileUri(url))
         return [];
     const _ = gettext;
-    const copyPath = {id: 'copy-path', label: _('Copy Path'), copy: pathOfUrl(url), confirmation: _('Path copied')};
-    const copyName = {id: 'copy-name', label: _('Copy Name'), copy: baseName(url), confirmation: _('Name copied')};
-    const openWith = {id: 'open-with', label: _('Open With…')};
+    // Three families, as in Files: open it, find where it is, copy it.
+    const openWith = {id: 'open-with', label: _('Open With…'), group: 'open'};
+    const copyPath = {id: 'copy-path', label: _('Copy Path'), copy: pathOfUrl(url), confirmation: _('Path copied'), group: 'copy'};
+    const copyName = {id: 'copy-name', label: _('Copy Name'), copy: baseName(url), confirmation: _('Name copied'), group: 'copy'};
     if (folder) {
         return [
-            {id: 'open-folder', label: _('Show in Parent Folder'), hint: _('Ctrl+Enter')},
-            ...terminal ? [{id: 'terminal', label: _('Open a Terminal Here')}] : [],
-            {id: 'copy-file', label: _('Copy Folder'), hint: _('Ctrl+C'), confirmation: _('Folder copied')},
-            copyPath, copyName, openWith,
+            openWith,
+            {id: 'open-folder', label: _('Show in Parent Folder'), hint: _('Ctrl+Enter'), group: 'place'},
+            ...terminal ? [{id: 'terminal', label: _('Open a Terminal Here'), group: 'place'}] : [],
+            {id: 'copy-file', label: _('Copy Folder'), hint: _('Ctrl+C'), confirmation: _('Folder copied'), group: 'copy'},
+            copyPath, copyName,
         ];
     }
     return [
-        {id: 'open-folder', label: _('Show in Folder'), hint: _('Ctrl+Enter')},
-        {id: 'preview', label: _('Preview'), hint: _('Space')},
-        {id: 'copy-file', label: _('Copy File'), hint: _('Ctrl+C'), confirmation: _('File copied')},
-        copyPath, copyName,
-        ...terminal ? [{id: 'terminal', label: _('Open a Terminal in Its Folder')}] : [],
         openWith,
+        // Ctrl+Y always previews; Space only once a result was chosen with the arrows.
+        {id: 'preview', label: _('Preview'), hint: _('Ctrl+Y'), group: 'open'},
+        {id: 'open-folder', label: _('Show in Folder'), hint: _('Ctrl+Enter'), group: 'place'},
+        ...terminal ? [{id: 'terminal', label: _('Open a Terminal in Its Folder'), group: 'place'}] : [],
+        {id: 'copy-file', label: _('Copy File'), hint: _('Ctrl+C'), confirmation: _('File copied'), group: 'copy'},
+        copyPath, copyName,
     ];
 }

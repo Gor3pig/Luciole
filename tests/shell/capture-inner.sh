@@ -40,15 +40,21 @@ gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell \
     --method org.freedesktop.DBus.Properties.Set org.gnome.Shell OverviewActive '<false>' >/dev/null 2>&1
 sleep 1
 
-if [ "$STATE" = prefs ] || [ "$STATE" = prefs-sources ]; then
+case "$STATE" in
+    prefs) PAGE=0 ;;
+    prefs-appearance) PAGE=1 ;;
+    prefs-search) PAGE=2 ;;
+    *) PAGE= ;;
+esac
+if [ -n "$PAGE" ]; then
     # The shell starts the preferences window of the extension, as it does for a user.
     ext_call LaunchExtensionPrefs "$UUID" >/dev/null || fail "the preferences could not be launched"
     sleep 6
-    # Reach the page switcher with Shift+Tab, then move to the next page with the arrow key.
-    if [ "$STATE" = prefs-sources ]; then
+    # Reach the page switcher with Shift+Tab, then move to the page with the arrow key.
+    if [ "$PAGE" -gt 0 ]; then
         press ISO_Left_Tab
         press ISO_Left_Tab
-        press Right
+        n=0; while [ "$n" -lt "$PAGE" ]; do press Right; n=$((n + 1)); done
         press Return
         sleep 2
     fi

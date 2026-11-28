@@ -324,7 +324,7 @@ const FILE = {data: {url: 'file:///home/me/Documents/Facture%20mars.pdf', parent
 test('a file offers its menu actions, and a result that is not a local file offers none', async () => {
     const t = setupProvider();
     await t.ready;
-    assertEquals((await t.provider.actions(FILE)).map(action => action.id), ['open-folder', 'preview', 'copy-file', 'copy-path', 'copy-name', 'open-with']);
+    assertEquals((await t.provider.actions(FILE)).map(action => action.id), ['open-with', 'preview', 'open-folder', 'copy-file', 'copy-path', 'copy-name']);
     assertEquals(await t.provider.actions({data: {url: 'https://example.org/x'}}), []);
     assertEquals(await t.provider.actions({}), []);
     t.provider.destroy();
@@ -334,7 +334,7 @@ test('Open With is a plain action, left out for a file no longer there', async (
     const t = setupProvider({missing: [FILE.data.url]});
     await t.ready;
     const actions = await t.provider.actions(FILE);
-    assertEquals(actions.map(action => action.id), ['open-folder', 'preview', 'copy-file', 'copy-path', 'copy-name']);
+    assertEquals(actions.map(action => action.id), ['preview', 'open-folder', 'copy-file', 'copy-path', 'copy-name']);
     t.provider.destroy();
 });
 
@@ -449,7 +449,7 @@ test('folders are a source of their own: Files leaves them out, Folders lists on
     const found = await folders.search('compta');
     assertEquals(found.map(r => r.title).sort(), ['Compta', 'Compta 2025'], 'hidden folders are left out too');
     assert(found.every(r => r.icon === 'folder' && r.data.folder === true && r.previewable === false), 'each is a folder');
-    assertEquals((await folders.provider.actions(found[0])).map(a => a.id), ['open-folder', 'copy-file', 'copy-path', 'copy-name', 'open-with']);
+    assertEquals((await folders.provider.actions(found[0])).map(a => a.id), ['open-with', 'open-folder', 'copy-file', 'copy-path', 'copy-name']);
     files.provider.destroy();
     folders.provider.destroy();
 });

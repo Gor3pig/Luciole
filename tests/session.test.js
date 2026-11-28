@@ -655,6 +655,7 @@ test('the menu of a result starts with Open, then what its source offers', async
     const t = menuSetup({actions: async () => [{id: 'new-window', label: 'New Window'}]});
     assertEquals((await t.controller.actionsFor(t.item)).map(action => action.id), ['open', 'new-window']);
     assertEquals((await t.controller.actionsFor(t.item))[0].label, '[Open]', 'its text is translated');
+    assertEquals((await t.controller.actionsFor(t.item))[0].group, 'open', 'Open heads the open family');
 });
 
 test('a source with no actions, or one that fails, offers only Open', async () => {

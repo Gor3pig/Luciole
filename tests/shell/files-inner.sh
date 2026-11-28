@@ -109,6 +109,24 @@ selected_row() {
 type_label() {
     shell_eval "(function find(a) { if ((a.style_class || '').includes('luciole-type-chip')) return a.visible ? a.text : 'hidden'; for (const c of a.get_children()) { const r = find(c); if (r) return r; } return ''; })(global.stage)"
 }
+# menu_highlighted: the label of the highlighted action. menu_go <label>: Down until it is highlighted.
+menu_highlighted() {
+    state=$(menu_state)
+    index=${state#* }; index=${index%% *}
+    case "$index" in ''|*[!0-9]*) return ;; esac
+    printf '%s\n' "${state#* * }" | cut -d';' -f$((index + 1))
+}
+menu_go() {
+    n=0
+    while [ "$n" -lt 12 ] && [ "$(menu_highlighted)" != "$1" ]; do press Down; sleep 0.1; n=$((n + 1)); done
+    [ "$(menu_highlighted)" = "$1" ]
+}
+
+# menu_separators: how many lines divide the actions into families (the one under the heading aside).
+menu_separators() {
+    shell_eval "(function() { let bp = null; (function f(a) { if (bp) return; if ((a.style_class || '').includes('luciole-context-menu')) { bp = a; return; } a.get_children().forEach(f); })(global.stage); const m = bp && bp._delegate; if (!m || !m.isOpen) return 'hidden'; const items = m._getMenuItems(); return String(items.filter((i, n) => n > 1 && i.constructor.name.includes('Separator')).length); })()"
+}
+
 # menu_row_center <index>: where to click to hit that action.
 # result_row_center <index>: where to click to hit that row of results; result_row_title <index>: its title.
 result_row_center() {
@@ -583,6 +601,7 @@ chord Control_L+k
 wait_menu || fail "calculator: Ctrl+K did not open the menu"
 set -- $(menu_state)
 [ "$1" = 2 ] || fail "calculator: expected 2 actions (copy the result, copy the calculation), got '$(menu_state)'"
+[ "$(menu_separators)" = 0 ] || fail "calculator: its two copies are one family, yet $(menu_separators) separators divide them"
 press Down
 sleep 0.2
 press Return
@@ -675,6 +694,8 @@ chord Control_L+k
 wait_menu || fail "folders: Ctrl+K did not open the menu of a folder"
 case "$(menu_state)" in *"Afficher dans le dossier parent"*) ;; *) fail "folders: the menu of a folder does not show it in its parent folder ('$(menu_state)')" ;; esac
 case "$(menu_state)" in *"Aperçu"*) fail "folders: a folder offers a preview ('$(menu_state)')" ;; esac
+case "$(menu_state)" in *" Ouvrir;"*"Afficher dans le dossier parent;"*"Copier le dossier;"*) ;; *) fail "folders: the menu of a folder is not in the order open, place, copy ('$(menu_state)')" ;; esac
+[ "$(menu_separators)" = 2 ] || fail "folders: expected the actions of a folder in three families, got $(menu_separators) separators"
 escape
 sleep 0.4
 LENGTH=$(entry_text_length)
@@ -764,7 +785,10 @@ set -- $(menu_state)
 [ "$1" = 8 ] && [ "$2" = 0 ] || fail "menu: expected 8 actions with the first highlighted, got '$(menu_state)'"
 [ "$(results_visible)" = true ] || fail "menu: the results are hidden behind the menu"
 case "$(menu_title)" in "rapport-test.txt | "*/docs) ;; *) fail "menu: the heading is '$(menu_title)', expected the file and its folder" ;; esac
-echo "ok: Ctrl+K opens GNOME's menu with the 8 actions of a file, over the results, the file and its folder at the top"
+[ "$(menu_separators)" = 2 ] || fail "menu: expected the actions in three families (2 separators), got $(menu_separators) ('$(menu_state)')"
+case "$(menu_state)" in *" Ouvrir;Ouvrir avec…;Aperçu;Afficher dans le dossier;Ouvrir un terminal dans son dossier;Copier le fichier;Copier le chemin;Copier le nom") ;;
+    *) fail "menu: the actions are not in the order open, place, copy ('$(menu_state)')" ;; esac
+echo "ok: Ctrl+K opens GNOME's menu with the 8 actions of a file in three families, over the results, the file and its folder at the top"
 # From the keyboard the menu opens under the start of the row's name, like the menu key in Files:
 # below the row, never over the field.
 # When it does not fit below the row (a short screen), it opens as low as it can, still under the
@@ -824,10 +848,7 @@ echo "ok: Escape closes the menu only; the keyboard is back in the field"
 wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
 chord Control_L+k
 wait_menu || fail "menu: Ctrl+K did not open the menu"
-press Down
-press Down
-press Down
-press Down
+n=0; while [ "$n" -lt 6 ]; do press Down; n=$((n + 1)); done
 sleep 0.2
 press Return
 i=0; while [ "$i" -lt 20 ] && [ "$(confirmation_shown)" != yes ]; do sleep 0.05; i=$((i + 1)); done
@@ -841,11 +862,7 @@ typed rapport
 wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $(last_results))"
 chord Control_L+k
 wait_menu || fail "menu: Ctrl+K did not open the menu"
-press Down
-press Down
-press Down
-press Down
-press Down
+n=0; while [ "$n" -lt 7 ]; do press Down; n=$((n + 1)); done
 sleep 0.2
 press Return
 sleep 0.4
@@ -870,7 +887,7 @@ wait_log "[Luciole] closed" $((CLOSED_NOW + 1)) || fail "menu: the window did no
 echo "ok: the first action of the menu (Open) runs with Enter"
 sleep 0.4
 
-# Open With: a plain action, the last one, that hands the file to GNOME's own chooser (the desktop
+# Open With: a plain action, right under Open, that hands the file to GNOME's own chooser (the desktop
 # portal, asked to ask the user) and closes the window.
 reopen_launcher
 typed rapport
@@ -878,13 +895,15 @@ wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $
 CLOSED_NOW=$(launcher_closed_count)
 chord Control_L+k
 wait_menu || fail "menu: Ctrl+K did not open the menu"
-press Up
+press Down
 sleep 0.2
-case "$(menu_state)" in *";Ouvrir avec…") ;; *) fail "menu: Open With is not the last action ('$(menu_state)')" ;; esac
+set -- $(menu_state)
+[ "$2" = 1 ] || fail "menu: Down did not move to the second action ('$(menu_state)')"
+case "$(menu_state)" in *" Ouvrir;Ouvrir avec…;"*) ;; *) fail "menu: Open With is not right under Open ('$(menu_state)')" ;; esac
 press Right
 sleep 0.4
 set -- $(menu_state)
-[ "$1" = 8 ] && [ "$2" = 7 ] || fail "menu: Open With unfolded something ('$(menu_state)')"
+[ "$1" = 8 ] && [ "$2" = 1 ] || fail "menu: Open With unfolded something ('$(menu_state)')"
 press Return
 i=0; while [ "$i" -lt 30 ] && [ ! -s "$PORTAL_RECORD" ]; do sleep 0.1; i=$((i + 1)); done
 [ "$(cat "$PORTAL_RECORD" 2>/dev/null)" = "OpenFile $WORK/docs/rapport-test.txt ask=true" ] ||
@@ -931,7 +950,7 @@ sleep 0.3
 chord Control_L+k
 wait_menu || fail "terminal: Ctrl+K did not open the menu"
 case "$(menu_state)" in *"Ouvrir un terminal dans son dossier"*) ;; *) fail "terminal: the menu offers no terminal ('$(menu_state)')" ;; esac
-n=0; while [ "$n" -lt 6 ]; do press Down; n=$((n + 1)); done
+n=0; while [ "$n" -lt 4 ]; do press Down; n=$((n + 1)); done
 sleep 0.2
 press Return
 i=0; while [ ! -s "$TERMINAL_RECORD" ] && [ "$i" -lt 50 ]; do sleep 0.1; i=$((i + 1)); done
@@ -1074,7 +1093,7 @@ typed quok
 wait_last 'results: 3 first=.*query=quok' || fail "results did not come back (last: $(last_results))"
 chord Control_L+k
 wait_menu || fail "menu: Ctrl+K did not open the menu"
-press Down
+menu_go "Afficher dans le dossier" || fail "menu: Show in Folder could not be reached ('$(menu_state)')"
 sleep 0.2
 press Return
 wait_log "the file is no longer there" 1 || fail "menu: the failure of Show in Folder was not logged"
@@ -1091,6 +1110,7 @@ chord Control_L+k
 wait_menu || fail "menu: Ctrl+K did not open the menu"
 set -- $(menu_state)
 [ "$1" = 2 ] || fail "menu: expected Open and the application's own action, got '$(menu_state)'"
+[ "$(menu_separators)" = 1 ] || fail "menu: Open and the application's own actions should be two families ($(menu_separators) separators)"
 press Down
 sleep 0.2
 press Return
@@ -1106,7 +1126,7 @@ wait_last 'results: 1 first=rapport' || fail "results did not come back (last: $
 CLOSED_NOW=$(launcher_closed_count)
 chord Control_L+k
 wait_menu || fail "menu: Ctrl+K did not open the menu"
-set -- $(menu_row_center 5)
+set -- $(menu_row_center 7)
 pointer "$1" "$2"
 sleep 0.3
 click

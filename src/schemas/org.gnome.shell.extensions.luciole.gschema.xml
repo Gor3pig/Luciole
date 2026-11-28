@@ -14,11 +14,6 @@
       <summary>Enabled result providers</summary>
     </key>
 
-    <key name="providers-order" type="as">
-      <default>["apps", "files", "folders", "calc", "system"]</default>
-      <summary>Display order of result providers</summary>
-    </key>
-
     <key name="backdrop" type="s">
       <choices>
         <choice value="none"/>

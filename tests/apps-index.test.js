@@ -135,10 +135,10 @@ test('ranking a few hundred apps takes a few milliseconds', () => {
     assert(perQueryMs < 8, `scoring 300 apps took ${perQueryMs} ms`);
 });
 
-test('the actions an application declares become menu actions, nothing is added', () => {
+test('the actions an application declares become menu actions of their own family, nothing is added', () => {
     assertEquals(appActionList([{name: 'new-window', label: 'Nouvelle fenêtre'}, {name: 'private', label: 'Fenêtre privée'}]), [
-        {id: `${APP_ACTION_PREFIX}new-window`, label: 'Nouvelle fenêtre'},
-        {id: `${APP_ACTION_PREFIX}private`, label: 'Fenêtre privée'},
+        {id: `${APP_ACTION_PREFIX}new-window`, label: 'Nouvelle fenêtre', group: 'app'},
+        {id: `${APP_ACTION_PREFIX}private`, label: 'Fenêtre privée', group: 'app'},
     ]);
     assertEquals(appActionList([]), []);
 });

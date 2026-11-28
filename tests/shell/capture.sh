@@ -4,7 +4,7 @@
 # Takes a PNG screenshot of the open launcher inside a private, headless GNOME
 # Shell: no real desktop is captured.
 #
-#   sh tests/shell/capture.sh <output.png> [light|dark] [open|closed|prefs|prefs-sources] [query]
+#   sh tests/shell/capture.sh <output.png> [light|dark] [open|closed|prefs|prefs-appearance|prefs-search] [query]
 #   (defaults: light, open; "closed" captures the desktop without the launcher, "prefs" the preferences window;
 #   a query is typed into the open launcher before the capture)
 #

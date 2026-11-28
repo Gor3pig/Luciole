@@ -1107,8 +1107,8 @@
   {
    "file": "src/providers/files-query.js",
    "label": "Open With becomes a submenu again",
-   "old": "    const openWith = {id: 'open-with', label: _('Open With…')};",
-   "new": "    const openWith = {id: 'open-with', label: _('Open With…'), submenu: true};"
+   "old": "    const openWith = {id: 'open-with', label: _('Open With…'), group: 'open'};",
+   "new": "    const openWith = {id: 'open-with', label: _('Open With…'), group: 'open', submenu: true};"
   },
   {
    "file": "src/providers/files.js",
@@ -1701,7 +1701,7 @@
   {
    "file": "src/providers/files-query.js",
    "label": "the menu has no preview",
-   "old": "        {id: 'preview', label: _('Preview'), hint: _('Space')},\n",
+   "old": "        {id: 'preview', label: _('Preview'), hint: _('Ctrl+Y'), group: 'open'},\n",
    "new": ""
   },
   {
@@ -2123,6 +2123,54 @@
    "label": "no delay still pairs clicks",
    "old": "return delay > 0 && ",
    "new": "return "
+  },
+  {
+   "file": "src/core/action-menu.js",
+   "label": "the menu is never divided into families",
+   "old": "separatorBefore: index > 0 && action.group !== actions[index - 1].group,",
+   "new": "separatorBefore: false,"
+  },
+  {
+   "file": "src/core/action-menu.js",
+   "label": "a separator opens the menu",
+   "old": "separatorBefore: index > 0 && action.group",
+   "new": "separatorBefore: index >= 0 && action.group"
+  },
+  {
+   "file": "src/core/action-menu.js",
+   "label": "the family of an action is lost",
+   "old": "            action.group = raw.group;\n",
+   "new": ""
+  },
+  {
+   "file": "src/core/action-menu.js",
+   "label": "any family a source gives is kept",
+   "old": "GROUP_PATTERN.test(raw.group)",
+   "new": "raw.group !== ''"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "Show in Folder joins the open family",
+   "old": "        {id: 'open-folder', label: _('Show in Folder'), hint: _('Ctrl+Enter'), group: 'place'},",
+   "new": "        {id: 'open-folder', label: _('Show in Folder'), hint: _('Ctrl+Enter'), group: 'open'},"
+  },
+  {
+   "file": "src/providers/files-query.js",
+   "label": "the menu says Space for the preview",
+   "old": "hint: _('Ctrl+Y')",
+   "new": "hint: _('Space')"
+  },
+  {
+   "file": "src/providers/apps-index.js",
+   "label": "an application's own actions have no family",
+   "old": "label: action.label, group: 'app'",
+   "new": "label: action.label"
+  },
+  {
+   "file": "src/core/session.js",
+   "label": "Open has no family",
+   "old": "hint: _('Enter'), group: 'open'}",
+   "new": "hint: _('Enter')}"
   }
  ]
 }
