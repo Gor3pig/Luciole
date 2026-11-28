@@ -10,6 +10,35 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import {menuAnchor} from '../core/layout.js';
 
+// Closed menus waiting for the stage to be updated before they are destroyed, with the handler that
+// will do it.
+const waiting = new Map();
+
+function destroyNow(menu) {
+    const handlerId = waiting.get(menu);
+    if (handlerId === undefined)
+        return;
+    waiting.delete(menu);
+    global.stage.disconnect(handlerId);
+    menu.destroy();
+}
+
+// Closing a menu (its highlight taken off) asks for a new layout, done with the next frame. A menu
+// destroyed before that frame would still be laid out by Clutter, destroyed, with errors in the
+// journal. So it is closed and hidden at once, and destroyed once the stage has been updated.
+function destroyAfterUpdate(menu) {
+    menu.close({animate: false});
+    menu.actor.hide();
+    waiting.set(menu, global.stage.connect('after-update', () => destroyNow(menu)));
+    global.stage.queue_redraw();
+}
+
+/** Destroys at once the menus still waiting for the stage (when the extension is disabled). */
+export function destroyClosedMenus() {
+    for (const menu of [...waiting.keys()])
+        destroyNow(menu);
+}
+
 /**
  * The actions of a result in GNOME's own menu, the one of a right click on the
  * dock. It opens like a menu of Files: its top left corner at the point given
@@ -142,7 +171,8 @@ export class ContextMenu {
         this.#menu = null;
         this.#manager = null;
         this.#onClosed = null;
-        menu?.destroy();
+        if (menu)
+            destroyAfterUpdate(menu);
     }
 
     // While the menu is open the keys come to it: Ctrl+K closes it, as it opened it; a character

@@ -15,7 +15,7 @@ import {jumpSection, nextSelection} from '../core/merge.js';
 import {HistoryCursor} from '../core/query-history.js';
 import {parseTypeQuery, typeLabels, typePrefix} from '../core/type-filter.js';
 import * as compat from '../shell/compat.js';
-import {ContextMenu} from '../shell/context-menu.js';
+import {ContextMenu, destroyClosedMenus} from '../shell/context-menu.js';
 import {describeWindow} from './a11y.js';
 import {ResultsView} from './results-view.js';
 
@@ -297,6 +297,7 @@ export class Launcher {
         this.#endSuspension();
         this.#isOpen = false;
         this.#resetMenu();
+        destroyClosedMenus();
         this.#unwatchFocus();
         this.#releaseGrab();
         if (this.#overlay) {
